@@ -123,6 +123,7 @@ predicted bracket to reality and awards the progression points above.
 
 ```
 index.html             → Predictions page (friends use this)
+predicciones.html      → Read-only view of everyone's picks (unlocks after the deadline)
 leaderboard.html       → Live rankings
 admin.html             → Enter match results from the web (optional)
 css/style.css          → All styles
