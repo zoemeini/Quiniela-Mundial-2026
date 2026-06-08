@@ -37,13 +37,28 @@ document.getElementById('username-submit').addEventListener('click', () => {
 document.getElementById('username-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('username-submit').click();
 });
+// "Borrar" no permite cambiar de nombre libremente: borra tu usuario (y todos
+// tus pronósticos) y solo entonces puedes crear uno nuevo. Evita jugar 2 veces.
 document.getElementById('change-user-btn').addEventListener('click', () => {
-  currentUser = null;
-  predictions = {};
-  koPred = {};
-  localStorage.removeItem('wc2026_username');
-  document.getElementById('username-input').value = '';
-  document.getElementById('username-modal').classList.remove('hidden');
+  if (isLocked()) return; // tras el cierre no se puede borrar
+  document.getElementById('delete-name').textContent = currentUser;
+  document.getElementById('delete-modal').classList.remove('hidden');
+});
+document.getElementById('delete-cancel').addEventListener('click', () => {
+  document.getElementById('delete-modal').classList.add('hidden');
+});
+document.getElementById('delete-confirm').addEventListener('click', async () => {
+  const btn = document.getElementById('delete-confirm');
+  btn.textContent = 'Borrando…'; btn.disabled = true;
+  try {
+    await api.deleteUser({ user: currentUser });   // borra en la hoja
+    localStorage.removeItem('wc2026_username');     // solo si el borrado tuvo éxito
+    location.reload();
+  } catch (err) {
+    console.error('deleteUser', err);
+    alert('No se pudo borrar el usuario ahora mismo. Inténtalo de nuevo en un momento.');
+    btn.textContent = 'Sí, borrar y empezar'; btn.disabled = false;
+  }
 });
 
 // ── Cuenta atrás ─────────────────────────────────────────
@@ -55,7 +70,9 @@ function updateCountdown() {
   if (isLocked()) {
     deadlineBanner.classList.add('hidden');
     lockedBanner.classList.remove('hidden');
-    document.querySelectorAll('.match-card').forEach(c => c.classList.add('locked'));
+    document.querySelectorAll('.match-card, .ko-card').forEach(c => c.classList.add('locked'));
+    const delBtn = document.getElementById('change-user-btn');
+    if (delBtn) delBtn.style.display = 'none'; // tras el cierre no se borra ni se cambia
     return;
   }
 
@@ -133,13 +150,13 @@ function buildMatchCard(match) {
       <div class="mc-row">
         ${teamFlag(match.home)}
         <span class="team-name">${teamName(match.home)}</span>
-        <input class="score-input" type="number" min="0" max="20" placeholder="–"
+        <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–"
                id="home-${match.id}" data-match="${match.id}" data-side="home">
       </div>
       <div class="mc-row">
         ${teamFlag(match.away)}
         <span class="team-name">${teamName(match.away)}</span>
-        <input class="score-input" type="number" min="0" max="20" placeholder="–"
+        <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–"
                id="away-${match.id}" data-match="${match.id}" data-side="away">
       </div>
     </div>
@@ -148,10 +165,71 @@ function buildMatchCard(match) {
       <div id="result-badge-${match.id}"></div>
     </div>`;
 
-  card.querySelector(`#home-${match.id}`).addEventListener('input', () => onScoreChange(match.id));
-  card.querySelector(`#away-${match.id}`).addEventListener('input', () => onScoreChange(match.id));
+  [`#home-${match.id}`, `#away-${match.id}`].forEach(sel => {
+    const el = card.querySelector(sel);
+    el.addEventListener('input', () => { onScoreChange(match.id); scheduleAdvance(el.id, advanceGroupFocus); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceGroupFocus(el.id); } });
+    el.addEventListener('focus', () => el.select());
+  });
 
   return card;
+}
+
+// ── Navegación automática entre casillas ─────────────────
+let advanceTimers = {};
+function focusInput(id) {
+  const el = document.getElementById(id);
+  if (el) { el.focus(); if (el.select) el.select(); }
+}
+// Avanza tras una breve pausa (permite escribir resultados de 2 cifras como "10").
+function scheduleAdvance(id, fn) {
+  clearTimeout(advanceTimers[id]);
+  const el = document.getElementById(id);
+  if (!el || el.value === '') return;
+  advanceTimers[id] = setTimeout(() => fn(id), 350);
+}
+function groupInputIds(group) {
+  const ids = [];
+  getMatchesByGroup(group).forEach(m => ids.push(`home-${m.id}`, `away-${m.id}`));
+  return ids;
+}
+function advanceGroupFocus(currentId) {
+  const matchId = currentId.replace(/^(home|away)-/, '');
+  const group = matchId[0];
+  const ids = groupInputIds(group);
+  const idx = ids.indexOf(currentId);
+  if (idx >= 0 && idx < ids.length - 1) { focusInput(ids[idx + 1]); return; }
+  // Última casilla del grupo → pasa al siguiente grupo.
+  const gi = GROUPS.indexOf(group);
+  if (gi >= 0 && gi < GROUPS.length - 1) {
+    const next = GROUPS[gi + 1];
+    switchGroup(next);
+    setTimeout(() => focusInput(groupInputIds(next)[0]), 40);
+  }
+}
+function koInputIds(roundKey) {
+  const ids = [];
+  getKoMatchesByRound(roundKey).forEach(m => ids.push(`ko-home-${m.id}`, `ko-away-${m.id}`));
+  return ids;
+}
+function advanceKoFocus(currentId) {
+  const matchId = currentId.replace(/^ko-(home|away)-/, '');
+  const round = getKoMatch(matchId).round;
+  const ids = koInputIds(round).filter(id => document.getElementById(id)); // solo casillas existentes
+  const idx = ids.indexOf(currentId);
+  if (idx >= 0 && idx < ids.length - 1) { focusInput(ids[idx + 1]); return; }
+  // Fin de la ronda → si está completa, pasa a la siguiente.
+  if (roundComplete(round)) {
+    const ri = KO_ROUNDS.findIndex(r => r.key === round);
+    if (ri >= 0 && ri < KO_ROUNDS.length - 1) {
+      const nextKey = KO_ROUNDS[ri + 1].key;
+      switchKoRound(nextKey);
+      setTimeout(() => {
+        const first = koInputIds(nextKey).find(id => document.getElementById(id));
+        if (first) focusInput(first);
+      }, 40);
+    }
+  }
 }
 
 // ── Guardar pronóstico ───────────────────────────────────
@@ -409,12 +487,12 @@ function buildKoCard(m) {
     <div class="ko-rows">
       <div class="ko-row home${r.winner === r.home ? ' winner' : ''}">
         ${teamFlag(r.home)}<span class="ko-team-name">${teamName(r.home)}</span>
-        <input class="score-input" type="number" min="0" max="20" placeholder="–" id="ko-home-${m.id}" value="${hv}">
+        <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="ko-home-${m.id}" value="${hv}">
         <span class="ko-check">✓</span>
       </div>
       <div class="ko-row away${r.winner === r.away ? ' winner' : ''}">
         ${teamFlag(r.away)}<span class="ko-team-name">${teamName(r.away)}</span>
-        <input class="score-input" type="number" min="0" max="20" placeholder="–" id="ko-away-${m.id}" value="${av}">
+        <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="ko-away-${m.id}" value="${av}">
         <span class="ko-check">✓</span>
       </div>
     </div>
@@ -426,8 +504,12 @@ function buildKoCard(m) {
       </div>
     </div>`;
 
-  card.querySelector(`#ko-home-${m.id}`).addEventListener('input', () => onKoScore(m.id));
-  card.querySelector(`#ko-away-${m.id}`).addEventListener('input', () => onKoScore(m.id));
+  [`#ko-home-${m.id}`, `#ko-away-${m.id}`].forEach(sel => {
+    const el = card.querySelector(sel);
+    el.addEventListener('input', () => { onKoScore(m.id); scheduleAdvance(el.id, advanceKoFocus); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceKoFocus(el.id); } });
+    el.addEventListener('focus', () => el.select());
+  });
   card.querySelectorAll('.ko-pen-btn').forEach(btn =>
     btn.addEventListener('click', () => onKoPenalty(m.id, btn.dataset.team)));
   return card;

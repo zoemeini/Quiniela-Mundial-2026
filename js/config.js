@@ -21,6 +21,18 @@ const ADMIN_PASSWORD = "zoe-quiniela-2026";
 const PREDICTION_DEADLINE = new Date('2026-06-11T17:00:00Z');
 
 // ============================================================
+//  Reproductor de música (opcional, abajo a la derecha)
+//  Canción oficial del Mundial 2026: "Dai Dai" — Shakira & Burna Boy.
+//  Pega el ID del vídeo de YouTube (lo que va después de "watch?v=").
+//  NO suena sola: solo se reproduce si el usuario pulsa el botón 🎵.
+//  Déjalo vacío ("") para ocultar el reproductor.
+// ============================================================
+const MUSIC = {
+  youtubeId: "DbDrhyXhjts",
+  title: "Dai Dai — Shakira & Burna Boy",
+};
+
+// ============================================================
 //  Group-stage points (per match)
 // ============================================================
 const GROUP_POINTS = { exact: 5, outcome: 3 };

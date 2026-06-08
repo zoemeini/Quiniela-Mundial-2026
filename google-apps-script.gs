@@ -167,6 +167,7 @@ function doGet(e) {
     if (action === 'saveResult')       return json(saveResult(e.parameter));
     if (action === 'savePick')         return json(savePick(e.parameter));
     if (action === 'saveKnockoutReal') return json(saveKnockoutReal(e.parameter));
+    if (action === 'deleteUser')       return json(deleteUser(e.parameter));
     return json({ ok: false, error: 'Acción desconocida. Prueba ?action=getAll' });
   } catch (err) {
     return json({ ok: false, error: String(err) });
@@ -330,6 +331,28 @@ function savePick(p) {
       if (rowIndex > 0) s.getRange(rowIndex, 1, 1, 6).setValues([row]);
       else s.appendRow(row);
     }
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true };
+}
+
+// Borra TODAS las filas (grupos + eliminatorias) de un jugador.
+function deleteUser(p) {
+  var user = (p.user || '').toString().trim();
+  if (!user) return { ok: false, error: 'falta user' };
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    ['Predictions', 'Bracket'].forEach(function (name) {
+      var s = sheetByName(name);
+      if (!s || s.getLastRow() < 2) return;
+      var players = s.getRange(2, 2, s.getLastRow() - 1, 1).getValues(); // col 2 = Jugador
+      for (var i = players.length - 1; i >= 0; i--) {
+        if (String(players[i][0]) === user) s.deleteRow(i + 2);
+      }
+    });
   } finally {
     lock.releaseLock();
   }

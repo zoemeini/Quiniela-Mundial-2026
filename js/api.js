@@ -25,4 +25,5 @@ const api = {
   saveResult:      (p) => apiCall('saveResult', p),
   savePick:        (p) => apiCall('savePick', p),          // pronóstico de eliminatorias
   saveKnockoutReal:(p) => apiCall('saveKnockoutReal', p),  // resultado real (admin)
+  deleteUser:      (p) => apiCall('deleteUser', p),        // borra un jugador y sus pronósticos
 };
