@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin · Mundial 2026</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-content">
+    <div class="header-left">
+      <span class="trophy">🏆</span>
+      <span class="header-title">Mundial 2026 · Admin</span>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link">Pronósticos</a>
+      <a href="leaderboard.html" class="nav-link">Clasificación</a>
+    </nav>
+    <div class="header-right">
+      <button class="btn-outline" id="logout-btn" style="display:none">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- Acceso con contraseña -->
+  <div id="password-gate">
+    <div style="font-size:40px;margin-bottom:12px">🔐</div>
+    <h2>Panel de Administración</h2>
+    <p>Introduce la contraseña de administrador para gestionar los resultados.</p>
+    <input type="password" id="password-input" placeholder="Contraseña…" autocomplete="current-password">
+    <br>
+    <button class="btn-primary" id="password-submit" style="width:100%">Entrar</button>
+    <div class="error-msg hidden" id="password-error">Contraseña incorrecta — inténtalo de nuevo.</div>
+  </div>
+
+  <!-- Panel de administración (oculto hasta iniciar sesión) -->
+  <div id="admin-panel" class="hidden">
+    <div class="admin-header">
+      <h1>⚽ Introducir Resultados</h1>
+      <p>Pon el resultado final de cada partido. La clasificación se actualiza automáticamente.</p>
+    </div>
+
+    <div class="info-banner" style="margin-bottom:24px">
+      ✅ Introduce el resultado final tras los 90 minutos. (En la fase de grupos no hay prórroga.) También puedes escribir los resultados directamente en la pestaña «Results» de tu Google Sheet.
+    </div>
+
+    <!-- Sub-conmutador: grupos / eliminatorias -->
+    <div class="phase-switch" style="margin-bottom:20px">
+      <button class="phase-btn active" id="admin-groups-btn">⚽ Fase de grupos</button>
+      <button class="phase-btn" id="admin-ko-btn">🏆 Eliminatorias (reales)</button>
+    </div>
+
+    <div id="admin-groups"></div>
+
+    <div id="admin-ko" class="hidden">
+      <div class="info-banner" style="margin-bottom:20px">
+        🏆 Aquí registras lo que pasa <b>de verdad</b> en cada eliminatoria: elige los dos equipos reales y quién gana. La clasificación usa esto para puntuar los cuadros de cada jugador. Rellénalo a medida que avance el torneo.
+      </div>
+      <div id="admin-ko-groups"></div>
+    </div>
+  </div>
+
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/data.js"></script>
+<script src="js/bracket.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

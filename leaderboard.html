@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clasificación · Mundial 2026</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-content">
+    <div class="header-left">
+      <span class="trophy">🏆</span>
+      <span class="header-title">Mundial 2026</span>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link">Mis Pronósticos</a>
+      <a href="leaderboard.html" class="nav-link active">Clasificación</a>
+    </nav>
+    <div class="header-right">
+      <span class="username-display" id="username-display"></span>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="leaderboard-title">🏅 Clasificación</div>
+  <div class="leaderboard-subtitle" id="lb-subtitle">Cargando…</div>
+
+  <div class="leaderboard-table">
+    <div class="lb-header">
+      <div>#</div>
+      <div>Jugador</div>
+      <div style="text-align:center">Total</div>
+      <div style="text-align:center">Grupos</div>
+      <div style="text-align:center">Elim.</div>
+      <div style="text-align:center">Jugados</div>
+    </div>
+    <div id="lb-body">
+      <div class="lb-loading">Cargando jugadores…</div>
+    </div>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/data.js"></script>
+<script src="js/bracket.js"></script>
+<script src="js/leaderboard.js"></script>
+</body>
+</html>
