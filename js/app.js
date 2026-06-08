@@ -129,21 +129,18 @@ function buildMatchCard(match) {
       <span class="separator">·</span>
       <span class="venue">${match.venue}</span>
     </div>
-    <div class="match-teams">
-      <div class="team home">
+    <div class="mc-rows">
+      <div class="mc-row">
         ${teamFlag(match.home)}
         <span class="team-name">${teamName(match.home)}</span>
-      </div>
-      <div class="score-inputs">
         <input class="score-input" type="number" min="0" max="20" placeholder="–"
                id="home-${match.id}" data-match="${match.id}" data-side="home">
-        <span class="score-separator">-</span>
+      </div>
+      <div class="mc-row">
+        ${teamFlag(match.away)}
+        <span class="team-name">${teamName(match.away)}</span>
         <input class="score-input" type="number" min="0" max="20" placeholder="–"
                id="away-${match.id}" data-match="${match.id}" data-side="away">
-      </div>
-      <div class="team away">
-        <span class="team-name">${teamName(match.away)}</span>
-        ${teamFlag(match.away)}
       </div>
     </div>
     <div class="match-footer">
@@ -396,10 +393,9 @@ function buildKoCard(m) {
   // Equipos aún por determinar (faltan pronósticos de rondas anteriores)
   if (!r.home || !r.away) {
     card.innerHTML = `${label ? `<div class="ko-card-label">${label}</div>` : ''}
-      <div class="ko-teams">
-        <div class="ko-side"><span class="ko-team-name tbd-text">Por determinar</span></div>
-        <span class="ko-vs">vs</span>
-        <div class="ko-side away"><span class="ko-team-name tbd-text">Por determinar</span></div>
+      <div class="ko-rows">
+        <div class="ko-row"><span class="ko-team-name tbd-text">Por determinar</span></div>
+        <div class="ko-row"><span class="ko-team-name tbd-text">Por determinar</span></div>
       </div>`;
     return card;
   }
@@ -410,17 +406,16 @@ function buildKoCard(m) {
 
   card.innerHTML = `
     ${label ? `<div class="ko-card-label">${label}</div>` : ''}
-    <div class="ko-teams">
-      <div class="ko-side home${r.winner === r.home ? ' winner' : ''}">
-        ${teamFlag(r.home)}<span class="ko-team-name">${teamName(r.home)}</span><span class="ko-check">✓</span>
-      </div>
-      <div class="ko-score">
+    <div class="ko-rows">
+      <div class="ko-row home${r.winner === r.home ? ' winner' : ''}">
+        ${teamFlag(r.home)}<span class="ko-team-name">${teamName(r.home)}</span>
         <input class="score-input" type="number" min="0" max="20" placeholder="–" id="ko-home-${m.id}" value="${hv}">
-        <span class="score-separator">-</span>
-        <input class="score-input" type="number" min="0" max="20" placeholder="–" id="ko-away-${m.id}" value="${av}">
+        <span class="ko-check">✓</span>
       </div>
-      <div class="ko-side away${r.winner === r.away ? ' winner' : ''}">
-        <span class="ko-check">✓</span><span class="ko-team-name">${teamName(r.away)}</span>${teamFlag(r.away)}
+      <div class="ko-row away${r.winner === r.away ? ' winner' : ''}">
+        ${teamFlag(r.away)}<span class="ko-team-name">${teamName(r.away)}</span>
+        <input class="score-input" type="number" min="0" max="20" placeholder="–" id="ko-away-${m.id}" value="${av}">
+        <span class="ko-check">✓</span>
       </div>
     </div>
     <div class="ko-pen ${isDraw ? '' : 'hidden'}" id="ko-pen-${m.id}">
@@ -444,8 +439,8 @@ function updateKoCardUI(matchId) {
   if (!card) return;
   const r  = bracket.resolved[matchId] || {};
   const pr = koPred[matchId] || {};
-  const homeSide = card.querySelector('.ko-side.home');
-  const awaySide = card.querySelector('.ko-side.away');
+  const homeSide = card.querySelector('.ko-row.home');
+  const awaySide = card.querySelector('.ko-row.away');
   if (homeSide) homeSide.classList.toggle('winner', !!r.winner && r.winner === r.home);
   if (awaySide) awaySide.classList.toggle('winner', !!r.winner && r.winner === r.away);
   const pen = card.querySelector('.ko-pen');
