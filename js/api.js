@@ -3,7 +3,7 @@
 // This is the most reliable way to call a Google Apps Script
 // web app from a browser (no CORS preflight, response readable).
 
-async function apiCall(action, params = {}) {
+async function apiCall(action, params = {}, _retries = 1) {
   if (!SHEET_API_URL || SHEET_API_URL.indexOf('PASTE_YOUR') === 0) {
     throw new Error('SHEET_API_URL is not set — edit js/config.js');
   }
@@ -12,15 +12,26 @@ async function apiCall(action, params = {}) {
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   url.searchParams.set('t', Date.now()); // cache-buster
 
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error('Network error ' + res.status);
+  let res;
+  try {
+    res = await fetch(url.toString());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  } catch (netErr) {
+    // Reintenta una vez ante fallos de red (habituales en móvil con cobertura débil).
+    if (_retries > 0) {
+      await new Promise(r => setTimeout(r, 900));
+      return apiCall(action, params, _retries - 1);
+    }
+    throw netErr;
+  }
   const data = await res.json();
-  if (data && data.ok === false) throw new Error(data.error || 'API error');
+  if (data && data.ok === false) throw new Error(data.error || 'API error'); // no reintentar errores de lógica
   return data;
 }
 
 const api = {
   getAll:          ()  => apiCall('getAll'),
+  getUser:         (p) => apiCall('getUser', p),           // solo los datos de un jugador (rápido)
   savePrediction:  (p) => apiCall('savePrediction', p),
   saveResult:      (p) => apiCall('saveResult', p),
   savePick:        (p) => apiCall('savePick', p),          // pronóstico de eliminatorias

@@ -163,6 +163,7 @@ function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action) : '';
   try {
     if (action === 'getAll')           return json(getAll());
+    if (action === 'getUser')          return json(getUser(e.parameter));
     if (action === 'savePrediction')   return json(savePrediction(e.parameter));
     if (action === 'saveResult')       return json(saveResult(e.parameter));
     if (action === 'savePick')         return json(savePick(e.parameter));
@@ -246,6 +247,21 @@ function getAll() {
   }
 
   return { ok: true, predictions: predictions, results: results, bracket: bracket, knockoutReal: knockoutReal };
+}
+
+// Solo los datos de UN jugador (+ resultados/eliminatorias reales, que son pocos).
+// Mucho más ligero que getAll cuando hay muchos jugadores → la página va rápida.
+function getUser(p) {
+  var user = (p.user || '').toString().trim();
+  if (!user) return { ok: false, error: 'falta user' };
+  var all = getAll();
+  return {
+    ok: true,
+    predictions: all.predictions.filter(function (x) { return x.user === user; }),
+    bracket:     all.bracket.filter(function (x) { return x.user === user; }),
+    results:     all.results,
+    knockoutReal: all.knockoutReal
+  };
 }
 
 function savePrediction(p) {

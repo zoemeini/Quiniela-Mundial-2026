@@ -169,7 +169,7 @@ function buildMatchCard(match) {
     const el = card.querySelector(sel);
     el.addEventListener('input', () => { onScoreChange(match.id); scheduleAdvance(el.id, advanceGroupFocus); });
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceGroupFocus(el.id); } });
-    el.addEventListener('focus', () => el.select());
+    el.addEventListener('focus', () => safeSelect(el));
   });
 
   return card;
@@ -177,12 +177,21 @@ function buildMatchCard(match) {
 
 // ── Navegación automática entre casillas ─────────────────
 let advanceTimers = {};
+// En móvil/tablet no saltamos el foco automáticamente: provoca saltos de teclado
+// y, en algunos navegadores, errores. El usuario rellena tocando cada casilla.
+const IS_TOUCH = (typeof window !== 'undefined') &&
+  (window.matchMedia ? window.matchMedia('(pointer: coarse)').matches : ('ontouchstart' in window));
+// select() lanza error en <input type="number"> en varios navegadores → protegido.
+function safeSelect(el) { try { if (el && el.select) el.select(); } catch (_) {} }
 function focusInput(id) {
   const el = document.getElementById(id);
-  if (el) { el.focus(); if (el.select) el.select(); }
+  if (!el) return;
+  try { el.focus(); } catch (_) {}
+  safeSelect(el);
 }
 // Avanza tras una breve pausa (permite escribir resultados de 2 cifras como "10").
 function scheduleAdvance(id, fn) {
+  if (IS_TOUCH) return;
   clearTimeout(advanceTimers[id]);
   const el = document.getElementById(id);
   if (!el || el.value === '') return;
@@ -284,10 +293,13 @@ function setStatus(matchId, cls, text) {
 async function loadData() {
   if (!currentUser) return;
   try {
-    const data = await api.getAll();
+    // Solo nuestros datos (rápido). Si el servidor aún no tiene getUser, usa getAll.
+    let data;
+    try { data = await api.getUser({ user: currentUser }); }
+    catch (e) { data = await api.getAll(); }
     predictions = {};
     (data.predictions || []).forEach(p => {
-      if (p.user === currentUser) predictions[p.matchId] = { home: p.home, away: p.away };
+      if (!p.user || p.user === currentUser) predictions[p.matchId] = { home: p.home, away: p.away };
     });
     koPred = {};
     (data.bracket || []).forEach(b => {
@@ -508,7 +520,7 @@ function buildKoCard(m) {
     const el = card.querySelector(sel);
     el.addEventListener('input', () => { onKoScore(m.id); scheduleAdvance(el.id, advanceKoFocus); });
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceKoFocus(el.id); } });
-    el.addEventListener('focus', () => el.select());
+    el.addEventListener('focus', () => safeSelect(el));
   });
   card.querySelectorAll('.ko-pen-btn').forEach(btn =>
     btn.addEventListener('click', () => onKoPenalty(m.id, btn.dataset.team)));
