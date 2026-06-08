@@ -1,32 +1,45 @@
 // ── Estado ───────────────────────────────────────────────
-let currentUser = null;
-let predictions = {};   // { matchId: { home, away } }
-let koPred      = {};   // { koMatchId: { home, away, pen } }  (eliminatorias)
-let results     = {};   // { matchId: { home, away, status } }
-let saveTimers  = {};   // temporizadores de guardado por partido
+// Modelo unificado: se pronostica el MARCADOR de cada partido real (grupos y
+// eliminatorias). Cada partido se cierra a su hora de inicio. Lo no rellenado
+// cuenta como 0–0. Las eliminatorias muestran los equipos REALES por ronda.
+let currentUser  = null;
+let predictions  = {};   // { matchId: { home, away } }  (grupos + eliminatorias)
+let results      = {};   // { matchId: { home, away, status } }  (grupos, reales)
+let koReal       = {};   // { koMatchId: { winner, gh, ga } }  (eliminatorias, reales)
+let realBr       = { complete: false, resolved: {} }; // equipos reales del cuadro
+let saveTimers   = {};
 let currentPhase = 'groups';
+let currentGroup = 'A';
 let currentKoRound = 'R32';
-let wasComplete = false; // para autosaltar a eliminatorias al completar grupos
 
-const isLocked = () => Date.now() >= PREDICTION_DEADLINE.getTime();
+const lockedM = m => matchLocked(m.kickoff);
+const getAnyMatch = id => getMatchById(id) || getKoMatch(id);
+
+// Resultado real de un partido (grupo o eliminatoria), o null si no jugado.
+function resultFor(matchId) {
+  if (matchId[0] !== 'M') {
+    const r = results[matchId];
+    return (r && r.status === 'finished') ? { home: r.home, away: r.away, status: 'finished' } : null;
+  }
+  const kr = koReal[matchId];
+  if (kr && kr.gh !== '' && kr.gh != null && kr.ga !== '' && kr.ga != null) {
+    return { home: Number(kr.gh), away: Number(kr.ga), status: 'finished' };
+  }
+  return null;
+}
 
 // ── Gestión de usuario ───────────────────────────────────
 function loadUser() {
   currentUser = localStorage.getItem('wc2026_username');
-  if (!currentUser) {
-    document.getElementById('username-modal').classList.remove('hidden');
-  } else {
-    applyUser();
-  }
+  if (!currentUser) document.getElementById('username-modal').classList.remove('hidden');
+  else applyUser();
 }
-
 function applyUser() {
   document.getElementById('username-display').textContent = currentUser;
   document.getElementById('username-modal').classList.add('hidden');
   loadData();
-  setInterval(loadData, 60000); // refresca resultados periódicamente
+  setInterval(loadData, 60000);
 }
-
 document.getElementById('username-submit').addEventListener('click', () => {
   const val = document.getElementById('username-input').value.trim();
   if (!val) return;
@@ -40,7 +53,6 @@ document.getElementById('username-input').addEventListener('keydown', e => {
 // "Borrar" no permite cambiar de nombre libremente: borra tu usuario (y todos
 // tus pronósticos) y solo entonces puedes crear uno nuevo. Evita jugar 2 veces.
 document.getElementById('change-user-btn').addEventListener('click', () => {
-  if (isLocked()) return; // tras el cierre no se puede borrar
   document.getElementById('delete-name').textContent = currentUser;
   document.getElementById('delete-modal').classList.remove('hidden');
 });
@@ -51,8 +63,8 @@ document.getElementById('delete-confirm').addEventListener('click', async () => 
   const btn = document.getElementById('delete-confirm');
   btn.textContent = 'Borrando…'; btn.disabled = true;
   try {
-    await api.deleteUser({ user: currentUser });   // borra en la hoja
-    localStorage.removeItem('wc2026_username');     // solo si el borrado tuvo éxito
+    await api.deleteUser({ user: currentUser });
+    localStorage.removeItem('wc2026_username');
     location.reload();
   } catch (err) {
     console.error('deleteUser', err);
@@ -61,46 +73,65 @@ document.getElementById('delete-confirm').addEventListener('click', async () => 
   }
 });
 
-// ── Cuenta atrás ─────────────────────────────────────────
-function updateCountdown() {
-  const deadlineBanner = document.getElementById('deadline-banner');
-  const lockedBanner   = document.getElementById('locked-banner');
-  const deadlineText   = document.getElementById('deadline-text');
-
-  if (isLocked()) {
-    deadlineBanner.classList.add('hidden');
-    lockedBanner.classList.remove('hidden');
-    document.querySelectorAll('.match-card, .ko-card').forEach(c => c.classList.add('locked'));
-    const delBtn = document.getElementById('change-user-btn');
-    if (delBtn) delBtn.style.display = 'none'; // tras el cierre no se borra ni se cambia
-    return;
-  }
-
-  lockedBanner.classList.add('hidden');
-  deadlineBanner.classList.remove('hidden');
-
-  const diff  = PREDICTION_DEADLINE.getTime() - Date.now();
-  const days  = Math.floor(diff / 86400000);
-  const hours = Math.floor((diff % 86400000) / 3600000);
-  const mins  = Math.floor((diff % 3600000)  / 60000);
-  const secs  = Math.floor((diff % 60000)    / 1000);
-
-  if (days > 0) {
-    deadlineText.textContent = `Los pronósticos se cierran en ${days}d ${hours}h ${mins}m — ¡envíalos antes del 11 de junio!`;
-  } else if (hours > 0) {
-    deadlineText.textContent = `Los pronósticos se cierran en ${hours}h ${mins}m ${secs}s — ¡date prisa!`;
-  } else {
-    deadlineText.textContent = `Los pronósticos se cierran en ${mins}m ${secs}s — ¡envíalos ya!`;
-  }
+// ── Aviso (sin cuenta atrás global: cada partido se cierra a su hora) ─────
+function setupBanner() {
+  const banner = document.getElementById('deadline-banner');
+  document.getElementById('locked-banner').classList.add('hidden');
+  banner.classList.remove('hidden');
+  document.getElementById('deadline-text').textContent =
+    'Cada partido se cierra a su hora de inicio. Lo que no rellenes cuenta como 0–0.';
 }
-setInterval(updateCountdown, 1000);
 
-// ── Construir interfaz ───────────────────────────────────
+// ── Tarjeta de partido (compartida por grupos y eliminatorias) ───────────
+function scoreRowsHtml(matchId, homeTeam, awayTeam, locked) {
+  const pred = predictions[matchId];
+  if (locked) {
+    const hs = pred ? pred.home : 0, as = pred ? pred.away : 0;
+    const cls = pred ? '' : ' unsent';
+    return `<div class="mc-rows">
+      <div class="mc-row">${teamFlag(homeTeam)}<span class="team-name">${teamName(homeTeam)}</span><span class="score-static${cls}">${hs}</span></div>
+      <div class="mc-row">${teamFlag(awayTeam)}<span class="team-name">${teamName(awayTeam)}</span><span class="score-static${cls}">${as}</span></div>
+    </div>`;
+  }
+  const hv = pred ? pred.home : '', av = pred ? pred.away : '';
+  return `<div class="mc-rows">
+    <div class="mc-row">${teamFlag(homeTeam)}<span class="team-name">${teamName(homeTeam)}</span>
+      <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="sc-${matchId}-home" value="${hv}"></div>
+    <div class="mc-row">${teamFlag(awayTeam)}<span class="team-name">${teamName(awayTeam)}</span>
+      <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="sc-${matchId}-away" value="${av}"></div>
+  </div>`;
+}
+function wireCardInputs(matchId) {
+  ['home', 'away'].forEach(side => {
+    const el = document.getElementById(`sc-${matchId}-${side}`);
+    if (!el) return;
+    el.addEventListener('input', () => { onScoreChange(matchId); scheduleAdvance(el.id, advanceFocus); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceFocus(el.id); } });
+    el.addEventListener('focus', () => safeSelect(el));
+  });
+}
+function resultBadgeHtml(matchId) {
+  const result = resultFor(matchId);
+  if (!result) return '';
+  const pred = predictions[matchId] || { home: 0, away: 0 }; // auto 0–0
+  const resultStr = `${result.home} – ${result.away}`;
+  const pts = calculatePoints(pred, result);
+  if (pts === 5) return `<span class="result-display result-correct-exact">⭐ ¡Exacto! +5</span>`;
+  if (pts === 3) return `<span class="result-display result-correct-outcome">✓ Acierto +3</span>`;
+  const tu = `${pred.home}–${pred.away}`;
+  return `<span class="result-display result-wrong">✗ ${tu} · real ${resultStr}</span>`;
+}
+function lockTag(locked, result) {
+  if (result) return `<span class="lock-tag finished">Final</span>`;
+  if (locked)  return `<span class="lock-tag closed">🔒 Cerrado</span>`;
+  return '';
+}
+
+// ── Construir fase de grupos ─────────────────────────────
 function buildUI() {
-  const tabsEl    = document.getElementById('group-tabs');
+  const tabsEl = document.getElementById('group-tabs');
   const contentEl = document.getElementById('group-content');
-  tabsEl.innerHTML    = '';
-  contentEl.innerHTML = '';
+  tabsEl.innerHTML = ''; contentEl.innerHTML = '';
 
   GROUPS.forEach((group, idx) => {
     const tab = document.createElement('button');
@@ -113,83 +144,50 @@ function buildUI() {
     const panel = document.createElement('div');
     panel.className = 'group-panel' + (idx === 0 ? ' active' : '');
     panel.id = `panel-${group}`;
-
     const matches = getMatchesByGroup(group);
     const teams = [...new Set(matches.flatMap(m => [m.home, m.away]))].map(teamName).join(' · ');
     panel.innerHTML = `<div class="group-header">Grupo ${group} &nbsp;·&nbsp; ${teams}</div>
                        <div class="matches-grid" id="grid-${group}"></div>`;
     contentEl.appendChild(panel);
-
-    matches.forEach(match => {
-      document.getElementById(`grid-${group}`).appendChild(buildMatchCard(match));
-    });
+    matches.forEach(m => document.getElementById(`grid-${group}`).appendChild(buildMatchCard(m)));
   });
 }
 
 function switchGroup(group) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.group === group));
+  currentGroup = group;
+  document.querySelectorAll('#group-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.group === group));
   document.querySelectorAll('.group-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${group}`));
 }
 
 function buildMatchCard(match) {
-  const card = document.createElement('div');
-  card.className = 'match-card' + (isLocked() ? ' locked' : '');
-  card.id = `card-${match.id}`;
-
+  const locked = lockedM(match);
+  const result = resultFor(match.id);
   const k = formatKickoff(match.kickoff);
-
+  const card = document.createElement('div');
+  card.className = 'match-card' + (locked ? ' locked' : '');
+  card.id = `card-${match.id}`;
   card.innerHTML = `
     <div class="match-meta">
-      <span>${k.date}</span>
-      <span class="separator">·</span>
-      <span class="kickoff-time">${k.time}</span>
-      <span class="separator">·</span>
+      <span>${k.date}</span><span class="separator">·</span>
+      <span class="kickoff-time">${k.time}</span><span class="separator">·</span>
       <span class="venue">${match.venue}</span>
+      ${lockTag(locked, result)}
     </div>
-    <div class="mc-rows">
-      <div class="mc-row">
-        ${teamFlag(match.home)}
-        <span class="team-name">${teamName(match.home)}</span>
-        <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–"
-               id="home-${match.id}" data-match="${match.id}" data-side="home">
-      </div>
-      <div class="mc-row">
-        ${teamFlag(match.away)}
-        <span class="team-name">${teamName(match.away)}</span>
-        <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–"
-               id="away-${match.id}" data-match="${match.id}" data-side="away">
-      </div>
-    </div>
+    ${scoreRowsHtml(match.id, match.home, match.away, locked)}
     <div class="match-footer">
       <div class="save-status idle" id="status-${match.id}"></div>
-      <div id="result-badge-${match.id}"></div>
+      <div id="result-badge-${match.id}">${resultBadgeHtml(match.id)}</div>
     </div>`;
-
-  [`#home-${match.id}`, `#away-${match.id}`].forEach(sel => {
-    const el = card.querySelector(sel);
-    el.addEventListener('input', () => { onScoreChange(match.id); scheduleAdvance(el.id, advanceGroupFocus); });
-    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceGroupFocus(el.id); } });
-    el.addEventListener('focus', () => safeSelect(el));
-  });
-
+  if (!locked) wireCardInputs(match.id);
   return card;
 }
 
 // ── Navegación automática entre casillas ─────────────────
 let advanceTimers = {};
-// En móvil/tablet no saltamos el foco automáticamente: provoca saltos de teclado
-// y, en algunos navegadores, errores. El usuario rellena tocando cada casilla.
 const IS_TOUCH = (typeof window !== 'undefined') &&
   (window.matchMedia ? window.matchMedia('(pointer: coarse)').matches : ('ontouchstart' in window));
-// select() lanza error en <input type="number"> en varios navegadores → protegido.
 function safeSelect(el) { try { if (el && el.select) el.select(); } catch (_) {} }
-function focusInput(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  try { el.focus(); } catch (_) {}
-  safeSelect(el);
-}
-// Avanza tras una breve pausa (permite escribir resultados de 2 cifras como "10").
+function focusInput(id) { const el = document.getElementById(id); if (!el) return; try { el.focus(); } catch (_) {} safeSelect(el); }
 function scheduleAdvance(id, fn) {
   if (IS_TOUCH) return;
   clearTimeout(advanceTimers[id]);
@@ -197,47 +195,33 @@ function scheduleAdvance(id, fn) {
   if (!el || el.value === '') return;
   advanceTimers[id] = setTimeout(() => fn(id), 350);
 }
-function groupInputIds(group) {
+function parseScoreId(id) { const m = id.match(/^sc-(.+)-(home|away)$/); return m ? { matchId: m[1], side: m[2] } : null; }
+function visibleGroupInputIds(group) {
   const ids = [];
-  getMatchesByGroup(group).forEach(m => ids.push(`home-${m.id}`, `away-${m.id}`));
+  getMatchesByGroup(group).forEach(m => ['home', 'away'].forEach(s => {
+    if (document.getElementById(`sc-${m.id}-${s}`)) ids.push(`sc-${m.id}-${s}`);
+  }));
   return ids;
 }
-function advanceGroupFocus(currentId) {
-  const matchId = currentId.replace(/^(home|away)-/, '');
-  const group = matchId[0];
-  const ids = groupInputIds(group);
-  const idx = ids.indexOf(currentId);
-  if (idx >= 0 && idx < ids.length - 1) { focusInput(ids[idx + 1]); return; }
-  // Última casilla del grupo → pasa al siguiente grupo.
-  const gi = GROUPS.indexOf(group);
-  if (gi >= 0 && gi < GROUPS.length - 1) {
-    const next = GROUPS[gi + 1];
-    switchGroup(next);
-    setTimeout(() => focusInput(groupInputIds(next)[0]), 40);
-  }
-}
-function koInputIds(roundKey) {
+function visibleKoInputIds(round) {
   const ids = [];
-  getKoMatchesByRound(roundKey).forEach(m => ids.push(`ko-home-${m.id}`, `ko-away-${m.id}`));
+  getKoMatchesByRound(round).forEach(m => ['home', 'away'].forEach(s => {
+    if (document.getElementById(`sc-${m.id}-${s}`)) ids.push(`sc-${m.id}-${s}`);
+  }));
   return ids;
 }
-function advanceKoFocus(currentId) {
-  const matchId = currentId.replace(/^ko-(home|away)-/, '');
-  const round = getKoMatch(matchId).round;
-  const ids = koInputIds(round).filter(id => document.getElementById(id)); // solo casillas existentes
+function advanceFocus(currentId) {
+  const p = parseScoreId(currentId); if (!p) return;
+  const isKo = p.matchId[0] === 'M';
+  const ids = isKo ? visibleKoInputIds(currentKoRound) : visibleGroupInputIds(currentGroup);
   const idx = ids.indexOf(currentId);
   if (idx >= 0 && idx < ids.length - 1) { focusInput(ids[idx + 1]); return; }
-  // Fin de la ronda → si está completa, pasa a la siguiente.
-  if (roundComplete(round)) {
-    const ri = KO_ROUNDS.findIndex(r => r.key === round);
-    if (ri >= 0 && ri < KO_ROUNDS.length - 1) {
-      const nextKey = KO_ROUNDS[ri + 1].key;
-      switchKoRound(nextKey);
-      setTimeout(() => {
-        const first = koInputIds(nextKey).find(id => document.getElementById(id));
-        if (first) focusInput(first);
-      }, 40);
-    }
+  if (!isKo) {
+    const gi = GROUPS.indexOf(currentGroup);
+    if (gi < GROUPS.length - 1) { const n = GROUPS[gi + 1]; switchGroup(n); setTimeout(() => { const f = visibleGroupInputIds(n)[0]; if (f) focusInput(f); }, 40); }
+  } else {
+    const ri = KO_ROUNDS.findIndex(r => r.key === currentKoRound);
+    if (ri < KO_ROUNDS.length - 1) { const n = KO_ROUNDS[ri + 1].key; switchKoRound(n); setTimeout(() => { const f = visibleKoInputIds(n)[0]; if (f) focusInput(f); }, 40); }
   }
 }
 
@@ -247,41 +231,26 @@ function onScoreChange(matchId) {
   setStatus(matchId, 'saving', '…');
   saveTimers[matchId] = setTimeout(() => savePrediction(matchId), 700);
 }
-
 async function savePrediction(matchId) {
-  if (isLocked()) return;
-  const homeVal = document.getElementById(`home-${matchId}`).value;
-  const awayVal = document.getElementById(`away-${matchId}`).value;
-  if (homeVal === '' || awayVal === '') { setStatus(matchId, 'idle', ''); return; }
-
-  const home = parseInt(homeVal, 10);
-  const away = parseInt(awayVal, 10);
+  const m = getAnyMatch(matchId);
+  if (!m || lockedM(m)) { setStatus(matchId, 'error', '🔒 Cerrado'); return; }
+  const hEl = document.getElementById(`sc-${matchId}-home`);
+  const aEl = document.getElementById(`sc-${matchId}-away`);
+  if (!hEl || !aEl) return;
+  if (hEl.value === '' || aEl.value === '') { setStatus(matchId, 'idle', ''); return; }
+  const home = parseInt(hEl.value, 10), away = parseInt(aEl.value, 10);
   if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return;
-
   try {
     await api.savePrediction({ user: currentUser, matchId, home, away });
     predictions[matchId] = { home, away };
     setStatus(matchId, 'saved', '✓ Guardado');
     updateProgress();
-    updateTabCheck(matchId[0]);
-    renderKnockout(); // el cuadro depende de los grupos
-    maybeJumpToKnockout();
+    if (matchId[0] !== 'M') updateTabCheck(matchId[0]);
   } catch (err) {
-    setStatus(matchId, 'error', '✗ Error');
+    setStatus(matchId, 'error', '✗ Reintentando…');
     console.error(err);
   }
 }
-
-// Cuando se completan los 72 pronósticos, salta a las eliminatorias.
-function maybeJumpToKnockout() {
-  const complete = Object.keys(predictions).length === MATCHES.length;
-  if (complete && !wasComplete) {
-    wasComplete = true;
-    showPhase('ko');
-  }
-  wasComplete = complete;
-}
-
 function setStatus(matchId, cls, text) {
   const el = document.getElementById(`status-${matchId}`);
   if (!el) return;
@@ -289,11 +258,10 @@ function setStatus(matchId, cls, text) {
   el.textContent = text;
 }
 
-// ── Cargar pronósticos + resultados desde la hoja ────────
+// ── Cargar datos ─────────────────────────────────────────
 async function loadData() {
   if (!currentUser) return;
   try {
-    // Solo nuestros datos (rápido). Si el servidor aún no tiene getUser, usa getAll.
     let data;
     try { data = await api.getUser({ user: currentUser }); }
     catch (e) { data = await api.getAll(); }
@@ -301,82 +269,59 @@ async function loadData() {
     (data.predictions || []).forEach(p => {
       if (!p.user || p.user === currentUser) predictions[p.matchId] = { home: p.home, away: p.away };
     });
-    koPred = {};
-    (data.bracket || []).forEach(b => {
-      if (b.user !== currentUser) return;
-      const h = (b.home === '' || b.home == null) ? null : Number(b.home);
-      const a = (b.away === '' || b.away == null) ? null : Number(b.away);
-      // For a predicted draw, the saved advancer is the penalty pick.
-      const pen = (h != null && a != null && h === a && b.team) ? b.team : null;
-      koPred[b.matchId] = { home: h, away: a, pen: pen };
-    });
     results = {};
     (data.results || []).forEach(r => { results[r.matchId] = r; });
-    renderPredictions();
+    koReal = {};
+    (data.knockoutReal || []).forEach(k => {
+      koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga };
+    });
+    // Equipos reales del cuadro a partir de resultados reales de grupos + ganadores reales.
+    const groupResults = {};
+    MATCHES.forEach(m => { const r = resultFor(m.id); if (r) groupResults[m.id] = { home: r.home, away: r.away }; });
+    realBr = realKnockout(groupResults, koReal);
+
+    rebuildGroups();
     renderKnockout();
-  } catch (err) {
-    console.error('loadData', err);
-  }
+  } catch (err) { console.error('loadData', err); }
 }
 
-function renderPredictions() {
-  MATCHES.forEach(match => {
-    const pred = predictions[match.id];
-    const hEl = document.getElementById(`home-${match.id}`);
-    const aEl = document.getElementById(`away-${match.id}`);
-    if (!hEl || !aEl) return;
-    if (pred) {
-      // No sobrescribir lo que el usuario está escribiendo ahora mismo.
-      if (document.activeElement !== hEl && document.activeElement !== aEl) {
-        hEl.value = pred.home;
-        aEl.value = pred.away;
-      }
-      setStatus(match.id, 'saved', '✓ Guardado');
-    }
+// Re-render de grupos preservando el foco del usuario.
+function rebuildGroups() {
+  GROUPS.forEach(group => {
+    const grid = document.getElementById(`grid-${group}`);
+    if (!grid) return;
+    getMatchesByGroup(group).forEach(m => {
+      const old = document.getElementById(`card-${m.id}`);
+      const active = document.activeElement;
+      const editingThis = active && active.id && active.id.indexOf(`sc-${m.id}-`) === 0;
+      if (editingThis) return; // no tocar la tarjeta que se está editando
+      const fresh = buildMatchCard(m);
+      if (old) old.replaceWith(fresh); else grid.appendChild(fresh);
+    });
   });
   updateProgress();
-  GROUPS.forEach(g => updateTabCheck(g));
-  renderResultBadges();
+  GROUPS.forEach(updateTabCheck);
 }
 
-function renderResultBadges() {
-  MATCHES.forEach(match => {
-    const badgeEl = document.getElementById(`result-badge-${match.id}`);
-    if (!badgeEl) return;
-    const result = results[match.id];
-    if (!result || result.status !== 'finished') { badgeEl.innerHTML = ''; return; }
-
-    const pred = predictions[match.id];
-    const resultStr = `${result.home} – ${result.away}`;
-    if (!pred) {
-      badgeEl.innerHTML = `<span class="result-display result-wrong">Resultado: ${resultStr}</span>`;
-      return;
-    }
-    const pts = calculatePoints(pred, result);
-    if (pts === 5)      badgeEl.innerHTML = `<span class="result-display result-correct-exact">⭐ ¡Exacto! +5pts</span>`;
-    else if (pts === 3) badgeEl.innerHTML = `<span class="result-display result-correct-outcome">✓ Acierto +3pts</span>`;
-    else                badgeEl.innerHTML = `<span class="result-display result-wrong">✗ ${resultStr}</span>`;
-  });
-}
-
-// ── Progreso ─────────────────────────────────────────────
+// ── Progreso (solo grupos) ───────────────────────────────
 function updateProgress() {
   const total = MATCHES.length;
-  const done  = Object.keys(predictions).length;
-  const pct   = Math.round((done / total) * 100);
-  document.getElementById('progress-text').textContent = `${done} / ${total} pronósticos`;
-  document.getElementById('progress-pct').textContent  = `${pct}%`;
-  document.getElementById('progress-fill').style.width = `${pct}%`;
+  const done = MATCHES.filter(m => predictions[m.id] !== undefined).length;
+  const pct = Math.round((done / total) * 100);
+  const t = document.getElementById('progress-text');
+  if (t) t.textContent = `${done} / ${total} pronósticos de grupos`;
+  const p = document.getElementById('progress-pct');
+  if (p) p.textContent = `${pct}%`;
+  const f = document.getElementById('progress-fill');
+  if (f) f.style.width = `${pct}%`;
 }
-
 function updateTabCheck(group) {
-  const matches = getMatchesByGroup(group);
-  const done    = matches.filter(m => predictions[m.id] !== undefined).length;
-  const el      = document.getElementById(`tab-check-${group}`);
+  const done = getMatchesByGroup(group).filter(m => predictions[m.id] !== undefined).length;
+  const el = document.getElementById(`tab-check-${group}`);
   if (el) el.textContent = done === 6 ? '✓' : '';
 }
 
-// ── Conmutador de fase (grupos / eliminatorias) ──────────
+// ── Conmutador de fase ───────────────────────────────────
 function showPhase(phase) {
   currentPhase = phase;
   document.getElementById('phase-groups').classList.toggle('hidden', phase !== 'groups');
@@ -388,56 +333,24 @@ function showPhase(phase) {
 document.getElementById('phase-groups-btn').addEventListener('click', () => showPhase('groups'));
 document.getElementById('phase-ko-btn').addEventListener('click', () => showPhase('ko'));
 
-// ── Eliminatorias ────────────────────────────────────────
-let bracket = null;     // { complete, standings, thirdAssign, resolved }
-let koSaveTimers = {};
-
-// El ganador de cada eliminatoria se deduce del marcador (en empate, penaltis).
-function koWinnerFn(matchId, home, away) {
-  const pr = koPred[matchId];
-  if (!pr || pr.home == null || pr.away == null) return null;
-  if (pr.home > pr.away) return home;
-  if (pr.away > pr.home) return away;
-  return (pr.pen === home || pr.pen === away) ? pr.pen : null;
-}
-
-function rebuildBracket() {
-  bracket = buildUserBracket(predictions, null, koWinnerFn);
-}
-
-// Qué partidos dependen de cada partido (para borrar los posteriores si cambia un ganador).
-const KO_CHILDREN = {};
-KO_MATCHES.forEach(m => {
-  [m.home, m.away].forEach(ref => {
-    const parent = ref.winOf || ref.loseOf;
-    if (parent) (KO_CHILDREN[parent] = KO_CHILDREN[parent] || []).push(m.id);
-  });
-});
-
+// ── Eliminatorias (equipos reales por ronda) ─────────────
 function renderKnockout() {
-  rebuildBracket();
-
   const lockedMsg = document.getElementById('ko-locked-msg');
   const koContent = document.getElementById('ko-content');
-
-  if (!bracket.complete) {
+  if (!realBr.complete) {
     lockedMsg.classList.remove('hidden');
     koContent.classList.add('hidden');
-    const done = Object.keys(predictions).length;
     document.getElementById('ko-locked-progress').textContent =
-      `Llevas ${done} de ${MATCHES.length} pronósticos de grupos.`;
+      'Se abrirán cuando termine la fase de grupos y se conozcan los 32 clasificados reales.';
     return;
   }
-
   lockedMsg.classList.add('hidden');
   koContent.classList.remove('hidden');
   buildKoRoundTabs();
   renderKoRound(currentKoRound);
 }
-
 function buildKoRoundTabs() {
   const tabsEl = document.getElementById('ko-round-tabs');
-  if (tabsEl.dataset.built) { updateKoTabChecks(); return; }
   tabsEl.innerHTML = '';
   KO_ROUNDS.forEach(r => {
     const btn = document.createElement('button');
@@ -447,196 +360,66 @@ function buildKoRoundTabs() {
     btn.addEventListener('click', () => switchKoRound(r.key));
     tabsEl.appendChild(btn);
   });
-  tabsEl.dataset.built = '1';
   updateKoTabChecks();
 }
-
 function switchKoRound(roundKey) {
   currentKoRound = roundKey;
-  document.querySelectorAll('#ko-round-tabs .tab-btn')
-    .forEach(b => b.classList.toggle('active', b.dataset.round === roundKey));
+  document.querySelectorAll('#ko-round-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.round === roundKey));
   renderKoRound(roundKey);
 }
-
 function renderKoRound(roundKey) {
   const container = document.getElementById('ko-rounds');
   const round = KO_ROUNDS.find(r => r.key === roundKey);
-  const matches = getKoMatchesByRound(roundKey);
-
-  container.innerHTML = `<div class="group-header">${round.name}</div>
-                         <div class="ko-grid" id="ko-grid"></div>`;
+  container.innerHTML = `<div class="group-header">${round.name}</div><div class="ko-grid" id="ko-grid"></div>`;
   const grid = document.getElementById('ko-grid');
-  matches.forEach(m => grid.appendChild(buildKoCard(m)));
+  getKoMatchesByRound(roundKey).forEach(m => grid.appendChild(buildKoCard(m)));
   updateKoTabChecks();
 }
-
 function buildKoCard(m) {
-  const r  = bracket.resolved[m.id] || {};
-  const pr = koPred[m.id] || {};
+  const r = realBr.resolved[m.id] || {};
+  const locked = lockedM(m);
+  const result = resultFor(m.id);
+  const k = formatKickoff(m.kickoff);
+  const label = (m.round === 'F') ? '🏆 Final' : (m.round === '3P') ? '🥉 Tercer puesto' : '';
   const card = document.createElement('div');
-  card.className = 'ko-card' + (isLocked() ? ' locked' : '');
-  card.id = `ko-card-${m.id}`;
+  card.className = 'ko-card' + (locked ? ' locked' : '');
+  card.id = `card-${m.id}`;
 
-  const label = (m.round === 'F') ? '🏆 Final'
-    : (m.round === '3P') ? '🥉 Tercer puesto' : '';
-
-  // Equipos aún por determinar (faltan pronósticos de rondas anteriores)
   if (!r.home || !r.away) {
     card.innerHTML = `${label ? `<div class="ko-card-label">${label}</div>` : ''}
-      <div class="ko-rows">
-        <div class="ko-row"><span class="ko-team-name tbd-text">Por determinar</span></div>
-        <div class="ko-row"><span class="ko-team-name tbd-text">Por determinar</span></div>
+      <div class="match-meta"><span>${k.date}</span><span class="separator">·</span><span class="kickoff-time">${k.time}</span></div>
+      <div class="mc-rows">
+        <div class="mc-row"><span class="team-name tbd-text">Por determinar</span></div>
+        <div class="mc-row"><span class="team-name tbd-text">Por determinar</span></div>
       </div>`;
     return card;
   }
-
-  const hv = pr.home == null ? '' : pr.home;
-  const av = pr.away == null ? '' : pr.away;
-  const isDraw = pr.home != null && pr.away != null && pr.home === pr.away;
-
   card.innerHTML = `
     ${label ? `<div class="ko-card-label">${label}</div>` : ''}
-    <div class="ko-rows">
-      <div class="ko-row home${r.winner === r.home ? ' winner' : ''}">
-        ${teamFlag(r.home)}<span class="ko-team-name">${teamName(r.home)}</span>
-        <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="ko-home-${m.id}" value="${hv}">
-        <span class="ko-check">✓</span>
-      </div>
-      <div class="ko-row away${r.winner === r.away ? ' winner' : ''}">
-        ${teamFlag(r.away)}<span class="ko-team-name">${teamName(r.away)}</span>
-        <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="ko-away-${m.id}" value="${av}">
-        <span class="ko-check">✓</span>
-      </div>
+    <div class="match-meta">
+      <span>${k.date}</span><span class="separator">·</span>
+      <span class="kickoff-time">${k.time}</span>
+      ${lockTag(locked, result)}
     </div>
-    <div class="ko-pen ${isDraw ? '' : 'hidden'}" id="ko-pen-${m.id}">
-      <span class="ko-pen-label">Empate — ¿quién pasa en penaltis?</span>
-      <div class="ko-pen-btns">
-        <button class="ko-pen-btn${pr.pen === r.home ? ' picked' : ''}" data-team="${r.home}">${teamName(r.home)}</button>
-        <button class="ko-pen-btn${pr.pen === r.away ? ' picked' : ''}" data-team="${r.away}">${teamName(r.away)}</button>
-      </div>
+    ${scoreRowsHtml(m.id, r.home, r.away, locked)}
+    <div class="match-footer">
+      <div class="save-status idle" id="status-${m.id}"></div>
+      <div id="result-badge-${m.id}">${resultBadgeHtml(m.id)}</div>
     </div>`;
-
-  [`#ko-home-${m.id}`, `#ko-away-${m.id}`].forEach(sel => {
-    const el = card.querySelector(sel);
-    el.addEventListener('input', () => { onKoScore(m.id); scheduleAdvance(el.id, advanceKoFocus); });
-    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceKoFocus(el.id); } });
-    el.addEventListener('focus', () => safeSelect(el));
-  });
-  card.querySelectorAll('.ko-pen-btn').forEach(btn =>
-    btn.addEventListener('click', () => onKoPenalty(m.id, btn.dataset.team)));
+  if (!locked) wireCardInputs(m.id);
   return card;
 }
-
-// Actualiza el resaltado del ganador y la fila de penaltis SIN recrear los inputs.
-function updateKoCardUI(matchId) {
-  const card = document.getElementById(`ko-card-${matchId}`);
-  if (!card) return;
-  const r  = bracket.resolved[matchId] || {};
-  const pr = koPred[matchId] || {};
-  const homeSide = card.querySelector('.ko-row.home');
-  const awaySide = card.querySelector('.ko-row.away');
-  if (homeSide) homeSide.classList.toggle('winner', !!r.winner && r.winner === r.home);
-  if (awaySide) awaySide.classList.toggle('winner', !!r.winner && r.winner === r.away);
-  const pen = card.querySelector('.ko-pen');
-  const isDraw = pr.home != null && pr.away != null && pr.home === pr.away;
-  if (pen) {
-    pen.classList.toggle('hidden', !isDraw);
-    pen.querySelectorAll('.ko-pen-btn').forEach(b => b.classList.toggle('picked', b.dataset.team === pr.pen));
-  }
-}
-
-function onKoScore(matchId) {
-  if (isLocked()) return;
-  const hEl = document.getElementById(`ko-home-${matchId}`);
-  const aEl = document.getElementById(`ko-away-${matchId}`);
-  const h = hEl.value === '' ? null : parseInt(hEl.value, 10);
-  const a = aEl.value === '' ? null : parseInt(aEl.value, 10);
-  const prev = koPred[matchId] || {};
-  koPred[matchId] = {
-    home: (h == null || isNaN(h) || h < 0) ? null : h,
-    away: (a == null || isNaN(a) || a < 0) ? null : a,
-    pen:  prev.pen || null,
-  };
-
-  const before = bracket.resolved[matchId] ? bracket.resolved[matchId].winner : null;
-  rebuildBracket();
-  const after = bracket.resolved[matchId] ? bracket.resolved[matchId].winner : null;
-  if (before !== after) { clearDescendants(matchId); rebuildBracket(); }
-
-  updateKoCardUI(matchId);
-  updateKoTabChecks();
-
-  clearTimeout(koSaveTimers[matchId]);
-  koSaveTimers[matchId] = setTimeout(() => { saveKoPred(matchId); autoAdvanceRound(); }, 700);
-}
-
-function onKoPenalty(matchId, team) {
-  if (isLocked()) return;
-  const pr = koPred[matchId];
-  if (!pr) return;
-  const before = bracket.resolved[matchId] ? bracket.resolved[matchId].winner : null;
-  pr.pen = team;
-  rebuildBracket();
-  const after = bracket.resolved[matchId] ? bracket.resolved[matchId].winner : null;
-  if (before !== after) { clearDescendants(matchId); rebuildBracket(); }
-  updateKoCardUI(matchId);
-  updateKoTabChecks();
-  saveKoPred(matchId);
-  autoAdvanceRound();
-}
-
-function saveKoPred(matchId) {
-  if (isLocked()) return;
-  const pr = koPred[matchId] || {};
-  const r  = bracket.resolved[matchId] || {};
-  api.savePick({
-    user: currentUser,
-    matchId,
-    team: r.winner || '',
-    home: pr.home == null ? '' : pr.home,
-    away: pr.away == null ? '' : pr.away,
-  }).catch(err => console.error('savePick', err));
-}
-
-// Si el ganador de un partido cambia, los partidos posteriores que dependían de él
-// ya no son válidos: se borran sus marcadores (en memoria y en la hoja).
-function clearDescendants(matchId) {
-  const queue = [...(KO_CHILDREN[matchId] || [])];
-  while (queue.length) {
-    const id = queue.shift();
-    if (koPred[id]) {
-      delete koPred[id];
-      api.savePick({ user: currentUser, matchId: id, team: '', home: '', away: '' }).catch(() => {});
-    }
-    (KO_CHILDREN[id] || []).forEach(c => queue.push(c));
-  }
-}
-
-function roundComplete(roundKey) {
-  return getKoMatchesByRound(roundKey).every(m => {
-    const r = bracket.resolved[m.id];
-    return r && r.winner;
-  });
-}
-
 function updateKoTabChecks() {
   KO_ROUNDS.forEach(r => {
+    const matches = getKoMatchesByRound(r.key);
+    const known = matches.filter(m => { const x = realBr.resolved[m.id]; return x && x.home && x.away; });
+    const done = known.length > 0 && known.every(m => predictions[m.id] !== undefined || lockedM(m));
     const el = document.getElementById(`ko-tab-check-${r.key}`);
-    if (el) el.textContent = roundComplete(r.key) ? '✓' : '';
+    if (el) el.textContent = done ? '✓' : '';
   });
-}
-
-// Al completar una ronda, salta automáticamente a la siguiente.
-function autoAdvanceRound() {
-  updateKoTabChecks();
-  if (!roundComplete(currentKoRound)) return;
-  const idx = KO_ROUNDS.findIndex(r => r.key === currentKoRound);
-  if (idx >= 0 && idx < KO_ROUNDS.length - 1) {
-    switchKoRound(KO_ROUNDS[idx + 1].key);
-  }
 }
 
 // ── Init ─────────────────────────────────────────────────
 buildUI();
-updateCountdown();
+setupBanner();
 loadUser();

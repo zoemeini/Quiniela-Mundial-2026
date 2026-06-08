@@ -132,6 +132,20 @@ function buildUserBracket(preds, picks, winnerFn) {
   return { complete: true, standings, thirdAssign, resolved };
 }
 
+// Derive the REAL knockout bracket from real results.
+//   groupResults: { matchId: {home,away} } for finished GROUP matches
+//   koReal:       { koMatchId: { winner } } who really advanced (admin-entered)
+// Returns { complete, resolved } where resolved[matchId] = {home,away,winner,loser}
+// with real teams filled in as far as they are known.
+function realKnockout(groupResults, koReal) {
+  const cs = computeStandings(groupResults);
+  if (!cs.complete) return { complete: false, resolved: {} };
+  const thirdAssign = assignThirds(bestEightThirds(cs.thirds));
+  const winnerFn = (matchId) => (koReal[matchId] && koReal[matchId].winner) ? koReal[matchId].winner : null;
+  const resolved = resolveBracket(cs.standings, thirdAssign, null, winnerFn);
+  return { complete: true, resolved };
+}
+
 // Sets of teams that REACH each round (i.e. are participants in it),
 // from a resolved (or real-knockout) bracket map.
 function reachedSets(resolved) {

@@ -194,45 +194,50 @@ const THIRD_SLOTS = {
 //   { third:'T74' } best-third assigned to slot T74
 //   { winOf:'M74' } winner of match M74
 //   { loseOf:'M101' } loser of match M101
+// kickoff = UTC instant (used to lock each match at its real start time).
 const KO_MATCHES = [
   // Round of 32
-  { id: 'M73', round: 'R32', home: { ru: 'A' }, away: { ru: 'B' } },
-  { id: 'M74', round: 'R32', home: { w: 'E' },  away: { third: 'T74' } },
-  { id: 'M75', round: 'R32', home: { w: 'F' },  away: { ru: 'C' } },
-  { id: 'M76', round: 'R32', home: { w: 'C' },  away: { ru: 'F' } },
-  { id: 'M77', round: 'R32', home: { w: 'I' },  away: { third: 'T77' } },
-  { id: 'M78', round: 'R32', home: { ru: 'E' }, away: { ru: 'I' } },
-  { id: 'M79', round: 'R32', home: { w: 'A' },  away: { third: 'T79' } },
-  { id: 'M80', round: 'R32', home: { w: 'L' },  away: { third: 'T80' } },
-  { id: 'M81', round: 'R32', home: { w: 'D' },  away: { third: 'T81' } },
-  { id: 'M82', round: 'R32', home: { w: 'G' },  away: { third: 'T82' } },
-  { id: 'M83', round: 'R32', home: { ru: 'K' }, away: { ru: 'L' } },
-  { id: 'M84', round: 'R32', home: { w: 'H' },  away: { ru: 'J' } },
-  { id: 'M85', round: 'R32', home: { w: 'B' },  away: { third: 'T85' } },
-  { id: 'M86', round: 'R32', home: { w: 'J' },  away: { ru: 'H' } },
-  { id: 'M87', round: 'R32', home: { w: 'K' },  away: { third: 'T87' } },
-  { id: 'M88', round: 'R32', home: { ru: 'D' }, away: { ru: 'G' } },
+  { id: 'M73', round: 'R32', kickoff: '2026-06-28T19:00:00Z', home: { ru: 'A' }, away: { ru: 'B' } },
+  { id: 'M74', round: 'R32', kickoff: '2026-06-29T20:30:00Z', home: { w: 'E' },  away: { third: 'T74' } },
+  { id: 'M75', round: 'R32', kickoff: '2026-06-30T01:00:00Z', home: { w: 'F' },  away: { ru: 'C' } },
+  { id: 'M76', round: 'R32', kickoff: '2026-06-29T17:00:00Z', home: { w: 'C' },  away: { ru: 'F' } },
+  { id: 'M77', round: 'R32', kickoff: '2026-06-30T21:00:00Z', home: { w: 'I' },  away: { third: 'T77' } },
+  { id: 'M78', round: 'R32', kickoff: '2026-06-30T17:00:00Z', home: { ru: 'E' }, away: { ru: 'I' } },
+  { id: 'M79', round: 'R32', kickoff: '2026-07-01T01:00:00Z', home: { w: 'A' },  away: { third: 'T79' } },
+  { id: 'M80', round: 'R32', kickoff: '2026-07-01T16:00:00Z', home: { w: 'L' },  away: { third: 'T80' } },
+  { id: 'M81', round: 'R32', kickoff: '2026-07-02T00:00:00Z', home: { w: 'D' },  away: { third: 'T81' } },
+  { id: 'M82', round: 'R32', kickoff: '2026-07-01T20:00:00Z', home: { w: 'G' },  away: { third: 'T82' } },
+  { id: 'M83', round: 'R32', kickoff: '2026-07-02T23:00:00Z', home: { ru: 'K' }, away: { ru: 'L' } },
+  { id: 'M84', round: 'R32', kickoff: '2026-07-02T19:00:00Z', home: { w: 'H' },  away: { ru: 'J' } },
+  { id: 'M85', round: 'R32', kickoff: '2026-07-03T03:00:00Z', home: { w: 'B' },  away: { third: 'T85' } },
+  { id: 'M86', round: 'R32', kickoff: '2026-07-03T22:00:00Z', home: { w: 'J' },  away: { ru: 'H' } },
+  { id: 'M87', round: 'R32', kickoff: '2026-07-04T01:30:00Z', home: { w: 'K' },  away: { third: 'T87' } },
+  { id: 'M88', round: 'R32', kickoff: '2026-07-03T18:00:00Z', home: { ru: 'D' }, away: { ru: 'G' } },
   // Round of 16
-  { id: 'M89', round: 'R16', home: { winOf: 'M74' }, away: { winOf: 'M77' } },
-  { id: 'M90', round: 'R16', home: { winOf: 'M73' }, away: { winOf: 'M75' } },
-  { id: 'M91', round: 'R16', home: { winOf: 'M76' }, away: { winOf: 'M78' } },
-  { id: 'M92', round: 'R16', home: { winOf: 'M79' }, away: { winOf: 'M80' } },
-  { id: 'M93', round: 'R16', home: { winOf: 'M83' }, away: { winOf: 'M84' } },
-  { id: 'M94', round: 'R16', home: { winOf: 'M81' }, away: { winOf: 'M82' } },
-  { id: 'M95', round: 'R16', home: { winOf: 'M86' }, away: { winOf: 'M88' } },
-  { id: 'M96', round: 'R16', home: { winOf: 'M85' }, away: { winOf: 'M87' } },
+  { id: 'M89', round: 'R16', kickoff: '2026-07-04T21:00:00Z', home: { winOf: 'M74' }, away: { winOf: 'M77' } },
+  { id: 'M90', round: 'R16', kickoff: '2026-07-04T17:00:00Z', home: { winOf: 'M73' }, away: { winOf: 'M75' } },
+  { id: 'M91', round: 'R16', kickoff: '2026-07-05T20:00:00Z', home: { winOf: 'M76' }, away: { winOf: 'M78' } },
+  { id: 'M92', round: 'R16', kickoff: '2026-07-06T00:00:00Z', home: { winOf: 'M79' }, away: { winOf: 'M80' } },
+  { id: 'M93', round: 'R16', kickoff: '2026-07-06T19:00:00Z', home: { winOf: 'M83' }, away: { winOf: 'M84' } },
+  { id: 'M94', round: 'R16', kickoff: '2026-07-07T00:00:00Z', home: { winOf: 'M81' }, away: { winOf: 'M82' } },
+  { id: 'M95', round: 'R16', kickoff: '2026-07-07T16:00:00Z', home: { winOf: 'M86' }, away: { winOf: 'M88' } },
+  { id: 'M96', round: 'R16', kickoff: '2026-07-07T20:00:00Z', home: { winOf: 'M85' }, away: { winOf: 'M87' } },
   // Quarterfinals
-  { id: 'M97',  round: 'QF', home: { winOf: 'M89' }, away: { winOf: 'M90' } },
-  { id: 'M98',  round: 'QF', home: { winOf: 'M93' }, away: { winOf: 'M94' } },
-  { id: 'M99',  round: 'QF', home: { winOf: 'M91' }, away: { winOf: 'M92' } },
-  { id: 'M100', round: 'QF', home: { winOf: 'M95' }, away: { winOf: 'M96' } },
+  { id: 'M97',  round: 'QF', kickoff: '2026-07-09T20:00:00Z', home: { winOf: 'M89' }, away: { winOf: 'M90' } },
+  { id: 'M98',  round: 'QF', kickoff: '2026-07-10T19:00:00Z', home: { winOf: 'M93' }, away: { winOf: 'M94' } },
+  { id: 'M99',  round: 'QF', kickoff: '2026-07-11T21:00:00Z', home: { winOf: 'M91' }, away: { winOf: 'M92' } },
+  { id: 'M100', round: 'QF', kickoff: '2026-07-12T01:00:00Z', home: { winOf: 'M95' }, away: { winOf: 'M96' } },
   // Semifinals
-  { id: 'M101', round: 'SF', home: { winOf: 'M97' }, away: { winOf: 'M98' } },
-  { id: 'M102', round: 'SF', home: { winOf: 'M99' }, away: { winOf: 'M100' } },
+  { id: 'M101', round: 'SF', kickoff: '2026-07-14T19:00:00Z', home: { winOf: 'M97' }, away: { winOf: 'M98' } },
+  { id: 'M102', round: 'SF', kickoff: '2026-07-15T19:00:00Z', home: { winOf: 'M99' }, away: { winOf: 'M100' } },
   // Third place & Final
-  { id: 'M103', round: '3P', home: { loseOf: 'M101' }, away: { loseOf: 'M102' } },
-  { id: 'M104', round: 'F',  home: { winOf: 'M101' },  away: { winOf: 'M102' } },
+  { id: 'M103', round: '3P', kickoff: '2026-07-18T21:00:00Z', home: { loseOf: 'M101' }, away: { loseOf: 'M102' } },
+  { id: 'M104', round: 'F',  kickoff: '2026-07-19T19:00:00Z', home: { winOf: 'M101' },  away: { winOf: 'M102' } },
 ];
+
+// A match is locked (no more predictions) once its kick-off has passed.
+function matchLocked(kickoff) { return Date.now() >= new Date(kickoff).getTime(); }
+function allMatches() { return MATCHES.concat(KO_MATCHES); }
 
 function getKoMatch(id)        { return KO_MATCHES.find(m => m.id === id); }
 function getKoMatchesByRound(r){ return KO_MATCHES.filter(m => m.round === r); }
