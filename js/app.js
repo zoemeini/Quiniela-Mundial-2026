@@ -9,7 +9,8 @@ let koReal       = {};   // { koMatchId: { winner, gh, ga } }  (eliminatorias, r
 let realBr       = { complete: false, resolved: {} }; // equipos reales del cuadro
 let saveTimers   = {};
 let currentPhase = 'groups';
-let currentGroup = 'A';
+let groupTabs    = [];        // ['upcoming', '2026-06-11', ...]
+let currentGroupTab = 'upcoming';
 let currentKoRound = 'R32';
 
 const lockedM = m => matchLocked(m.kickoff);
@@ -101,9 +102,11 @@ function scoreRowsHtml(matchId, homeTeam, awayTeam, locked) {
       <input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="sc-${matchId}-away" value="${av}"></div>
   </div>`;
 }
-function wireCardInputs(matchId) {
+// IMPORTANT: search within the (possibly detached) card element, NOT the document —
+// the card isn't in the page yet when this runs, so document.getElementById would miss it.
+function wireCardInputs(card, matchId) {
   ['home', 'away'].forEach(side => {
-    const el = document.getElementById(`sc-${matchId}-${side}`);
+    const el = card.querySelector(`#sc-${matchId}-${side}`);
     if (!el) return;
     el.addEventListener('input', () => { onScoreChange(matchId); scheduleAdvance(el.id, advanceFocus); });
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceFocus(el.id); } });
@@ -127,36 +130,73 @@ function lockTag(locked, result) {
   return '';
 }
 
-// ── Construir fase de grupos ─────────────────────────────
-function buildUI() {
-  const tabsEl = document.getElementById('group-tabs');
-  const contentEl = document.getElementById('group-content');
-  tabsEl.innerHTML = ''; contentEl.innerHTML = '';
-
-  GROUPS.forEach((group, idx) => {
-    const tab = document.createElement('button');
-    tab.className = 'tab-btn' + (idx === 0 ? ' active' : '');
-    tab.dataset.group = group;
-    tab.innerHTML = `Grupo ${group} <span class="tab-check" id="tab-check-${group}"></span>`;
-    tab.addEventListener('click', () => switchGroup(group));
-    tabsEl.appendChild(tab);
-
-    const panel = document.createElement('div');
-    panel.className = 'group-panel' + (idx === 0 ? ' active' : '');
-    panel.id = `panel-${group}`;
-    const matches = getMatchesByGroup(group);
-    const teams = [...new Set(matches.flatMap(m => [m.home, m.away]))].map(teamName).join(' · ');
-    panel.innerHTML = `<div class="group-header">Grupo ${group} &nbsp;·&nbsp; ${teams}</div>
-                       <div class="matches-grid" id="grid-${group}"></div>`;
-    contentEl.appendChild(panel);
-    matches.forEach(m => document.getElementById(`grid-${group}`).appendChild(buildMatchCard(m)));
-  });
+// ── Construir fase de grupos (pestañas por día + «Próximos») ─────
+function dayKeysSorted() {
+  const set = {};
+  MATCHES.forEach(m => { set[madridDayKey(m.kickoff)] = true; });
+  return Object.keys(set).sort();
+}
+function dayLabel(key) {
+  const d = new Date(key + 'T12:00:00Z');
+  return new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
+}
+function upcomingMatches(limit) {
+  return MATCHES.filter(m => !matchLocked(m.kickoff))
+    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
+    .slice(0, limit || 12);
 }
 
-function switchGroup(group) {
-  currentGroup = group;
-  document.querySelectorAll('#group-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.group === group));
-  document.querySelectorAll('.group-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${group}`));
+function buildUI() {
+  const tabsEl = document.getElementById('day-tabs');
+  tabsEl.innerHTML = '';
+  groupTabs = ['upcoming'].concat(dayKeysSorted());
+  groupTabs.forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (key === currentGroupTab ? ' active' : '');
+    btn.dataset.tab = key;
+    btn.innerHTML = (key === 'upcoming' ? '⏳ Próximos' : dayLabel(key))
+      + ` <span class="tab-check" id="daycheck-${key}"></span>`;
+    btn.addEventListener('click', () => renderGroupTab(key));
+    tabsEl.appendChild(btn);
+  });
+  renderGroupTab(currentGroupTab);
+  buildGroupSummary();
+}
+
+function renderGroupTab(tabKey) {
+  currentGroupTab = tabKey;
+  document.querySelectorAll('#day-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabKey));
+  const content = document.getElementById('day-content');
+  let matches, header;
+  if (tabKey === 'upcoming') {
+    matches = upcomingMatches(12);
+    header = '⏳ Próximos partidos por jugar (rellena estos primero)';
+  } else {
+    matches = MATCHES.filter(m => madridDayKey(m.kickoff) === tabKey)
+      .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+    header = 'Partidos del ' + dayLabel(tabKey);
+  }
+  if (matches.length === 0) {
+    content.innerHTML = '<p class="ko-intro">No quedan partidos próximos sin jugar. ¡Estás al día! 🎉</p>';
+    return;
+  }
+  content.innerHTML = `<div class="group-header">${header}</div><div class="matches-grid" id="day-grid"></div>`;
+  const grid = document.getElementById('day-grid');
+  matches.forEach(m => grid.appendChild(buildMatchCard(m)));
+}
+
+function buildGroupSummary() {
+  const el = document.getElementById('group-summary');
+  if (!el) return;
+  let html = '<div class="summary-title">📋 Grupos</div><div class="summary-grid">';
+  GROUPS.forEach(g => {
+    const teams = [...new Set(getMatchesByGroup(g).flatMap(m => [m.home, m.away]))];
+    html += `<div class="summary-group"><div class="summary-group-name">Grupo ${g}</div>`;
+    teams.forEach(t => { html += `<div class="summary-team">${teamFlag(t)} <span>${teamName(t)}</span></div>`; });
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function buildMatchCard(match) {
@@ -168,6 +208,7 @@ function buildMatchCard(match) {
   card.id = `card-${match.id}`;
   card.innerHTML = `
     <div class="match-meta">
+      <span class="group-badge">Grupo ${match.group}</span>
       <span>${k.date}</span><span class="separator">·</span>
       <span class="kickoff-time">${k.time}</span><span class="separator">·</span>
       <span class="venue">${match.venue}</span>
@@ -178,7 +219,7 @@ function buildMatchCard(match) {
       <div class="save-status idle" id="status-${match.id}"></div>
       <div id="result-badge-${match.id}">${resultBadgeHtml(match.id)}</div>
     </div>`;
-  if (!locked) wireCardInputs(match.id);
+  if (!locked) wireCardInputs(card, match.id);
   return card;
 }
 
@@ -196,32 +237,28 @@ function scheduleAdvance(id, fn) {
   advanceTimers[id] = setTimeout(() => fn(id), 350);
 }
 function parseScoreId(id) { const m = id.match(/^sc-(.+)-(home|away)$/); return m ? { matchId: m[1], side: m[2] } : null; }
-function visibleGroupInputIds(group) {
-  const ids = [];
-  getMatchesByGroup(group).forEach(m => ['home', 'away'].forEach(s => {
-    if (document.getElementById(`sc-${m.id}-${s}`)) ids.push(`sc-${m.id}-${s}`);
-  }));
-  return ids;
-}
-function visibleKoInputIds(round) {
-  const ids = [];
-  getKoMatchesByRound(round).forEach(m => ['home', 'away'].forEach(s => {
-    if (document.getElementById(`sc-${m.id}-${s}`)) ids.push(`sc-${m.id}-${s}`);
-  }));
-  return ids;
-}
+// Avanza dentro del contenedor visible (día activo o ronda activa); al final, salta al siguiente.
 function advanceFocus(currentId) {
   const p = parseScoreId(currentId); if (!p) return;
   const isKo = p.matchId[0] === 'M';
-  const ids = isKo ? visibleKoInputIds(currentKoRound) : visibleGroupInputIds(currentGroup);
+  const container = document.getElementById(isKo ? 'ko-grid' : 'day-content');
+  if (!container) return;
+  const ids = Array.from(container.querySelectorAll('.score-input')).map(i => i.id);
   const idx = ids.indexOf(currentId);
   if (idx >= 0 && idx < ids.length - 1) { focusInput(ids[idx + 1]); return; }
+  // Fin del contenedor → siguiente día / ronda.
   if (!isKo) {
-    const gi = GROUPS.indexOf(currentGroup);
-    if (gi < GROUPS.length - 1) { const n = GROUPS[gi + 1]; switchGroup(n); setTimeout(() => { const f = visibleGroupInputIds(n)[0]; if (f) focusInput(f); }, 40); }
+    const i = groupTabs.indexOf(currentGroupTab);
+    if (i >= 0 && i < groupTabs.length - 1) {
+      renderGroupTab(groupTabs[i + 1]);
+      setTimeout(() => { const f = document.querySelector('#day-content .score-input'); if (f) focusInput(f.id); }, 50);
+    }
   } else {
     const ri = KO_ROUNDS.findIndex(r => r.key === currentKoRound);
-    if (ri < KO_ROUNDS.length - 1) { const n = KO_ROUNDS[ri + 1].key; switchKoRound(n); setTimeout(() => { const f = visibleKoInputIds(n)[0]; if (f) focusInput(f); }, 40); }
+    if (ri >= 0 && ri < KO_ROUNDS.length - 1) {
+      switchKoRound(KO_ROUNDS[ri + 1].key);
+      setTimeout(() => { const f = document.querySelector('#ko-grid .score-input'); if (f) focusInput(f.id); }, 50);
+    }
   }
 }
 
@@ -245,7 +282,7 @@ async function savePrediction(matchId) {
     predictions[matchId] = { home, away };
     setStatus(matchId, 'saved', '✓ Guardado');
     updateProgress();
-    if (matchId[0] !== 'M') updateTabCheck(matchId[0]);
+    updateDayChecks();
   } catch (err) {
     setStatus(matchId, 'error', '✗ Reintentando…');
     console.error(err);
@@ -280,27 +317,33 @@ async function loadData() {
     MATCHES.forEach(m => { const r = resultFor(m.id); if (r) groupResults[m.id] = { home: r.home, away: r.away }; });
     realBr = realKnockout(groupResults, koReal);
 
-    rebuildGroups();
-    renderKnockout();
+    syncGroupCards();
+    // Eliminatorias: re-render solo si no estás escribiendo una casilla KO ahora mismo.
+    const editingKo = document.activeElement && /^sc-M/.test(document.activeElement.id || '');
+    if (currentPhase === 'ko' && !editingKo) renderKnockout();
   } catch (err) { console.error('loadData', err); }
 }
 
-// Re-render de grupos preservando el foco del usuario.
-function rebuildGroups() {
-  GROUPS.forEach(group => {
-    const grid = document.getElementById(`grid-${group}`);
-    if (!grid) return;
-    getMatchesByGroup(group).forEach(m => {
-      const old = document.getElementById(`card-${m.id}`);
-      const active = document.activeElement;
-      const editingThis = active && active.id && active.id.indexOf(`sc-${m.id}-`) === 0;
-      if (editingThis) return; // no tocar la tarjeta que se está editando
-      const fresh = buildMatchCard(m);
-      if (old) old.replaceWith(fresh); else grid.appendChild(fresh);
-    });
+// Actualiza las tarjetas visibles SIN borrar lo que el usuario está escribiendo:
+// solo rellena casillas vacías con lo ya guardado, refresca insignias y bloqueos.
+function syncGroupCards() {
+  MATCHES.forEach(m => {
+    const card = document.getElementById(`card-${m.id}`);
+    if (!card) return; // solo las del día visible
+    if (lockedM(m)) { card.replaceWith(buildMatchCard(m)); return; } // ya empezó → solo lectura
+    const pred = predictions[m.id];
+    if (pred) {
+      const h = document.getElementById(`sc-${m.id}-home`);
+      const a = document.getElementById(`sc-${m.id}-away`);
+      if (h && document.activeElement !== h && h.value === '') h.value = pred.home;
+      if (a && document.activeElement !== a && a.value === '') a.value = pred.away;
+      if (h && a && h.value !== '' && a.value !== '') setStatus(m.id, 'saved', '✓ Guardado');
+    }
+    const badge = document.getElementById(`result-badge-${m.id}`);
+    if (badge) badge.innerHTML = resultBadgeHtml(m.id);
   });
   updateProgress();
-  GROUPS.forEach(updateTabCheck);
+  updateDayChecks();
 }
 
 // ── Progreso (solo grupos) ───────────────────────────────
@@ -315,10 +358,14 @@ function updateProgress() {
   const f = document.getElementById('progress-fill');
   if (f) f.style.width = `${pct}%`;
 }
-function updateTabCheck(group) {
-  const done = getMatchesByGroup(group).filter(m => predictions[m.id] !== undefined).length;
-  const el = document.getElementById(`tab-check-${group}`);
-  if (el) el.textContent = done === 6 ? '✓' : '';
+function updateDayChecks() {
+  groupTabs.forEach(key => {
+    if (key === 'upcoming') return;
+    const matches = MATCHES.filter(m => madridDayKey(m.kickoff) === key);
+    const done = matches.length > 0 && matches.every(m => predictions[m.id] !== undefined);
+    const el = document.getElementById(`daycheck-${key}`);
+    if (el) el.textContent = done ? '✓' : '';
+  });
 }
 
 // ── Conmutador de fase ───────────────────────────────────
@@ -406,7 +453,7 @@ function buildKoCard(m) {
       <div class="save-status idle" id="status-${m.id}"></div>
       <div id="result-badge-${m.id}">${resultBadgeHtml(m.id)}</div>
     </div>`;
-  if (!locked) wireCardInputs(m.id);
+  if (!locked) wireCardInputs(card, m.id);
   return card;
 }
 function updateKoTabChecks() {

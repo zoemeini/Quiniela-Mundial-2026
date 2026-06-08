@@ -219,6 +219,43 @@ function buildAdminKoRow(m) {
   return row;
 }
 
+// ── Navegación con teclado en el panel de admin ──────────
+// Enter (y, en escritorio, escribir) salta a la siguiente casilla de marcador.
+const IS_TOUCH_ADMIN = (typeof window !== 'undefined') &&
+  (window.matchMedia ? window.matchMedia('(pointer: coarse)').matches : ('ontouchstart' in window));
+function focusNextAdminInput(el) {
+  const all = Array.from(document.querySelectorAll('#admin-panel .admin-score-input'))
+    .filter(i => i.offsetParent !== null); // solo las visibles (pestaña activa)
+  const i = all.indexOf(el);
+  if (i >= 0 && i < all.length - 1) {
+    const n = all[i + 1];
+    try { n.focus(); } catch (_) {}
+    try { if (n.select) n.select(); } catch (_) {}
+  }
+}
+(function wireAdminKeyboard() {
+  const panel = document.getElementById('admin-panel');
+  if (!panel) return;
+  panel.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('admin-score-input')) return;
+    e.preventDefault();
+    focusNextAdminInput(el);
+  });
+  panel.addEventListener('focusin', e => {
+    const el = e.target;
+    if (el.classList && el.classList.contains('admin-score-input')) { try { if (el.select) el.select(); } catch (_) {} }
+  });
+  panel.addEventListener('input', e => {
+    const el = e.target;
+    if (IS_TOUCH_ADMIN || !el.classList || !el.classList.contains('admin-score-input')) return;
+    clearTimeout(el._advT);
+    if (el.value === '') return;
+    el._advT = setTimeout(() => focusNextAdminInput(el), 300);
+  });
+})();
+
 async function saveKoReal(matchId) {
   const r = realBr.resolved[matchId] || {};
   if (!r.home || !r.away) { alert('Los equipos de este partido aún no están determinados.'); return; }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/style.css?v=6">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 </head>
 <body>
@@ -22,7 +22,7 @@
       <input type="text" id="username-input" placeholder="Tu nombre…" maxlength="30" autocomplete="off">
       <button id="username-submit" class="btn-primary">Entrar</button>
     </div>
-    <p class="modal-note">⏰ Los pronósticos se cierran el 11 de junio antes del primer partido</p>
+    <p class="modal-note">⏰ Cada partido se cierra a su hora de inicio · rellena cuando quieras</p>
   </div>
 </div>
 
@@ -96,13 +96,14 @@
       <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
 
-    <!-- Pestañas de grupos -->
+    <!-- Pestañas por día (la primera es «Próximos») -->
     <div class="tabs-container">
-      <div class="tabs" id="group-tabs"></div>
+      <div class="tabs" id="day-tabs"></div>
     </div>
+    <div id="day-content"></div>
 
-    <!-- Paneles de grupos -->
-    <div id="group-content"></div>
+    <!-- Resumen de grupos al final -->
+    <div id="group-summary"></div>
   </section>
 
   <!-- ============ ELIMINATORIAS ============ -->
@@ -127,11 +128,11 @@
   </section>
 </main>
 
-<script src="js/config.js?v=5"></script>
-<script src="js/api.js?v=5"></script>
-<script src="js/data.js?v=5"></script>
-<script src="js/bracket.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
-<script src="js/music.js?v=5"></script>
+<script src="js/config.js?v=6"></script>
+<script src="js/api.js?v=6"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/bracket.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
+<script src="js/music.js?v=6"></script>
 </body>
 </html>

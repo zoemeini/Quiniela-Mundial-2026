@@ -28,7 +28,7 @@ const PREDICTION_DEADLINE = new Date('2026-06-11T17:00:00Z');
 //  Déjalo vacío ("") para ocultar el reproductor.
 // ============================================================
 const MUSIC = {
-  youtubeId: "DbDrhyXhjts",
+  youtubeId: "fcnDmrtj6Sk",
   title: "Dai Dai — Shakira & Burna Boy",
 };
 

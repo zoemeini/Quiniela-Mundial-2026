@@ -239,6 +239,13 @@ const KO_MATCHES = [
 function matchLocked(kickoff) { return Date.now() >= new Date(kickoff).getTime(); }
 function allMatches() { return MATCHES.concat(KO_MATCHES); }
 
+// Calendar day (Madrid time) used to group matches into day tabs.
+function madridDayKey(kickoff) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date(kickoff));
+}
+
 function getKoMatch(id)        { return KO_MATCHES.find(m => m.id === id); }
 function getKoMatchesByRound(r){ return KO_MATCHES.filter(m => m.round === r); }
 
