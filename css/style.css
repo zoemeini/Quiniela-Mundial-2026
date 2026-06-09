@@ -1024,6 +1024,24 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-day-lbl { font-weight: 700; color: var(--text); min-width: 80px; text-align: center; }
 .mg-day-theme { font-weight: 700; color: var(--green); }
 .mg-day-reset { font-size: 11px; color: var(--green); text-decoration: underline; background: none; }
+
+/* Modo «Adivina con pistas» */
+.mg-clues { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.mg-clue { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.mg-clue b { color: var(--green); }
+.mg-clue.locked { opacity: .4; }
+.mg-clue .team-flag-img { width: 22px; height: auto; border-radius: 2px; vertical-align: middle; }
+.mg-guess-row { display: flex; gap: 8px; margin-top: 12px; }
+.mg-guess-input { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 15px; outline: none; }
+.mg-guess-input:focus { border-color: var(--green); }
+.mg-guess-btn { border-radius: 999px; padding: 10px 18px; font-weight: 700; background: var(--accent); color: #052e1a; }
+.mg-pts-hint { text-align: center; font-size: 12px; color: var(--gold); margin-top: 10px; }
+.mg-tries { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; justify-content: center; }
+.mg-try { font-size: 12px; border-radius: 999px; padding: 3px 10px; border: 1px solid var(--border); }
+.mg-try.bad { color: var(--red); border-color: var(--red); }
+.mg-reveal { margin: 10px 0; font-size: 18px; }
+.mg-reveal .team-flag-img { width: 28px; height: auto; border-radius: 2px; vertical-align: middle; }
+.mg-reveal-sub { font-size: 13px; color: var(--muted); }
 .mg-panel {
   position: fixed;
   left: 18px; bottom: 84px;
