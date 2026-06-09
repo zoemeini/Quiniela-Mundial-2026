@@ -730,17 +730,27 @@ button { font-family: inherit; cursor: pointer; border: none; }
 }
 #group-summary { margin-top: 34px; }
 .summary-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 12px; }
+.summary-hint { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: var(--muted); }
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
 .summary-group {
+  display: block;
+  width: 100%;
+  text-align: left;
   background: var(--bg2);
   border: 1px solid var(--border);
+  border-left-width: 4px;
   border-radius: var(--radius);
   padding: 12px 14px;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, background .15s;
 }
+.summary-group:hover { transform: translateY(-2px); box-shadow: var(--shadow); background: var(--bg3); }
 .summary-group-name {
-  font-size: 12px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px;
+  font-size: 13px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
 }
+.summary-arrow { font-size: 18px; }
 .summary-team { display: flex; align-items: center; gap: 7px; font-size: 13px; padding: 3px 0; }
 .summary-team .team-flag-img { width: 20px; height: 15px; }
 

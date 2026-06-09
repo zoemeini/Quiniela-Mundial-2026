@@ -141,10 +141,19 @@ function dayLabel(key) {
   const d = new Date(key + 'T12:00:00Z');
   return new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
 }
-function upcomingMatches(limit) {
-  return MATCHES.filter(m => !matchLocked(m.kickoff))
-    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
-    .slice(0, limit || 12);
+// Partidos de los PRÓXIMOS 3 DÍAS de juego (días naturales con partidos sin jugar).
+// Se recalcula en cada render → se actualiza solo cada día. Las eliminatorias
+// aparecen solo cuando ya se conocen los equipos reales.
+function upcomingMatches() {
+  const unlocked = allMatches().filter(m => {
+    if (matchLocked(m.kickoff)) return false;
+    if (m.id[0] === 'M') { const r = realBr.resolved[m.id]; if (!r || !r.home || !r.away) return false; }
+    return true;
+  }).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  const days = [];
+  unlocked.forEach(m => { const k = madridDayKey(m.kickoff); if (!days.includes(k)) days.push(k); });
+  const keep = days.slice(0, 3); // los 3 próximos días con partidos
+  return unlocked.filter(m => keep.includes(madridDayKey(m.kickoff)));
 }
 
 function buildUI() {
@@ -164,40 +173,66 @@ function buildUI() {
   buildGroupSummary();
 }
 
+let lastUpcomingKey = '';
 function renderGroupTab(tabKey) {
   currentGroupTab = tabKey;
   document.querySelectorAll('#day-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabKey));
   const content = document.getElementById('day-content');
   let matches, header;
   if (tabKey === 'upcoming') {
-    matches = upcomingMatches(12);
-    header = '⏳ Próximos partidos por jugar (rellena estos primero)';
+    matches = upcomingMatches();
+    lastUpcomingKey = matches.map(m => m.id).join(',');
+    header = '⏳ Próximos 3 días — rellena estos primero';
   } else {
     matches = MATCHES.filter(m => madridDayKey(m.kickoff) === tabKey)
       .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
     header = 'Partidos del ' + dayLabel(tabKey);
   }
   if (matches.length === 0) {
-    content.innerHTML = '<p class="ko-intro">No quedan partidos próximos sin jugar. ¡Estás al día! 🎉</p>';
+    content.innerHTML = '<p class="ko-intro">No hay partidos próximos ahora mismo. Mira las pestañas por día. 🙂</p>';
     return;
   }
   content.innerHTML = `<div class="group-header">${header}</div><div class="matches-grid" id="day-grid"></div>`;
   const grid = document.getElementById('day-grid');
-  matches.forEach(m => grid.appendChild(buildMatchCard(m)));
+  matches.forEach(m => grid.appendChild(m.id[0] === 'M' ? buildKoCard(m) : buildMatchCard(m)));
+}
+
+// Refresca la pestaña «Próximos» cuando cambian los partidos (otro día), sin molestar si estás escribiendo.
+function maybeRefreshUpcoming() {
+  if (currentGroupTab !== 'upcoming') return;
+  const focused = document.activeElement && /^sc-/.test(document.activeElement.id || '');
+  if (focused) return;
+  if (upcomingMatches().map(m => m.id).join(',') !== lastUpcomingKey) renderGroupTab('upcoming');
 }
 
 function buildGroupSummary() {
   const el = document.getElementById('group-summary');
   if (!el) return;
-  let html = '<div class="summary-title">📋 Grupos</div><div class="summary-grid">';
+  let html = '<div class="summary-title">📋 Grupos <span class="summary-hint">(toca uno para ver tus pronósticos)</span></div><div class="summary-grid">';
   GROUPS.forEach(g => {
+    const c = groupColor(g);
     const teams = [...new Set(getMatchesByGroup(g).flatMap(m => [m.home, m.away]))];
-    html += `<div class="summary-group"><div class="summary-group-name">Grupo ${g}</div>`;
+    html += `<button class="summary-group" style="border-left-color:${c}" onclick="renderGroupView('${g}')">
+      <div class="summary-group-name" style="color:${c}">Grupo ${g} <span class="summary-arrow">›</span></div>`;
     teams.forEach(t => { html += `<div class="summary-team">${teamFlag(t)} <span>${teamName(t)}</span></div>`; });
-    html += '</div>';
+    html += '</button>';
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+// Al tocar un grupo en el resumen: muestra los 6 partidos de ese grupo con tus pronósticos.
+function renderGroupView(g) {
+  currentGroupTab = 'group:' + g;
+  document.querySelectorAll('#day-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  const c = groupColor(g);
+  const content = document.getElementById('day-content');
+  const matches = getMatchesByGroup(g).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  content.innerHTML = `<div class="group-header" style="color:${c};border-left:4px solid ${c};padding-left:10px">Grupo ${g} · tus pronósticos</div>
+                       <div class="matches-grid" id="day-grid"></div>`;
+  const grid = document.getElementById('day-grid');
+  matches.forEach(m => grid.appendChild(buildMatchCard(m)));
+  content.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function buildMatchCard(match) {
@@ -209,7 +244,7 @@ function buildMatchCard(match) {
   card.id = `card-${match.id}`;
   card.innerHTML = `
     <div class="match-meta">
-      <span class="group-badge">Grupo ${match.group}</span>
+      <span class="group-badge" style="color:${groupColor(match.group)};border-color:${groupColor(match.group)};background:${groupColor(match.group)}22">Grupo ${match.group}</span>
       <span>${k.date}</span><span class="separator">·</span>
       <span class="kickoff-time">${k.time}</span><span class="separator">·</span>
       <span class="venue">${match.venue}</span>
@@ -240,16 +275,13 @@ function scheduleAdvance(id, fn) {
 function parseScoreId(id) { const m = id.match(/^sc-(.+)-(home|away)$/); return m ? { matchId: m[1], side: m[2] } : null; }
 // Avanza dentro del contenedor visible (día activo o ronda activa); al final, salta al siguiente.
 function advanceFocus(currentId) {
-  const p = parseScoreId(currentId); if (!p) return;
-  const isKo = p.matchId[0] === 'M';
-  const container = document.getElementById(isKo ? 'ko-grid' : 'day-content');
-  if (!container) return;
-  const ids = Array.from(container.querySelectorAll('.score-input')).map(i => i.id);
+  const cur = document.getElementById(currentId); if (!cur) return;
+  const grid = cur.closest('.matches-grid, .ko-grid'); if (!grid) return;
+  const ids = Array.from(grid.querySelectorAll('.score-input')).map(i => i.id);
   const idx = ids.indexOf(currentId);
   if (idx >= 0 && idx < ids.length - 1) { focusInput(ids[idx + 1]); return; }
   // En la última casilla NO saltamos de día/ronda — el usuario revisa lo que ha puesto.
-  const cur = document.getElementById(currentId);
-  if (cur) try { cur.blur(); } catch (_) {}
+  try { cur.blur(); } catch (_) {}
 }
 
 // ── Guardar pronóstico ───────────────────────────────────
@@ -316,6 +348,7 @@ async function loadData() {
     realBr = realKnockout(groupResults, koReal);
 
     syncGroupCards();
+    maybeRefreshUpcoming(); // mantiene «Próximos» al día (3 días) en tiempo real
     // Eliminatorias: re-render solo si no estás escribiendo una casilla KO ahora mismo.
     const editingKo = document.activeElement && /^sc-M/.test(document.activeElement.id || '');
     if (currentPhase === 'ko' && !editingKo) renderKnockout();
