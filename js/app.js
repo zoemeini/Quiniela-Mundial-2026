@@ -5,6 +5,7 @@
 let currentUser  = null;
 let predictions  = {};   // { matchId: { home, away } }  (grupos + eliminatorias)
 let dirty        = {};   // pronósticos escritos pero aún no confirmados en la hoja
+let cleared      = {};   // pronósticos borrados (para que no reaparezcan al refrescar)
 let results      = {};   // { matchId: { home, away, status } }  (grupos, reales)
 let koReal       = {};   // { koMatchId: { winner, gh, ga } }  (eliminatorias, reales)
 let realBr       = { complete: false, resolved: {} }; // equipos reales del cuadro
@@ -362,9 +363,24 @@ function onScoreChange(matchId) {
   const hEl = document.getElementById(`sc-${matchId}-home`);
   const aEl = document.getElementById(`sc-${matchId}-away`);
   if (!hEl || !aEl) return;
-  if (hEl.value === '' || aEl.value === '') { setStatus(matchId, 'idle', ''); return; }
-  const home = parseInt(hEl.value, 10), away = parseInt(aEl.value, 10);
+  const hv = hEl.value, av = aEl.value;
+  // Si borras AMBAS casillas → eliminar el pronóstico (no debe reaparecer al refrescar).
+  if (hv === '' && av === '') {
+    clearTimeout(saveTimers[matchId]);
+    if (predictions[matchId] || dirty[matchId]) {
+      delete predictions[matchId];
+      delete dirty[matchId];
+      cleared[matchId] = true;
+      updateProgress(); updateDayChecks(); updateNudge();
+      api.deletePrediction({ user: currentUser, matchId }).catch(e => console.error('deletePrediction', e));
+    }
+    setStatus(matchId, 'idle', '');
+    return;
+  }
+  if (hv === '' || av === '') { setStatus(matchId, 'idle', ''); return; } // a medias: no guardar todavía
+  const home = parseInt(hv, 10), away = parseInt(av, 10);
   if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return;
+  delete cleared[matchId]; // vuelve a tener pronóstico
   predictions[matchId] = { home, away }; // se conserva aunque cambies de pestaña al instante
   dirty[matchId] = { home, away };
   updateProgress();
@@ -406,6 +422,11 @@ async function loadData() {
     });
     // Conserva lo que aún no se ha confirmado en la hoja (dirty manda sobre el servidor).
     predictions = Object.assign({}, serverPreds, dirty);
+    // Respeta los pronósticos recién borrados hasta que el servidor confirme.
+    Object.keys(cleared).forEach(id => {
+      if (serverPreds[id] === undefined) delete cleared[id]; // borrado confirmado
+      else delete predictions[id];                            // aún no procesado: mantenlo vacío
+    });
     results = {};
     (data.results || []).forEach(r => { results[r.matchId] = r; });
     koReal = {};

@@ -33,6 +33,7 @@ const api = {
   getAll:          ()  => apiCall('getAll'),
   getUser:         (p) => apiCall('getUser', p),           // solo los datos de un jugador (rápido)
   savePrediction:  (p) => apiCall('savePrediction', p),
+  deletePrediction:(p) => apiCall('deletePrediction', p), // borra el pronóstico de un partido
   saveResult:      (p) => apiCall('saveResult', p),
   savePick:        (p) => apiCall('savePick', p),          // pronóstico de eliminatorias
   saveKnockoutReal:(p) => apiCall('saveKnockoutReal', p),  // resultado real (admin)

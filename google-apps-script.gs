@@ -165,6 +165,7 @@ function doGet(e) {
     if (action === 'getAll')           return json(getAll());
     if (action === 'getUser')          return json(getUser(e.parameter));
     if (action === 'savePrediction')   return json(savePrediction(e.parameter));
+    if (action === 'deletePrediction') return json(deletePrediction(e.parameter));
     if (action === 'saveResult')       return json(saveResult(e.parameter));
     if (action === 'savePick')         return json(savePick(e.parameter));
     if (action === 'saveKnockoutReal') return json(saveKnockoutReal(e.parameter));
@@ -247,6 +248,28 @@ function getAll() {
   }
 
   return { ok: true, predictions: predictions, results: results, bracket: bracket, knockoutReal: knockoutReal };
+}
+
+// Borra el pronóstico de UN partido de un jugador (al vaciar el marcador).
+function deletePrediction(p) {
+  var user = (p.user || '').toString().trim();
+  var matchId = (p.matchId || '').toString().trim();
+  if (!user || !matchId) return { ok: false, error: 'falta user o matchId' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var s = sheetByName('Predictions');
+    var last = s.getLastRow();
+    if (last > 1) {
+      var keys = s.getRange(2, 2, last - 1, 2).getValues(); // Jugador, ID
+      for (var i = keys.length - 1; i >= 0; i--) {
+        if (String(keys[i][0]) === user && String(keys[i][1]) === matchId) s.deleteRow(i + 2);
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true };
 }
 
 // Solo los datos de UN jugador (+ resultados/eliminatorias reales, que son pocos).
