@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=24">
+  <link rel="stylesheet" href="css/style.css?v=25">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 </head>
 <body>
@@ -54,10 +54,11 @@
       ✅ Introduce el resultado final tras los 90 minutos. (En la fase de grupos no hay prórroga.) También puedes escribir los resultados directamente en la pestaña «Results» de tu Google Sheet.
     </div>
 
-    <!-- Sub-conmutador: grupos / eliminatorias -->
+    <!-- Sub-conmutador: grupos / eliminatorias / minijuego -->
     <div class="phase-switch" style="margin-bottom:20px">
       <button class="phase-btn active" id="admin-groups-btn">⚽ Fase de grupos</button>
       <button class="phase-btn" id="admin-ko-btn">🏆 Eliminatorias (reales)</button>
+      <button class="phase-btn" id="admin-game-btn">🎮 Reto del día (beta)</button>
     </div>
 
     <div id="admin-groups"></div>
@@ -68,15 +69,26 @@
       </div>
       <div id="admin-ko-groups"></div>
     </div>
+
+    <!-- 🎮 Minijuego diario (EN PRUEBAS — solo visible aquí, en el admin) -->
+    <div id="admin-minigame" class="hidden">
+      <div class="info-banner" style="margin-bottom:18px">
+        🎮 <b>Reto del día — «¿Más o menos?»</b> · en pruebas, solo lo ves tú aquí.
+        Adivina si el siguiente jugador vale <b>más o menos</b> que el anterior. La secuencia es la misma para todos cada día.
+      </div>
+      <div class="mg-hud" id="mg-hud"></div>
+      <div id="mg-board"></div>
+    </div>
   </div>
 
 </main>
 
-<script src="js/config.js?v=24"></script>
-<script src="js/cache.js?v=24"></script>
-<script src="js/api.js?v=24"></script>
-<script src="js/data.js?v=24"></script>
-<script src="js/bracket.js?v=24"></script>
-<script src="js/admin.js?v=24"></script>
+<script src="js/config.js?v=25"></script>
+<script src="js/cache.js?v=25"></script>
+<script src="js/api.js?v=25"></script>
+<script src="js/data.js?v=25"></script>
+<script src="js/bracket.js?v=25"></script>
+<script src="js/admin.js?v=25"></script>
+<script src="js/minigame.js?v=25"></script>
 </body>
 </html>
