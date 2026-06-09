@@ -8,9 +8,11 @@
 //     victorias en Mundiales).
 //   · Adivina con pistas → adivina al jugador con pistas que se van
 //     revelando; cuantas menos necesites, más puntos.
+//   · Wordle de jugadores → adivina el apellido de un futbolista en
+//     6 intentos con pistas de color (verde/amarillo/gris).
 //
-//  15 s por pregunta en «¿Más o menos?» y 45 s por reto en «Pistas»
-//  (para que no dé tiempo a buscar la respuesta).
+//  Hay temporizador en cada modo (15 s ¿Más o menos?, 45 s Pistas,
+//  90 s Wordle) para que no dé tiempo a buscar la respuesta.
 //
 //  Depende de data.js (madridDayKey, formatKickoff).
 // ============================================================
@@ -169,16 +171,46 @@ const MG_PISTAS_POOL = [
   { n: 'Son Heung-min', iso: 'kr', pais: 'Corea del Sur', pos: 'Delantero', club: 'Tottenham', age: 33, num: 7 },
 ];
 
+// ── Datos de «Wordle de jugadores» ──
+// sol = apellido en MAYÚSCULAS sin tildes (la solución). Longitudes 4-8.
+const MG_WORDLE_POOL = [
+  { sol: 'MESSI',    n: 'Lionel Messi',       iso: 'ar',     pais: 'Argentina',  pos: 'Delantero' },
+  { sol: 'MBAPPE',   n: 'Kylian Mbappé',      iso: 'fr',     pais: 'Francia',    pos: 'Delantero' },
+  { sol: 'HAALAND',  n: 'Erling Haaland',     iso: 'no',     pais: 'Noruega',    pos: 'Delantero' },
+  { sol: 'KANE',     n: 'Harry Kane',         iso: 'gb-eng', pais: 'Inglaterra', pos: 'Delantero' },
+  { sol: 'MODRIC',   n: 'Luka Modrić',        iso: 'hr',     pais: 'Croacia',    pos: 'Centrocampista' },
+  { sol: 'PEDRI',    n: 'Pedri',              iso: 'es',     pais: 'España',     pos: 'Centrocampista' },
+  { sol: 'RODRI',    n: 'Rodri',              iso: 'es',     pais: 'España',     pos: 'Centrocampista' },
+  { sol: 'SALAH',    n: 'Mohamed Salah',      iso: 'eg',     pais: 'Egipto',     pos: 'Delantero' },
+  { sol: 'NEYMAR',   n: 'Neymar Jr',          iso: 'br',     pais: 'Brasil',     pos: 'Delantero' },
+  { sol: 'VINICIUS', n: 'Vinícius Júnior',    iso: 'br',     pais: 'Brasil',     pos: 'Delantero' },
+  { sol: 'YAMAL',    n: 'Lamine Yamal',       iso: 'es',     pais: 'España',     pos: 'Delantero' },
+  { sol: 'SAKA',     n: 'Bukayo Saka',        iso: 'gb-eng', pais: 'Inglaterra', pos: 'Delantero' },
+  { sol: 'FODEN',    n: 'Phil Foden',         iso: 'gb-eng', pais: 'Inglaterra', pos: 'Centrocampista' },
+  { sol: 'MUSIALA',  n: 'Jamal Musiala',      iso: 'de',     pais: 'Alemania',   pos: 'Centrocampista' },
+  { sol: 'WIRTZ',    n: 'Florian Wirtz',      iso: 'de',     pais: 'Alemania',   pos: 'Centrocampista' },
+  { sol: 'OSIMHEN',  n: 'Victor Osimhen',     iso: 'ng',     pais: 'Nigeria',    pos: 'Delantero' },
+  { sol: 'COURTOIS', n: 'Thibaut Courtois',   iso: 'be',     pais: 'Bélgica',    pos: 'Portero' },
+  { sol: 'RONALDO',  n: 'Cristiano Ronaldo',  iso: 'pt',     pais: 'Portugal',   pos: 'Delantero' },
+  { sol: 'VALVERDE', n: 'Federico Valverde',  iso: 'uy',     pais: 'Uruguay',    pos: 'Centrocampista' },
+  { sol: 'HAKIMI',   n: 'Achraf Hakimi',      iso: 'ma',     pais: 'Marruecos',  pos: 'Defensa' },
+  { sol: 'GAVI',     n: 'Gavi',               iso: 'es',     pais: 'España',     pos: 'Centrocampista' },
+  { sol: 'DEMBELE',  n: 'Ousmane Dembélé',    iso: 'fr',     pais: 'Francia',    pos: 'Delantero' },
+  { sol: 'LEAO',     n: 'Rafael Leão',        iso: 'pt',     pais: 'Portugal',   pos: 'Delantero' },
+];
+
 // ── Calendario diario: qué modo/tema toca cada día (rota, igual para todos) ──
 const MG_ROTATION = [
   { mode: 'mm', theme: 'valor' },
+  { mode: 'wordle' },
   { mode: 'pistas' },
   { mode: 'mm', theme: 'goles' },
   { mode: 'mm', theme: 'altura' },
-  { mode: 'pistas' },
+  { mode: 'wordle' },
   { mode: 'mm', theme: 'edad' },
-  { mode: 'mm', theme: 'instagram' },
   { mode: 'pistas' },
+  { mode: 'mm', theme: 'instagram' },
+  { mode: 'wordle' },
   { mode: 'mm', theme: 'champions' },
   { mode: 'mm', theme: 'caps' },
   { mode: 'pistas' },
@@ -283,10 +315,12 @@ const MG_ROTATION = [
 
   // ── Arranque del día: elige modo/tema y construye el juego ──
   function startDay() {
+    if (Game && Game.teardown) Game.teardown(); // limpia el modo anterior (p. ej. teclado del Wordle)
     const entry = currentEntry();
     gameOver = false; busy = false; started = true;
     const tb = el('mg-theme');
     if (entry.mode === 'pistas') { if (tb) tb.innerHTML = '🕵️ Reto de hoy: <b>Adivina con pistas</b>'; Game = PistasMode; }
+    else if (entry.mode === 'wordle') { if (tb) tb.innerHTML = '🔤 Reto de hoy: <b>Wordle de jugadores</b>'; Game = WordleMode; }
     else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
     Game.start();
     renderDayPreview();
@@ -490,6 +524,124 @@ const MG_ROTATION = [
     },
   };
 
+  // ===========================================================
+  //  MODO 3 — Wordle de jugadores
+  // ===========================================================
+  const WordleMode = {
+    sol: '', player: null, guesses: [], cur: '', max: 6, keyState: {}, msgTimer: null, _keyHandler: null,
+    start() {
+      const rng = mulberry32(seedInt() ^ 0x57a3f17b); // semilla propia del Wordle
+      this.player = MG_WORDLE_POOL[Math.floor(rng() * MG_WORDLE_POOL.length)];
+      this.sol = this.player.sol;
+      this.guesses = []; this.cur = ''; this.keyState = {}; gameOver = false; busy = false;
+      this.render();
+      // Teclado físico (PC): escuchamos mientras el panel esté abierto en «Jugar»
+      if (this._keyHandler) document.removeEventListener('keydown', this._keyHandler);
+      this._keyHandler = (e) => {
+        if (!open || view !== 'play' || gameOver || Game !== WordleMode) return;
+        if (e.key === 'Enter') { e.preventDefault(); this.enter(); }
+        else if (e.key === 'Backspace') { e.preventDefault(); this.back(); }
+        else if (e.key.length === 1 && /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/.test(e.key)) { this.type(e.key); }
+      };
+      document.addEventListener('keydown', this._keyHandler);
+      startTimer(90000, () => this.timeUp());
+    },
+    teardown() { if (this._keyHandler) { document.removeEventListener('keydown', this._keyHandler); this._keyHandler = null; } },
+    len() { return this.sol.length; },
+    normLetter(ch) { return (ch || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); },
+    type(ch) {
+      if (gameOver) return;
+      const L = this.normLetter(ch);
+      if (!/^[A-Z]$/.test(L) || this.cur.length >= this.len()) return;
+      this.cur += L; this.paintGrid();
+    },
+    back() { if (gameOver) return; this.cur = this.cur.slice(0, -1); this.paintGrid(); },
+    enter() {
+      if (gameOver) return;
+      if (this.cur.length < this.len()) { this.flash('Faltan letras'); return; }
+      const guess = this.cur, res = this.evaluate(guess);
+      this.guesses.push({ g: guess, r: res });
+      for (let i = 0; i < guess.length; i++) this.bumpKey(guess[i], res[i]);
+      this.cur = '';
+      this.paintGrid(); this.renderKeys();
+      if (guess === this.sol) { gameOver = true; stopTimer(); setTimeout(() => this.end(true), 400); return; }
+      if (this.guesses.length >= this.max) { gameOver = true; stopTimer(); setTimeout(() => this.end(false), 400); return; }
+    },
+    evaluate(guess) {
+      const len = this.len(), res = new Array(len).fill('absent'), used = new Array(len).fill(false);
+      for (let i = 0; i < len; i++) if (guess[i] === this.sol[i]) { res[i] = 'correct'; used[i] = true; }
+      for (let i = 0; i < len; i++) {
+        if (res[i] === 'correct') continue;
+        for (let j = 0; j < len; j++) { if (!used[j] && this.sol[j] === guess[i]) { res[i] = 'present'; used[j] = true; break; } }
+      }
+      return res;
+    },
+    rank(s) { return s === 'correct' ? 3 : s === 'present' ? 2 : 1; },
+    bumpKey(ch, st) { const c = this.keyState[ch]; if (!c || this.rank(st) > this.rank(c)) this.keyState[ch] = st; },
+    render() {
+      const wrap = el('mg-board'); if (!wrap) return;
+      wrap.innerHTML = `
+        <div class="mg-wd-hint">${flag(this.player.iso)} <b>${this.player.pais}</b> · ${this.player.pos} · ${this.len()} letras</div>
+        <div class="mg-wd-grid" id="mg-wd-grid" style="--cols:${this.len()}"></div>
+        <div class="mg-wd-msg" id="mg-wd-msg"></div>
+        <div class="mg-wd-keys" id="mg-wd-keys"></div>`;
+      this.paintGrid(); this.renderKeys();
+      setHud(`Adivina el apellido · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+    },
+    paintGrid() {
+      const grid = el('mg-wd-grid'); if (!grid) return;
+      const len = this.len(); let html = '';
+      for (let r = 0; r < this.max; r++) {
+        const past = this.guesses[r];
+        for (let c = 0; c < len; c++) {
+          if (past) html += `<div class="mg-wd-cell ${past.r[c]}">${past.g[c]}</div>`;
+          else if (r === this.guesses.length) { const ch = this.cur[c] || ''; html += `<div class="mg-wd-cell${ch ? ' filled' : ''}">${ch}</div>`; }
+          else html += '<div class="mg-wd-cell"></div>';
+        }
+      }
+      grid.innerHTML = html;
+    },
+    renderKeys() {
+      const box = el('mg-wd-keys'); if (!box) return;
+      const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+      let html = '';
+      rows.forEach((row, ri) => {
+        html += '<div class="mg-wd-krow">';
+        if (ri === 2) html += '<button type="button" class="mg-wd-key wide" data-k="ENTER">⏎</button>';
+        for (const ch of row) html += `<button type="button" class="mg-wd-key ${this.keyState[ch] || ''}" data-k="${ch}">${ch}</button>`;
+        if (ri === 2) html += '<button type="button" class="mg-wd-key wide" data-k="BACK">⌫</button>';
+        html += '</div>';
+      });
+      box.innerHTML = html;
+      Array.from(box.querySelectorAll('.mg-wd-key')).forEach(b => b.addEventListener('click', () => {
+        const k = b.dataset.k;
+        if (k === 'ENTER') this.enter(); else if (k === 'BACK') this.back(); else this.type(k);
+      }));
+    },
+    flash(msg) {
+      const m = el('mg-wd-msg'); if (!m) return;
+      m.textContent = msg; m.classList.add('show');
+      clearTimeout(this.msgTimer); this.msgTimer = setTimeout(() => m.classList.remove('show'), 1200);
+    },
+    timeUp() { if (gameOver) return; gameOver = true; stopTimer(); this.end(false, true); },
+    end(win, byTime) {
+      stopTimer(); resetTimerBar(); this.teardown();
+      const wrap = el('mg-board'); if (!wrap) return;
+      const k = this.guesses.length, score = win ? Math.max(1, 8 - k) : 0;
+      if (win) setBest(score);
+      const head = win ? { e: '🎉', t: `¡Correcto en ${k}/${this.max}!` }
+                       : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡Sin intentos!' };
+      wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
+        <div class="mg-reveal">${flag(this.player.iso)} <b>${this.sol}</b><br><span class="mg-reveal-sub">${this.player.n} · ${this.player.pos}</span></div>
+        ${win ? `<p>Has ganado <b>${score}</b> pts.</p>` : ''}
+        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
+        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+      el('mg-again').addEventListener('click', () => this.start());
+      setHud(`Adivina el apellido · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+    },
+  };
+
   function resetTimerBar() {
     const bar = el('mg-timer-bar'), num = el('mg-timer-num');
     if (bar) { bar.style.width = '100%'; bar.classList.remove('low'); }
@@ -502,7 +654,9 @@ const MG_ROTATION = [
     const isToday = previewOffset === 0;
     const lbl = cap(formatKickoff(dayKey() + 'T12:00:00Z').date);
     const entry = currentEntry();
-    const modeLbl = entry.mode === 'pistas' ? '🕵️ Adivina con pistas' : (themeByKey(entry.theme).emoji + ' ' + themeByKey(entry.theme).label);
+    const modeLbl = entry.mode === 'pistas' ? '🕵️ Adivina con pistas'
+                  : entry.mode === 'wordle' ? '🔤 Wordle de jugadores'
+                  : (themeByKey(entry.theme).emoji + ' ' + themeByKey(entry.theme).label);
     dp.innerHTML =
       '🔧 <b>Beta</b> · ver otro día: ' +
       '<button class="mg-day-arrow" id="mg-day-prev" aria-label="Día anterior">‹</button>' +
