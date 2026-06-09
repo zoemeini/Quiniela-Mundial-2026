@@ -203,27 +203,29 @@ const MG_WORDLE_POOL = [
 
 // ── Datos de «¿Quién es este jugador?» (foto ampliada) ──
 // wiki = título EXACTO del artículo en la Wikipedia en inglés (de ahí sale la foto).
+// fy = altura (% de la imagen) donde está la CARA; centramos ahí el recorte para
+//      que el primer plano caiga siempre en el rostro (retrato o cuerpo entero).
 const MG_FOTO_POOL = [
-  { n: 'Lionel Messi',       wiki: 'Lionel Messi',       iso: 'ar',     pais: 'Argentina',     pos: 'Delantero' },
-  { n: 'Cristiano Ronaldo',  wiki: 'Cristiano Ronaldo',  iso: 'pt',     pais: 'Portugal',      pos: 'Delantero' },
-  { n: 'Kylian Mbappé',      wiki: 'Kylian Mbappé',      iso: 'fr',     pais: 'Francia',       pos: 'Delantero' },
-  { n: 'Erling Haaland',     wiki: 'Erling Haaland',     iso: 'no',     pais: 'Noruega',       pos: 'Delantero' },
-  { n: 'Neymar Jr',          wiki: 'Neymar',             iso: 'br',     pais: 'Brasil',        pos: 'Delantero' },
-  { n: 'Vinícius Júnior',    wiki: 'Vinícius Júnior',    iso: 'br',     pais: 'Brasil',        pos: 'Delantero' },
-  { n: 'Mohamed Salah',      wiki: 'Mohamed Salah',      iso: 'eg',     pais: 'Egipto',        pos: 'Delantero' },
-  { n: 'Robert Lewandowski', wiki: 'Robert Lewandowski', iso: 'pl',     pais: 'Polonia',       pos: 'Delantero' },
-  { n: 'Luka Modrić',        wiki: 'Luka Modrić',        iso: 'hr',     pais: 'Croacia',       pos: 'Centrocampista' },
-  { n: 'Kevin De Bruyne',    wiki: 'Kevin De Bruyne',    iso: 'be',     pais: 'Bélgica',       pos: 'Centrocampista' },
-  { n: 'Harry Kane',         wiki: 'Harry Kane',         iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Delantero' },
-  { n: 'Jude Bellingham',    wiki: 'Jude Bellingham',    iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Centrocampista' },
-  { n: 'Lamine Yamal',       wiki: 'Lamine Yamal',       iso: 'es',     pais: 'España',        pos: 'Delantero' },
-  { n: 'Pedri',              wiki: 'Pedri',              iso: 'es',     pais: 'España',        pos: 'Centrocampista' },
-  { n: 'Antoine Griezmann',  wiki: 'Antoine Griezmann',  iso: 'fr',     pais: 'Francia',       pos: 'Delantero' },
-  { n: 'Bukayo Saka',        wiki: 'Bukayo Saka',        iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Delantero' },
-  { n: 'Son Heung-min',      wiki: 'Son Heung-min',      iso: 'kr',     pais: 'Corea del Sur', pos: 'Delantero' },
-  { n: 'Karim Benzema',      wiki: 'Karim Benzema',      iso: 'fr',     pais: 'Francia',       pos: 'Delantero' },
-  { n: 'Sergio Ramos',       wiki: 'Sergio Ramos',       iso: 'es',     pais: 'España',        pos: 'Defensa' },
-  { n: 'Manuel Neuer',       wiki: 'Manuel Neuer',       iso: 'de',     pais: 'Alemania',      pos: 'Portero' },
+  { n: 'Lionel Messi',       wiki: 'Lionel Messi',       iso: 'ar',     pais: 'Argentina',     pos: 'Delantero',     fy: 20 },
+  { n: 'Cristiano Ronaldo',  wiki: 'Cristiano Ronaldo',  iso: 'pt',     pais: 'Portugal',      pos: 'Delantero',     fy: 24 },
+  { n: 'Kylian Mbappé',      wiki: 'Kylian Mbappé',      iso: 'fr',     pais: 'Francia',       pos: 'Delantero',     fy: 18 },
+  { n: 'Erling Haaland',     wiki: 'Erling Haaland',     iso: 'no',     pais: 'Noruega',       pos: 'Delantero',     fy: 28 },
+  { n: 'Neymar Jr',          wiki: 'Neymar',             iso: 'br',     pais: 'Brasil',        pos: 'Delantero',     fy: 24 },
+  { n: 'Vinícius Júnior',    wiki: 'Vinícius Júnior',    iso: 'br',     pais: 'Brasil',        pos: 'Delantero',     fy: 22 },
+  { n: 'Mohamed Salah',      wiki: 'Mohamed Salah',      iso: 'eg',     pais: 'Egipto',        pos: 'Delantero',     fy: 16 },
+  { n: 'Robert Lewandowski', wiki: 'Robert Lewandowski', iso: 'pl',     pais: 'Polonia',       pos: 'Delantero',     fy: 17 },
+  { n: 'Luka Modrić',        wiki: 'Luka Modrić',        iso: 'hr',     pais: 'Croacia',       pos: 'Centrocampista', fy: 22 },
+  { n: 'Kevin De Bruyne',    wiki: 'Kevin De Bruyne',    iso: 'be',     pais: 'Bélgica',       pos: 'Centrocampista', fy: 19 },
+  { n: 'Harry Kane',         wiki: 'Harry Kane',         iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Delantero',     fy: 19 },
+  { n: 'Jude Bellingham',    wiki: 'Jude Bellingham',    iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Centrocampista', fy: 14 },
+  { n: 'Lamine Yamal',       wiki: 'Lamine Yamal',       iso: 'es',     pais: 'España',        pos: 'Delantero',     fy: 10 },
+  { n: 'Pedri',              wiki: 'Pedri',              iso: 'es',     pais: 'España',        pos: 'Centrocampista', fy: 10 },
+  { n: 'Antoine Griezmann',  wiki: 'Antoine Griezmann',  iso: 'fr',     pais: 'Francia',       pos: 'Delantero',     fy: 24 },
+  { n: 'Bukayo Saka',        wiki: 'Bukayo Saka',        iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Delantero',     fy: 26 },
+  { n: 'Son Heung-min',      wiki: 'Son Heung-min',      iso: 'kr',     pais: 'Corea del Sur', pos: 'Delantero',     fy: 24 },
+  { n: 'Karim Benzema',      wiki: 'Karim Benzema',      iso: 'fr',     pais: 'Francia',       pos: 'Delantero',     fy: 40 },
+  { n: 'Sergio Ramos',       wiki: 'Sergio Ramos',       iso: 'es',     pais: 'España',        pos: 'Defensa',       fy: 28 },
+  { n: 'Manuel Neuer',       wiki: 'Manuel Neuer',       iso: 'de',     pais: 'Alemania',      pos: 'Portero',       fy: 13 },
 ];
 
 // ── Calendario diario: qué modo/tema toca cada día (rota, igual para todos) ──
@@ -682,7 +684,7 @@ const MG_ROTATION = [
   function fotoFetch(title) {
     return new Promise(resolve => {
       if (MG_FOTO_CACHE[title] !== undefined) { resolve(MG_FOTO_CACHE[title]); return; }
-      const u = 'https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&piprop=thumbnail&pithumbsize=520&titles=' + encodeURIComponent(title);
+      const u = 'https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&piprop=thumbnail&pithumbsize=800&titles=' + encodeURIComponent(title);
       fetch(u).then(r => r.json()).then(d => {
         const pages = (d.query && d.query.pages) || {}; let src = '';
         for (const k in pages) { if (pages[k].thumbnail && pages[k].thumbnail.source) src = pages[k].thumbnail.source; }
@@ -692,9 +694,9 @@ const MG_ROTATION = [
   }
 
   const FotoMode = {
-    secret: null, attempts: 0, max: 5, level: 0, _tries: [], _req: 0,
-    zooms: [4.6, 3.4, 2.5, 1.7, 1.0],
-    zlabels: ['🔍 Muy de cerca', '🔍 Más cerca', '👀 Se va viendo', '🙂 Casi entera', '🖼️ Foto completa'],
+    secret: null, attempts: 0, max: 6, level: 0, _tries: [], _req: 0,
+    zooms: [6.5, 4.6, 3.3, 2.3, 1.5, 1.0],
+    zlabels: ['🔍 Solo un detalle', '🔍 Muy de cerca', '🔍 De cerca', '👀 Se va viendo', '🙂 Casi entera', '🖼️ Foto completa'],
     start() {
       const rng = mulberry32(seedInt() ^ 0x1f83d9ab); // semilla propia de la foto
       this.secret = MG_FOTO_POOL[Math.floor(rng() * MG_FOTO_POOL.length)];
@@ -709,9 +711,15 @@ const MG_ROTATION = [
         else { im.classList.remove('loading'); im.classList.add('failed'); im.innerHTML = `Sin foto 😕<br><span class="mg-foto-fallback">${flag(this.secret.iso)} ${this.secret.pais} · ${this.secret.pos}</span>`; }
       });
     },
-    points() { return Math.max(1, 7 - (this.attempts + 1)); },
+    points() { return Math.max(1, 8 - (this.attempts + 1)); },
     applyZoom() {
-      const im = el('mg-foto-img'); if (im && !im.classList.contains('loading') && !im.classList.contains('failed')) im.style.transform = 'scale(' + this.zooms[Math.min(this.level, this.zooms.length - 1)] + ')';
+      const im = el('mg-foto-img');
+      if (im) {
+        const fy = (this.secret && this.secret.fy != null) ? this.secret.fy : 22;
+        im.style.backgroundPosition = '50% ' + fy + '%'; // recorta a la altura de la CARA
+        im.style.transformOrigin = '50% ' + fy + '%';    // y hace zoom justo sobre ese punto
+        if (!im.classList.contains('loading') && !im.classList.contains('failed')) im.style.transform = 'scale(' + this.zooms[Math.min(this.level, this.zooms.length - 1)] + ')';
+      }
       const zl = el('mg-foto-zoomlbl'); if (zl) zl.textContent = this.zlabels[Math.min(this.level, this.zlabels.length - 1)];
     },
     render() {
@@ -788,12 +796,13 @@ const MG_ROTATION = [
     end(win, byTime) {
       stopTimer(); resetTimerBar();
       const wrap = el('mg-board'); if (!wrap) return;
-      const score = win ? Math.max(1, 7 - this.attempts) : 0;
+      const score = win ? Math.max(1, 8 - this.attempts) : 0;
       if (win) setBest(score);
       const head = win ? { e: '🎉', t: `¡Acertaste! (${this.attempts}/${this.max})` }
                        : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡No era!' };
       const url = MG_FOTO_CACHE[this.secret.wiki];
-      const photo = (url && url !== 'FAIL') ? `<div class="mg-foto-reveal" style="background-image:url('${url}')"></div>` : '';
+      const fy = this.secret.fy != null ? this.secret.fy : 22;
+      const photo = (url && url !== 'FAIL') ? `<div class="mg-foto-reveal" style="background-image:url('${url}');background-position:50% ${fy}%"></div>` : '';
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
         ${photo}
         <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pais} · ${this.secret.pos}</span></div>
