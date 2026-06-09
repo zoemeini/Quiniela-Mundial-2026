@@ -37,11 +37,21 @@ const ES_NAMES = {
 
 const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
-// A distinct color per group (used for badges and the group summary).
+// A distinct color per group — interleaved across the spectrum so neighbouring
+// groups look clearly different (used for badges and the group summary).
 const GROUP_COLORS = {
-  A: '#ef4444', B: '#f97316', C: '#f59e0b', D: '#eab308',
-  E: '#84cc16', F: '#22c55e', G: '#14b8a6', H: '#06b6d4',
-  I: '#3b82f6', J: '#8b5cf6', K: '#ec4899', L: '#fb7185',
+  A: '#ef4444', // red
+  B: '#3b82f6', // blue
+  C: '#f59e0b', // amber
+  D: '#22c55e', // green
+  E: '#a855f7', // purple
+  F: '#fde047', // yellow
+  G: '#06b6d4', // cyan
+  H: '#ec4899', // pink
+  I: '#84cc16', // lime
+  J: '#f97316', // orange
+  K: '#8b5cf6', // violet
+  L: '#14b8a6', // teal
 };
 function groupColor(g) { return GROUP_COLORS[g] || '#34d399'; }
 

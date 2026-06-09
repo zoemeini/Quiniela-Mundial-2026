@@ -37,7 +37,7 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 input { font-family: inherit; }
-button { font-family: inherit; cursor: pointer; border: none; }
+button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 ::selection { background: rgba(52,211,153,.3); }
 
 /* ── Header ────────────────────────────────────────────── */
@@ -708,9 +708,17 @@ button { font-family: inherit; cursor: pointer; border: none; }
 }
 .music-panel.hidden { display: none; }
 .music-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
-.music-frame { border-radius: 10px; overflow: hidden; background: #000; min-height: 158px; }
-.music-frame iframe { display: block; }
+.music-frame { border-radius: 10px; overflow: hidden; background: #000; min-height: 150px; }
+.music-frame iframe { display: block; width: 100%; }
 .music-hint { font-size: 11px; color: var(--muted); margin-top: 8px; text-align: center; }
+.music-controls { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.music-btn {
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  background: var(--bg3); color: var(--text); font-size: 14px;
+}
+.music-btn:hover { background: var(--border); }
+.music-vol-ico { font-size: 15px; flex-shrink: 0; }
+#music-vol { flex: 1; height: 6px; accent-color: var(--green); cursor: pointer; }
 
 /* ── Modal actions / delete confirm ────────────────────── */
 .modal-actions { display: flex; gap: 10px; justify-content: center; }
@@ -751,7 +759,7 @@ button { font-family: inherit; cursor: pointer; border: none; }
   display: flex; align-items: center; justify-content: space-between;
 }
 .summary-arrow { font-size: 18px; }
-.summary-team { display: flex; align-items: center; gap: 7px; font-size: 13px; padding: 3px 0; }
+.summary-team { display: flex; align-items: center; gap: 7px; font-size: 13px; padding: 3px 0; color: var(--text); }
 .summary-team .team-flag-img { width: 20px; height: 15px; }
 
 /* ── Locked / finished match states ────────────────────── */

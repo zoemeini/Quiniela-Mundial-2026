@@ -419,7 +419,7 @@ function renderKnockout() {
     lockedMsg.classList.remove('hidden');
     koContent.classList.add('hidden');
     document.getElementById('ko-locked-progress').textContent =
-      'Se abrirán cuando termine la fase de grupos y se conozcan los 32 clasificados reales.';
+      'Entonces podrás pronosticar cada ronda con los equipos reales.';
     return;
   }
   lockedMsg.classList.add('hidden');
