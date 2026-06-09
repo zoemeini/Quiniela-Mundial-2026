@@ -84,6 +84,7 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   font-size: 14px;
   font-weight: 600;
   color: var(--muted);
+  white-space: nowrap;
   transition: all .18s;
 }
 .nav-link:hover { background: var(--bg3); color: var(--text); }
@@ -818,12 +819,34 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 
 /* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .header-content { gap: 8px; }
+  /* Header: two rows so name + Borrar stay visible and nothing overflows.
+     Row 1 = trophy (left) + name + Borrar (right). Row 2 = nav links. */
+  .header-content {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 12px;
+    gap: 8px 10px;
+  }
   .header-title { display: none; }
+  .header-right { order: 2; margin-left: auto; }
+  .header-nav {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .header-nav::-webkit-scrollbar { display: none; }
+  .header-nav .nav-link { padding: 6px 12px; font-size: 13px; }
+  .username-display { font-size: 13px; }
+  .header-right .btn-outline { padding: 5px 11px; }
+
   .lb-header, .lb-row {
-    grid-template-columns: 36px 1fr 50px 50px 50px 50px;
-    padding: 10px 12px;
+    grid-template-columns: 34px 1fr 48px 48px 48px 48px;
+    padding: 10px 10px;
     font-size: 13px;
+    gap: 6px;
   }
   .matches-grid { grid-template-columns: 1fr; }
   .ko-grid { grid-template-columns: 1fr; }
