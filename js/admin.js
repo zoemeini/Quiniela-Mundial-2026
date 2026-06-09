@@ -247,13 +247,6 @@ function focusNextAdminInput(el) {
     const el = e.target;
     if (el.classList && el.classList.contains('admin-score-input')) { try { if (el.select) el.select(); } catch (_) {} }
   });
-  panel.addEventListener('input', e => {
-    const el = e.target;
-    if (IS_TOUCH_ADMIN || !el.classList || !el.classList.contains('admin-score-input')) return;
-    clearTimeout(el._advT);
-    if (el.value === '') return;
-    el._advT = setTimeout(() => focusNextAdminInput(el), 300);
-  });
 })();
 
 async function saveKoReal(matchId) {

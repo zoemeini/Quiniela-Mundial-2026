@@ -4,6 +4,7 @@
 // cuenta como 0–0. Las eliminatorias muestran los equipos REALES por ronda.
 let currentUser  = null;
 let predictions  = {};   // { matchId: { home, away } }  (grupos + eliminatorias)
+let dirty        = {};   // pronósticos escritos pero aún no confirmados en la hoja
 let results      = {};   // { matchId: { home, away, status } }  (grupos, reales)
 let koReal       = {};   // { koMatchId: { winner, gh, ga } }  (eliminatorias, reales)
 let realBr       = { complete: false, resolved: {} }; // equipos reales del cuadro
@@ -108,7 +109,7 @@ function wireCardInputs(card, matchId) {
   ['home', 'away'].forEach(side => {
     const el = card.querySelector(`#sc-${matchId}-${side}`);
     if (!el) return;
-    el.addEventListener('input', () => { onScoreChange(matchId); scheduleAdvance(el.id, advanceFocus); });
+    el.addEventListener('input', () => onScoreChange(matchId)); // sin salto automático
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceFocus(el.id); } });
     el.addEventListener('focus', () => safeSelect(el));
   });
@@ -246,29 +247,15 @@ function advanceFocus(currentId) {
   const ids = Array.from(container.querySelectorAll('.score-input')).map(i => i.id);
   const idx = ids.indexOf(currentId);
   if (idx >= 0 && idx < ids.length - 1) { focusInput(ids[idx + 1]); return; }
-  // Fin del contenedor → siguiente día / ronda.
-  if (!isKo) {
-    const i = groupTabs.indexOf(currentGroupTab);
-    if (i >= 0 && i < groupTabs.length - 1) {
-      renderGroupTab(groupTabs[i + 1]);
-      setTimeout(() => { const f = document.querySelector('#day-content .score-input'); if (f) focusInput(f.id); }, 50);
-    }
-  } else {
-    const ri = KO_ROUNDS.findIndex(r => r.key === currentKoRound);
-    if (ri >= 0 && ri < KO_ROUNDS.length - 1) {
-      switchKoRound(KO_ROUNDS[ri + 1].key);
-      setTimeout(() => { const f = document.querySelector('#ko-grid .score-input'); if (f) focusInput(f.id); }, 50);
-    }
-  }
+  // En la última casilla NO saltamos de día/ronda — el usuario revisa lo que ha puesto.
+  const cur = document.getElementById(currentId);
+  if (cur) try { cur.blur(); } catch (_) {}
 }
 
 // ── Guardar pronóstico ───────────────────────────────────
+// Guarda el valor EN MEMORIA al instante (para que no desaparezca al cambiar de
+// pestaña) y envía a la hoja con un pequeño retardo.
 function onScoreChange(matchId) {
-  clearTimeout(saveTimers[matchId]);
-  setStatus(matchId, 'saving', '…');
-  saveTimers[matchId] = setTimeout(() => savePrediction(matchId), 700);
-}
-async function savePrediction(matchId) {
   const m = getAnyMatch(matchId);
   if (!m || lockedM(m)) { setStatus(matchId, 'error', '🔒 Cerrado'); return; }
   const hEl = document.getElementById(`sc-${matchId}-home`);
@@ -277,14 +264,23 @@ async function savePrediction(matchId) {
   if (hEl.value === '' || aEl.value === '') { setStatus(matchId, 'idle', ''); return; }
   const home = parseInt(hEl.value, 10), away = parseInt(aEl.value, 10);
   if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return;
+  predictions[matchId] = { home, away }; // se conserva aunque cambies de pestaña al instante
+  dirty[matchId] = { home, away };
+  updateProgress();
+  updateDayChecks();
+  setStatus(matchId, 'saving', '…');
+  clearTimeout(saveTimers[matchId]);
+  saveTimers[matchId] = setTimeout(() => savePrediction(matchId), 600);
+}
+async function savePrediction(matchId) {
+  const pred = predictions[matchId];
+  if (!pred) return;
   try {
-    await api.savePrediction({ user: currentUser, matchId, home, away });
-    predictions[matchId] = { home, away };
+    await api.savePrediction({ user: currentUser, matchId, home: pred.home, away: pred.away });
+    delete dirty[matchId];
     setStatus(matchId, 'saved', '✓ Guardado');
-    updateProgress();
-    updateDayChecks();
   } catch (err) {
-    setStatus(matchId, 'error', '✗ Reintentando…');
+    setStatus(matchId, 'error', '✗ Sin guardar — reintenta');
     console.error(err);
   }
 }
@@ -302,10 +298,12 @@ async function loadData() {
     let data;
     try { data = await api.getUser({ user: currentUser }); }
     catch (e) { data = await api.getAll(); }
-    predictions = {};
+    const serverPreds = {};
     (data.predictions || []).forEach(p => {
-      if (!p.user || p.user === currentUser) predictions[p.matchId] = { home: p.home, away: p.away };
+      if (!p.user || p.user === currentUser) serverPreds[p.matchId] = { home: p.home, away: p.away };
     });
+    // Conserva lo que aún no se ha confirmado en la hoja (dirty manda sobre el servidor).
+    predictions = Object.assign({}, serverPreds, dirty);
     results = {};
     (data.results || []).forEach(r => { results[r.matchId] = r; });
     koReal = {};
