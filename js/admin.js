@@ -77,16 +77,27 @@ function buildAdminUI() {
   const container = document.getElementById('admin-groups');
   container.innerHTML = '';
 
-  GROUPS.forEach(group => {
+  // Partidos de grupos en ORDEN CRONOLÓGICO, separados por día de juego, para
+  // que el día del partido baste con bajar por la lista en orden.
+  const sorted = MATCHES.slice().sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  const days = [];
+  const byDay = {};
+  sorted.forEach(m => {
+    const key = madridDayKey(m.kickoff);
+    if (!byDay[key]) { byDay[key] = []; days.push(key); }
+    byDay[key].push(m);
+  });
+
+  days.forEach(key => {
+    const lbl = formatKickoff(byDay[key][0].kickoff).date; // p.ej. "vie, 12 jun"
+    const title = '📅 ' + lbl.charAt(0).toUpperCase() + lbl.slice(1);
     const section = document.createElement('div');
     section.className = 'admin-group';
-    section.innerHTML = `<div class="admin-group-title">Grupo ${group}</div>
-                         <div id="admin-grid-${group}"></div>`;
+    section.innerHTML = `<div class="admin-group-title">${title}</div>
+                         <div id="admin-day-${key}"></div>`;
     container.appendChild(section);
-
-    getMatchesByGroup(group).forEach(match => {
-      document.getElementById(`admin-grid-${group}`).appendChild(buildAdminMatchRow(match));
-    });
+    const grid = section.querySelector(`#admin-day-${key}`);
+    byDay[key].forEach(match => grid.appendChild(buildAdminMatchRow(match)));
   });
 }
 
@@ -101,7 +112,7 @@ function buildAdminMatchRow(match) {
 
   row.innerHTML = `
     <div class="admin-match-info">
-      <div class="teams">${teamFlag(match.home)} ${teamName(match.home)} vs ${teamName(match.away)} ${teamFlag(match.away)}</div>
+      <div class="teams"><span class="group-badge" style="color:${groupColor(match.group)};border-color:${groupColor(match.group)};background:${groupColor(match.group)}22">Grupo ${match.group}</span> ${teamFlag(match.home)} ${teamName(match.home)} vs ${teamName(match.away)} ${teamFlag(match.away)}</div>
       <div class="date">${k.date} · ${k.time} · ${match.venue}</div>
     </div>
     <div class="admin-score-form">
