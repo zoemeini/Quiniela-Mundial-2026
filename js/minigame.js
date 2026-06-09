@@ -9,10 +9,12 @@
 //   · Adivina con pistas → adivina al jugador con pistas que se van
 //     revelando; cuantas menos necesites, más puntos.
 //   · Wordle de jugadores → adivina el apellido de un futbolista en
-//     6 intentos con pistas de color (verde/amarillo/gris).
+//     6 intentos con pistas de color (verde/amarillo/gris). SIN crono.
+//   · ¿Quién es este jugador? → foto (de Wikipedia) muy ampliada que se va
+//     alejando con cada fallo hasta verse entera.
 //
-//  Hay temporizador en cada modo (15 s ¿Más o menos?, 45 s Pistas,
-//  90 s Wordle) para que no dé tiempo a buscar la respuesta.
+//  Casi todos llevan crono (15 s ¿Más o menos?, 45 s Pistas y Foto) para que
+//  no dé tiempo a buscar la respuesta; el Wordle no, porque es más difícil.
 //
 //  Depende de data.js (madridDayKey, formatKickoff).
 // ============================================================
@@ -199,18 +201,46 @@ const MG_WORDLE_POOL = [
   { sol: 'LEAO',     n: 'Rafael Leão',        iso: 'pt',     pais: 'Portugal',   pos: 'Delantero' },
 ];
 
+// ── Datos de «¿Quién es este jugador?» (foto ampliada) ──
+// wiki = título EXACTO del artículo en la Wikipedia en inglés (de ahí sale la foto).
+const MG_FOTO_POOL = [
+  { n: 'Lionel Messi',       wiki: 'Lionel Messi',       iso: 'ar',     pais: 'Argentina',     pos: 'Delantero' },
+  { n: 'Cristiano Ronaldo',  wiki: 'Cristiano Ronaldo',  iso: 'pt',     pais: 'Portugal',      pos: 'Delantero' },
+  { n: 'Kylian Mbappé',      wiki: 'Kylian Mbappé',      iso: 'fr',     pais: 'Francia',       pos: 'Delantero' },
+  { n: 'Erling Haaland',     wiki: 'Erling Haaland',     iso: 'no',     pais: 'Noruega',       pos: 'Delantero' },
+  { n: 'Neymar Jr',          wiki: 'Neymar',             iso: 'br',     pais: 'Brasil',        pos: 'Delantero' },
+  { n: 'Vinícius Júnior',    wiki: 'Vinícius Júnior',    iso: 'br',     pais: 'Brasil',        pos: 'Delantero' },
+  { n: 'Mohamed Salah',      wiki: 'Mohamed Salah',      iso: 'eg',     pais: 'Egipto',        pos: 'Delantero' },
+  { n: 'Robert Lewandowski', wiki: 'Robert Lewandowski', iso: 'pl',     pais: 'Polonia',       pos: 'Delantero' },
+  { n: 'Luka Modrić',        wiki: 'Luka Modrić',        iso: 'hr',     pais: 'Croacia',       pos: 'Centrocampista' },
+  { n: 'Kevin De Bruyne',    wiki: 'Kevin De Bruyne',    iso: 'be',     pais: 'Bélgica',       pos: 'Centrocampista' },
+  { n: 'Harry Kane',         wiki: 'Harry Kane',         iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Delantero' },
+  { n: 'Jude Bellingham',    wiki: 'Jude Bellingham',    iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Centrocampista' },
+  { n: 'Lamine Yamal',       wiki: 'Lamine Yamal',       iso: 'es',     pais: 'España',        pos: 'Delantero' },
+  { n: 'Pedri',              wiki: 'Pedri',              iso: 'es',     pais: 'España',        pos: 'Centrocampista' },
+  { n: 'Antoine Griezmann',  wiki: 'Antoine Griezmann',  iso: 'fr',     pais: 'Francia',       pos: 'Delantero' },
+  { n: 'Bukayo Saka',        wiki: 'Bukayo Saka',        iso: 'gb-eng', pais: 'Inglaterra',    pos: 'Delantero' },
+  { n: 'Son Heung-min',      wiki: 'Son Heung-min',      iso: 'kr',     pais: 'Corea del Sur', pos: 'Delantero' },
+  { n: 'Karim Benzema',      wiki: 'Karim Benzema',      iso: 'fr',     pais: 'Francia',       pos: 'Delantero' },
+  { n: 'Sergio Ramos',       wiki: 'Sergio Ramos',       iso: 'es',     pais: 'España',        pos: 'Defensa' },
+  { n: 'Manuel Neuer',       wiki: 'Manuel Neuer',       iso: 'de',     pais: 'Alemania',      pos: 'Portero' },
+];
+
 // ── Calendario diario: qué modo/tema toca cada día (rota, igual para todos) ──
 const MG_ROTATION = [
   { mode: 'mm', theme: 'valor' },
   { mode: 'wordle' },
   { mode: 'pistas' },
+  { mode: 'foto' },
   { mode: 'mm', theme: 'goles' },
   { mode: 'mm', theme: 'altura' },
   { mode: 'wordle' },
+  { mode: 'foto' },
   { mode: 'mm', theme: 'edad' },
   { mode: 'pistas' },
   { mode: 'mm', theme: 'instagram' },
   { mode: 'wordle' },
+  { mode: 'foto' },
   { mode: 'mm', theme: 'champions' },
   { mode: 'mm', theme: 'caps' },
   { mode: 'pistas' },
@@ -312,16 +342,20 @@ const MG_ROTATION = [
     if (remaining <= 0) { stopTimer(); if (onExpire) onExpire(); }
   }
   function setHud(html) { const h = el('mg-hud'); if (h) h.innerHTML = html; }
+  function setTimerVisible(show) { const r = document.querySelector('.mg-timer-row'); if (r) r.style.display = show ? '' : 'none'; }
 
   // ── Arranque del día: elige modo/tema y construye el juego ──
   function startDay() {
     if (Game && Game.teardown) Game.teardown(); // limpia el modo anterior (p. ej. teclado del Wordle)
+    stopTimer(); // corta cualquier crono del modo anterior
     const entry = currentEntry();
     gameOver = false; busy = false; started = true;
     const tb = el('mg-theme');
     if (entry.mode === 'pistas') { if (tb) tb.innerHTML = '🕵️ Reto de hoy: <b>Adivina con pistas</b>'; Game = PistasMode; }
     else if (entry.mode === 'wordle') { if (tb) tb.innerHTML = '🔤 Reto de hoy: <b>Wordle de jugadores</b>'; Game = WordleMode; }
+    else if (entry.mode === 'foto') { if (tb) tb.innerHTML = '📸 Reto de hoy: <b>¿Quién es este jugador?</b>'; Game = FotoMode; }
     else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
+    setTimerVisible(entry.mode !== 'wordle'); // el Wordle no lleva crono
     Game.start();
     renderDayPreview();
   }
@@ -544,7 +578,7 @@ const MG_ROTATION = [
         else if (e.key.length === 1 && /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/.test(e.key)) { this.type(e.key); }
       };
       document.addEventListener('keydown', this._keyHandler);
-      startTimer(90000, () => this.timeUp());
+      // Sin crono: el Wordle es difícil, mejor pensar con calma.
     },
     teardown() { if (this._keyHandler) { document.removeEventListener('keydown', this._keyHandler); this._keyHandler = null; } },
     len() { return this.sol.length; },
@@ -623,7 +657,6 @@ const MG_ROTATION = [
       m.textContent = msg; m.classList.add('show');
       clearTimeout(this.msgTimer); this.msgTimer = setTimeout(() => m.classList.remove('show'), 1200);
     },
-    timeUp() { if (gameOver) return; gameOver = true; stopTimer(); this.end(false, true); },
     end(win, byTime) {
       stopTimer(); resetTimerBar(); this.teardown();
       const wrap = el('mg-board'); if (!wrap) return;
@@ -642,6 +675,137 @@ const MG_ROTATION = [
     },
   };
 
+  // ===========================================================
+  //  MODO 4 — ¿Quién es este jugador? (foto ampliada de Wikipedia)
+  // ===========================================================
+  const MG_FOTO_CACHE = {}; // título wiki -> url de la foto (o 'FAIL')
+  function fotoFetch(title) {
+    return new Promise(resolve => {
+      if (MG_FOTO_CACHE[title] !== undefined) { resolve(MG_FOTO_CACHE[title]); return; }
+      const u = 'https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&piprop=thumbnail&pithumbsize=520&titles=' + encodeURIComponent(title);
+      fetch(u).then(r => r.json()).then(d => {
+        const pages = (d.query && d.query.pages) || {}; let src = '';
+        for (const k in pages) { if (pages[k].thumbnail && pages[k].thumbnail.source) src = pages[k].thumbnail.source; }
+        MG_FOTO_CACHE[title] = src || 'FAIL'; resolve(MG_FOTO_CACHE[title]);
+      }).catch(() => { MG_FOTO_CACHE[title] = 'FAIL'; resolve('FAIL'); });
+    });
+  }
+
+  const FotoMode = {
+    secret: null, attempts: 0, max: 5, level: 0, _tries: [], _req: 0,
+    zooms: [4.6, 3.4, 2.5, 1.7, 1.0],
+    zlabels: ['🔍 Muy de cerca', '🔍 Más cerca', '👀 Se va viendo', '🙂 Casi entera', '🖼️ Foto completa'],
+    start() {
+      const rng = mulberry32(seedInt() ^ 0x1f83d9ab); // semilla propia de la foto
+      this.secret = MG_FOTO_POOL[Math.floor(rng() * MG_FOTO_POOL.length)];
+      this.attempts = 0; this.level = 0; this._tries = []; gameOver = false; busy = false;
+      this.render();
+      startTimer(45000, () => this.timeUp());
+      const req = ++this._req;
+      fotoFetch(this.secret.wiki).then(url => {
+        if (req !== this._req) return; // cambió de día/modo: descarta
+        const im = el('mg-foto-img'); if (!im) return;
+        if (url && url !== 'FAIL') { im.textContent = ''; im.style.backgroundImage = `url("${url}")`; im.classList.remove('loading'); this.applyZoom(); }
+        else { im.classList.remove('loading'); im.classList.add('failed'); im.innerHTML = `Sin foto 😕<br><span class="mg-foto-fallback">${flag(this.secret.iso)} ${this.secret.pais} · ${this.secret.pos}</span>`; }
+      });
+    },
+    points() { return Math.max(1, 7 - (this.attempts + 1)); },
+    applyZoom() {
+      const im = el('mg-foto-img'); if (im && !im.classList.contains('loading') && !im.classList.contains('failed')) im.style.transform = 'scale(' + this.zooms[Math.min(this.level, this.zooms.length - 1)] + ')';
+      const zl = el('mg-foto-zoomlbl'); if (zl) zl.textContent = this.zlabels[Math.min(this.level, this.zlabels.length - 1)];
+    },
+    render() {
+      const wrap = el('mg-board'); if (!wrap) return;
+      wrap.innerHTML = `
+        <div class="mg-foto-frame"><div class="mg-foto-img loading" id="mg-foto-img">Cargando foto…</div></div>
+        <div class="mg-foto-zoomlbl" id="mg-foto-zoomlbl">🔍 Muy de cerca</div>
+        <div class="mg-guess-row">
+          <div class="mg-guess-field">
+            <input class="mg-guess-input" id="mg-guess" placeholder="¿Quién es?" autocomplete="off" autocorrect="off" spellcheck="false">
+            <div class="mg-suggest hidden" id="mg-suggest"></div>
+          </div>
+          <button class="mg-guess-btn" id="mg-guess-btn">Adivinar</button>
+        </div>
+        <div class="mg-pts-hint">Vale ahora: <b>${this.points()}</b> pts · Intento ${this.attempts + 1}/${this.max}</div>
+        <div class="mg-tries" id="mg-tries"></div>`;
+      el('mg-guess-btn').addEventListener('click', () => this.guess());
+      this.setupAutocomplete();
+      this.renderTries();
+      setHud(`Mira la foto y adivina · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+    },
+    renderTries() {
+      const t = el('mg-tries'); if (!t) return;
+      t.innerHTML = (this._tries || []).map(g => `<span class="mg-try bad">✗ ${g}</span>`).join('');
+    },
+    matches(input) {
+      const g = norm(input); if (!g) return false;
+      const full = norm(this.secret.n); const words = full.split(' ');
+      return g === full || (g.length >= 3 && words.includes(g));
+    },
+    guess() {
+      if (busy || gameOver) return;
+      const inp = el('mg-guess'); if (!inp) return;
+      const val = inp.value.trim(); if (!val) return;
+      this.attempts++;
+      if (this.matches(val)) { gameOver = true; stopTimer(); this.end(true); return; }
+      (this._tries = this._tries || []).push(val);
+      if (this.attempts >= this.max) { gameOver = true; stopTimer(); this.end(false); return; }
+      this.level = Math.min(this.level + 1, this.zooms.length - 1); this.applyZoom();
+      const hint = document.querySelector('.mg-pts-hint'); if (hint) hint.innerHTML = `Vale ahora: <b>${this.points()}</b> pts · Intento ${this.attempts + 1}/${this.max}`;
+      this.renderTries();
+      inp.value = ''; inp.focus();
+    },
+    timeUp() { if (gameOver || busy) return; gameOver = true; this.end(false, true); },
+    // Autocompletado propio (igual que en Pistas): solo sugiere al escribir.
+    setupAutocomplete() {
+      const inp = el('mg-guess'), box = el('mg-suggest');
+      if (!inp || !box) return;
+      const self = this;
+      let active = -1, items = [];
+      const hide = () => { box.classList.add('hidden'); box.innerHTML = ''; active = -1; items = []; };
+      const pick = name => { inp.value = name; hide(); inp.focus(); };
+      const upd = () => { Array.from(box.children).forEach((n, i) => n.classList.toggle('active', i === active)); };
+      const show = q => {
+        const nq = norm(q);
+        if (nq.length < 2) { hide(); return; }
+        items = MG_FOTO_POOL.filter(p => { const np = norm(p.n); return np.includes(nq) || np.split(' ').some(w => w.startsWith(nq)); }).slice(0, 5);
+        if (!items.length) { hide(); return; }
+        active = -1;
+        box.innerHTML = items.map((p, i) => `<div class="mg-sug-item" data-i="${i}">${flag(p.iso)}<span>${p.n}</span></div>`).join('');
+        box.classList.remove('hidden');
+        Array.from(box.children).forEach(node => node.addEventListener('mousedown', e => { e.preventDefault(); pick(items[+node.dataset.i].n); }));
+      };
+      inp.addEventListener('input', () => show(inp.value));
+      inp.addEventListener('keydown', e => {
+        const opened = !box.classList.contains('hidden');
+        if (e.key === 'ArrowDown' && opened) { e.preventDefault(); active = Math.min(active + 1, items.length - 1); upd(); }
+        else if (e.key === 'ArrowUp' && opened) { e.preventDefault(); active = Math.max(active - 1, 0); upd(); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (opened && active >= 0 && items[active]) pick(items[active].n); else { hide(); self.guess(); } }
+        else if (e.key === 'Escape') { hide(); }
+      });
+      inp.addEventListener('blur', () => setTimeout(hide, 120));
+    },
+    end(win, byTime) {
+      stopTimer(); resetTimerBar();
+      const wrap = el('mg-board'); if (!wrap) return;
+      const score = win ? Math.max(1, 7 - this.attempts) : 0;
+      if (win) setBest(score);
+      const head = win ? { e: '🎉', t: `¡Acertaste! (${this.attempts}/${this.max})` }
+                       : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡No era!' };
+      const url = MG_FOTO_CACHE[this.secret.wiki];
+      const photo = (url && url !== 'FAIL') ? `<div class="mg-foto-reveal" style="background-image:url('${url}')"></div>` : '';
+      wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
+        ${photo}
+        <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pais} · ${this.secret.pos}</span></div>
+        ${win ? `<p>Has ganado <b>${score}</b> pts.</p>` : ''}
+        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
+        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+      el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
+      setHud(`Mira la foto y adivina · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+    },
+  };
+
   function resetTimerBar() {
     const bar = el('mg-timer-bar'), num = el('mg-timer-num');
     if (bar) { bar.style.width = '100%'; bar.classList.remove('low'); }
@@ -656,6 +820,7 @@ const MG_ROTATION = [
     const entry = currentEntry();
     const modeLbl = entry.mode === 'pistas' ? '🕵️ Adivina con pistas'
                   : entry.mode === 'wordle' ? '🔤 Wordle de jugadores'
+                  : entry.mode === 'foto' ? '📸 ¿Quién es este jugador?'
                   : (themeByKey(entry.theme).emoji + ' ' + themeByKey(entry.theme).label);
     dp.innerHTML =
       '🔧 <b>Beta</b> · ver otro día: ' +

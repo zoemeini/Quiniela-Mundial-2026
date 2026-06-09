@@ -1085,6 +1085,29 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-wd-key.correct { background: var(--green); border-color: var(--green); color: #04210f; }
 .mg-wd-key.present { background: var(--gold); border-color: var(--gold); color: #231a00; }
 .mg-wd-key.absent  { background: var(--bg2); border-color: var(--border); color: var(--muted); opacity: .5; }
+
+/* Modo «¿Quién es este jugador?» (foto ampliada) */
+.mg-foto-frame {
+  width: min(62%, 208px); aspect-ratio: 1; margin: 0 auto 6px;
+  border-radius: 14px; overflow: hidden; border: 2px solid var(--border); background: var(--bg3);
+}
+.mg-foto-img {
+  width: 100%; height: 100%;
+  background-size: cover; background-position: center 14%; background-repeat: no-repeat;
+  transform: scale(4.6); transform-origin: center 22%; transition: transform .35s ease;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  color: var(--muted); font-size: 12px; padding: 6px;
+}
+.mg-foto-img.loading, .mg-foto-img.failed { transform: none; }
+.mg-foto-img.failed { font-size: 13px; color: var(--text); }
+.mg-foto-img .team-flag-img { width: 20px; height: auto; border-radius: 2px; vertical-align: middle; }
+.mg-foto-fallback { display: inline-block; margin-top: 6px; color: var(--muted); }
+.mg-foto-zoomlbl { text-align: center; font-size: 12px; color: var(--gold); margin-bottom: 8px; }
+.mg-foto-reveal {
+  width: min(58%, 190px); aspect-ratio: 1; margin: 10px auto;
+  border-radius: 12px; border: 1px solid var(--border);
+  background-size: cover; background-position: center 14%; background-repeat: no-repeat;
+}
 .mg-panel {
   position: fixed;
   left: 18px; bottom: 84px;
