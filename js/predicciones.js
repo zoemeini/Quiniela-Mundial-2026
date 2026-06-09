@@ -18,12 +18,10 @@ function resultFor(matchId) {
 }
 function startedById(matchId) { const m = getMatchById(matchId) || getKoMatch(matchId); return m ? matchLocked(m.kickoff) : false; }
 
-let initialized = false;
-async function load() {
-  const subtitle = document.getElementById('pred-subtitle');
-  document.getElementById('pred-locked').classList.add('hidden');
-  try {
-    const data = await api.getAll();
+let initialized = false, predRendered = false;
+function applyPred(data) {
+    const subtitle = document.getElementById('pred-subtitle');
+    document.getElementById('pred-locked').classList.add('hidden');
     allPreds = {};
     (data.predictions || []).forEach(p => { (allPreds[p.user] = allPreds[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
     results = {}; (data.results || []).forEach(r => { results[r.matchId] = r; });
@@ -32,7 +30,7 @@ async function load() {
     realBr = realKnockout(gr, koReal);
 
     const players = Object.keys(allPreds).sort((a, b) => a.localeCompare(b));
-    if (players.length === 0) { subtitle.textContent = 'Todavía no hay predicciones.'; return; }
+    if (players.length === 0) { subtitle.textContent = 'Todavía no hay predicciones.'; predRendered = true; return; }
 
     subtitle.textContent = 'El pronóstico de cada partido se revela en cuanto empieza ese partido · solo lectura';
     document.getElementById('pred-content').classList.remove('hidden');
@@ -50,8 +48,14 @@ async function load() {
       sel.value = prev; // conserva tu selección en los refrescos automáticos
     }
     renderPlayer(sel.value);
+    predRendered = true;
+}
+
+async function load() {
+  try {
+    applyPred(await api.getAll());
   } catch (err) {
-    subtitle.textContent = 'No se pudieron cargar las predicciones. Revisa SHEET_API_URL.';
+    if (!predRendered) document.getElementById('pred-subtitle').textContent = 'No se pudieron cargar las predicciones. Revisa tu conexión.';
     console.error(err);
   }
 }
@@ -109,5 +113,8 @@ function renderPlayer(user) {
 function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escAttr(s) { return escHtml(s); }
 
+// Pinta al instante lo último guardado (si hay) y luego refresca de verdad.
+const predCached = CacheStore.get('getAll');
+if (predCached) { try { applyPred(predCached); } catch (_) {} }
 load();
 setInterval(load, 60000); // refresca datos y revela los partidos en cuanto empiezan

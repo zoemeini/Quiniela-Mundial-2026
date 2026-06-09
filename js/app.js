@@ -43,7 +43,14 @@ function applyUser() {
   if (!localStorage.getItem('wc2026_help_seen')) {
     localStorage.setItem('wc2026_help_seen', '1');
     setTimeout(showHelp, 400);
+  } else if (!localStorage.getItem('wc2026_pin_done')) {
+    // Jugadores antiguos (sin PIN aún): ofréceles proteger su usuario para
+    // poder entrar desde otro dispositivo. Solo una vez.
+    setTimeout(() => openPinModal('secure'), 700);
   }
+  // Pinta al instante tus pronósticos guardados (si hay caché) y luego refresca.
+  const cached = CacheStore.get('user_' + currentUser);
+  if (cached) { try { applyData(cached); } catch (_) {} }
   loadData();
   setInterval(loadData, 60000);
 }
@@ -75,16 +82,105 @@ document.getElementById('nudge-banner').addEventListener('click', () => {
   const c = document.getElementById('day-content');
   if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
-document.getElementById('username-submit').addEventListener('click', () => {
-  const val = document.getElementById('username-input').value.trim();
-  if (!val) return;
-  currentUser = val;
-  localStorage.setItem('wc2026_username', val);
-  applyUser();
-});
+// ── Entrar / registrarse con nombre + PIN ────────────────
+// Un único formulario sirve para todo:
+//   · nombre nuevo → se crea con ese PIN
+//   · nombre existente → el PIN debe coincidir (así recuperas tu usuario en
+//     otro dispositivo y nadie puede tocar tus pronósticos)
+function showAuthError(msg) {
+  const el = document.getElementById('username-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function authUser() {
+  const name = document.getElementById('username-input').value.trim();
+  const pin  = document.getElementById('pin-input').value.trim();
+  const btn  = document.getElementById('username-submit');
+  document.getElementById('username-error').classList.add('hidden');
+  if (!name) { showAuthError('Escribe tu nombre.'); return; }
+  if (!/^\d{4}$/.test(pin)) { showAuthError('El PIN debe tener 4 cifras (números).'); return; }
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Entrando…';
+  api.auth({ user: name, pin })
+    .then(resp => {
+      currentUser = resp.user || name;
+      localStorage.setItem('wc2026_username', currentUser);
+      localStorage.setItem('wc2026_pin', pin);
+      localStorage.setItem('wc2026_pin_done', '1');
+      applyUser();
+    })
+    .catch(err => {
+      const msg = String(err && err.message || '');
+      showAuthError(/PIN/.test(msg) ? msg : 'No se pudo entrar ahora mismo. Revisa tu conexión e inténtalo de nuevo.');
+      btn.disabled = false; btn.textContent = old;
+    });
+}
+document.getElementById('username-submit').addEventListener('click', authUser);
 document.getElementById('username-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('username-submit').click();
+  if (e.key === 'Enter') document.getElementById('pin-input').focus();
 });
+document.getElementById('pin-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') authUser();
+});
+
+// ── Modal de PIN (proteger / recuperar / ver) ────────────
+function openPinModal(mode) {
+  const title = document.getElementById('pin-modal-title');
+  const text  = document.getElementById('pin-modal-text');
+  const row   = document.getElementById('pin-set-row');
+  const cancel = document.getElementById('pin-set-cancel');
+  document.getElementById('pin-set-error').classList.add('hidden');
+  document.getElementById('pin-set-input').value = '';
+  const storedPin = localStorage.getItem('wc2026_pin');
+  if (mode === 'view' && storedPin) {
+    title.textContent = '🔑 Tu PIN';
+    text.innerHTML = `Tu PIN es <b style="font-size:1.5em;letter-spacing:4px;color:var(--green)">${storedPin}</b><br><br>Entra con tu nombre <b>${currentUser}</b> y este PIN desde cualquier dispositivo para ver y editar tus pronósticos.`;
+    row.classList.add('hidden');
+    cancel.textContent = 'Cerrar';
+  } else {
+    title.textContent = '🔐 Protege tu usuario';
+    text.innerHTML = `Crea un <b>PIN de 4 cifras</b> para poder entrar y editar tus pronósticos desde <b>otro dispositivo</b> (móvil, tablet u ordenador). Lo usarás junto a tu nombre <b>${currentUser}</b>.`;
+    row.classList.remove('hidden');
+    cancel.textContent = 'Ahora no';
+  }
+  document.getElementById('pin-modal').classList.remove('hidden');
+}
+function closePinModal() {
+  document.getElementById('pin-modal').classList.add('hidden');
+  localStorage.setItem('wc2026_pin_done', '1'); // no volver a insistir
+}
+function submitSetPin() {
+  const pin = document.getElementById('pin-set-input').value.trim();
+  const err = document.getElementById('pin-set-error');
+  const btn = document.getElementById('pin-set-submit');
+  err.classList.add('hidden');
+  if (!/^\d{4}$/.test(pin)) { err.textContent = 'El PIN debe tener 4 cifras (números).'; err.classList.remove('hidden'); return; }
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  api.auth({ user: currentUser, pin })
+    .then(() => {
+      // status 'created' = PIN nuevo · 'login' = ya tenías ese mismo PIN
+      localStorage.setItem('wc2026_pin', pin);
+      localStorage.setItem('wc2026_pin_done', '1');
+      document.getElementById('pin-modal').classList.add('hidden');
+      btn.disabled = false; btn.textContent = old;
+    })
+    .catch(e => {
+      const msg = String(e && e.message || '');
+      err.textContent = /PIN/.test(msg)
+        ? 'Ese nombre ya tiene otro PIN. Si es tuyo, escribe el correcto; si no lo recuerdas, pídeselo al organizador.'
+        : 'No se pudo guardar ahora mismo. Inténtalo de nuevo.';
+      err.classList.remove('hidden');
+      btn.disabled = false; btn.textContent = old;
+    });
+}
+document.getElementById('pin-btn').addEventListener('click', () => {
+  openPinModal(localStorage.getItem('wc2026_pin') ? 'view' : 'secure');
+});
+document.getElementById('pin-set-submit').addEventListener('click', submitSetPin);
+document.getElementById('pin-set-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitSetPin(); });
+document.getElementById('pin-set-cancel').addEventListener('click', closePinModal);
+document.getElementById('pin-modal').addEventListener('click', e => { if (e.target.id === 'pin-modal') closePinModal(); });
 // "Borrar" no permite cambiar de nombre libremente: borra tu usuario (y todos
 // tus pronósticos) y solo entonces puedes crear uno nuevo. Evita jugar 2 veces.
 document.getElementById('change-user-btn').addEventListener('click', () => {
@@ -416,6 +512,12 @@ async function loadData() {
     let data;
     try { data = await api.getUser({ user: currentUser }); }
     catch (e) { data = await api.getAll(); }
+    applyData(data);
+  } catch (err) { console.error('loadData', err); }
+}
+
+// Procesa los datos (de la red o de la caché) y refresca la pantalla.
+function applyData(data) {
     const serverPreds = {};
     (data.predictions || []).forEach(p => {
       if (!p.user || p.user === currentUser) serverPreds[p.matchId] = { home: p.home, away: p.away };
@@ -444,7 +546,6 @@ async function loadData() {
     // Eliminatorias: re-render solo si no estás escribiendo una casilla KO ahora mismo.
     const editingKo = document.activeElement && /^sc-M/.test(document.activeElement.id || '');
     if (currentPhase === 'ko' && !editingKo) renderKnockout();
-  } catch (err) { console.error('loadData', err); }
 }
 
 // Actualiza las tarjetas visibles SIN borrar lo que el usuario está escribiendo:

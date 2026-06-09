@@ -146,6 +146,9 @@ function setup() {
   kr.getRange(2, 1, koRows.length, 7).setValues(koRows);
   kr.autoResizeColumns(1, 7);
 
+  // Cuentas: nombre + PIN, para que cada jugador entre desde varios dispositivos.
+  usersSheet();
+
   SpreadsheetApp.getUi().alert(
     '¡Configuración completada!\n\n' +
     'Se han creado cuatro pestañas: "Predictions" (pronósticos de grupos), ' +
@@ -163,6 +166,7 @@ function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action) : '';
   try {
     if (action === 'getAll')           return json(getAll());
+    if (action === 'auth')             return json(auth(e.parameter));
     if (action === 'getUser')          return json(getUser(e.parameter));
     if (action === 'savePrediction')   return json(savePrediction(e.parameter));
     if (action === 'deletePrediction') return json(deletePrediction(e.parameter));
@@ -184,6 +188,52 @@ function json(obj) {
 
 function sheetByName(name) {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+}
+
+// ── Cuentas con PIN (para entrar desde varios dispositivos) ──
+// Crea la pestaña "Users" si no existe, así NO hace falta volver a ejecutar setup().
+function usersSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var s = ss.getSheetByName('Users');
+  if (!s) {
+    s = ss.insertSheet('Users');
+    s.getRange(1, 1, 1, 3).setValues([['Jugador', 'PIN', 'Fecha']]);
+    s.setFrozenRows(1);
+    s.getRange(1, 1, 1, 3).setFontWeight('bold');
+  }
+  return s;
+}
+
+// Entrar o registrarse con NOMBRE + PIN (4 cifras). Permite jugar desde
+// cualquier dispositivo recuperando el mismo usuario.
+//  - Si el nombre ya tiene PIN: debe coincidir → login. Si no coincide → error.
+//  - Si el nombre no existe: se crea con ese PIN. Esto también sirve para los
+//    jugadores antiguos (sin PIN aún): "adoptan" sus pronósticos ya guardados,
+//    porque los pronósticos se guardan por nombre.
+function auth(p) {
+  var user = (p.user || '').toString().trim();
+  var pin  = (p.pin  || '').toString().trim();
+  if (!user) return { ok: false, error: 'Falta el nombre' };
+  if (!/^[0-9]{4}$/.test(pin)) return { ok: false, error: 'El PIN debe tener 4 cifras' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var s = usersSheet();
+    var last = s.getLastRow();
+    if (last > 1) {
+      var rows = s.getRange(2, 1, last - 1, 2).getValues(); // Jugador, PIN
+      for (var i = 0; i < rows.length; i++) {
+        if (String(rows[i][0]).trim() === user) {
+          if (String(rows[i][1]).trim() === pin) return { ok: true, status: 'login', user: user };
+          return { ok: false, error: 'PIN incorrecto para ese nombre' };
+        }
+      }
+    }
+    s.appendRow([user, pin, new Date()]);
+    return { ok: true, status: 'created', user: user };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function getAll() {
@@ -392,6 +442,14 @@ function deleteUser(p) {
         if (String(players[i][0]) === user) s.deleteRow(i + 2);
       }
     });
+    // Libera el nombre + PIN (pestaña Users: Jugador está en la columna 1).
+    var us = sheetByName('Users');
+    if (us && us.getLastRow() >= 2) {
+      var names = us.getRange(2, 1, us.getLastRow() - 1, 1).getValues();
+      for (var j = names.length - 1; j >= 0; j--) {
+        if (String(names[j][0]).trim() === user) us.deleteRow(j + 2);
+      }
+    }
   } finally {
     lock.releaseLock();
   }

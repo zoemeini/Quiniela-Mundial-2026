@@ -30,8 +30,11 @@ async function apiCall(action, params = {}, _retries = 1) {
 }
 
 const api = {
-  getAll:          ()  => apiCall('getAll'),
-  getUser:         (p) => apiCall('getUser', p),           // solo los datos de un jugador (rápido)
+  // getAll/getUser guardan su respuesta en caché para que la siguiente página
+  // cargue al instante (ver js/cache.js).
+  getAll:          ()  => apiCall('getAll').then(d => { if (d && d.ok !== false) CacheStore.set('getAll', d); return d; }),
+  auth:            (p) => apiCall('auth', p),              // entrar/registrarse con nombre + PIN
+  getUser:         (p) => apiCall('getUser', p).then(d => { if (d && d.ok !== false) CacheStore.set('user_' + (p.user || ''), d); return d; }), // solo los datos de un jugador (rápido)
   savePrediction:  (p) => apiCall('savePrediction', p),
   deletePrediction:(p) => apiCall('deletePrediction', p), // borra el pronóstico de un partido
   saveResult:      (p) => apiCall('saveResult', p),

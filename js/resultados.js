@@ -20,9 +20,8 @@ function teamsFor(m) {
   return { home: r.home, away: r.away };
 }
 
-async function load() {
-  try {
-    const data = await api.getAll();
+let resRendered = false;
+function applyRes(data) {
     byUser = {};
     (data.predictions || []).forEach(p => { (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
     results = {}; (data.results || []).forEach(r => { results[r.matchId] = r; });
@@ -34,8 +33,14 @@ async function load() {
     const finished = allMatches().map(m => ({ m, res: resultFor(m.id) })).filter(x => x.res)
       .sort((a, b) => new Date(b.m.kickoff) - new Date(a.m.kickoff)); // más recientes primero
     render(finished, players);
+    resRendered = true;
+}
+
+async function load() {
+  try {
+    applyRes(await api.getAll());
   } catch (err) {
-    document.getElementById('res-subtitle').textContent = 'No se pudieron cargar los resultados. Revisa SHEET_API_URL.';
+    if (!resRendered) document.getElementById('res-subtitle').textContent = 'No se pudieron cargar los resultados. Revisa tu conexión.';
     console.error(err);
   }
 }
@@ -91,5 +96,8 @@ function render(finished, players) {
 
 function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+// Pinta al instante lo último guardado (si hay) y luego refresca de verdad.
+const resCached = CacheStore.get('getAll');
+if (resCached) { try { applyRes(resCached); } catch (_) {} }
 load();
 setInterval(load, 60000);

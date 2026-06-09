@@ -7,22 +7,43 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=19">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 </head>
 <body>
 
-<!-- Modal de nombre -->
+<!-- Modal de nombre + PIN -->
 <div id="username-modal" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-icon">⚽</div>
     <h2>Porrita Mundial 2026</h2>
-    <p>Introduce tu nombre para unirte y hacer tus pronósticos.</p>
+    <p>Entra con tu <b>nombre</b> y un <b>PIN de 4 cifras</b> para hacer tus pronósticos.</p>
     <div class="input-group">
       <input type="text" id="username-input" placeholder="Tu nombre…" maxlength="30" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <input type="tel" id="pin-input" placeholder="PIN (4 cifras)" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
       <button id="username-submit" class="btn-primary">Entrar</button>
     </div>
-    <p class="modal-note">⏰ Cada partido se cierra a su hora de inicio · rellena cuando quieras</p>
+    <div class="error-msg hidden" id="username-error"></div>
+    <p class="modal-note">📱 ¿Juegas desde otro móvil u ordenador? Entra con tu <b>mismo nombre y PIN</b> y recuperas tus pronósticos. Apúntate el PIN: lo necesitas para recuperar tu usuario.</p>
+  </div>
+</div>
+
+<!-- Modal: protege/recupera tu usuario con un PIN -->
+<div id="pin-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-icon">🔐</div>
+    <h2 id="pin-modal-title">Protege tu usuario</h2>
+    <p id="pin-modal-text"></p>
+    <div class="input-group" id="pin-set-row">
+      <input type="tel" id="pin-set-input" placeholder="PIN (4 cifras)" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <button id="pin-set-submit" class="btn-primary">Guardar</button>
+    </div>
+    <div class="error-msg hidden" id="pin-set-error"></div>
+    <div class="modal-actions" style="margin-top:12px">
+      <button class="btn-outline" id="pin-set-cancel">Ahora no</button>
+    </div>
   </div>
 </div>
 
@@ -36,7 +57,7 @@
       <button class="btn-outline" id="delete-cancel">Cancelar</button>
       <button class="btn-danger" id="delete-confirm">Sí, borrar y empezar</button>
     </div>
-    <p class="modal-note">Solo puedes tener un usuario por dispositivo — así nadie juega dos veces.</p>
+    <p class="modal-note">¿Solo quieres jugar desde otro móvil? <b>No borres</b>: entra allí con tu mismo nombre y PIN. Borrar es para empezar de cero con otro nombre.</p>
   </div>
 </div>
 
@@ -62,7 +83,7 @@
       <p><b>3. Puntos:</b> <span class="badge badge-green">+5</span> resultado exacto · <span class="badge badge-gold">+3</span> acertar el vencedor · <span class="badge badge-red">0</span> fallo.</p>
       <p><b>4. Eliminatorias:</b> se abren al terminar los grupos, ronda por ronda, con los equipos reales clasificados.</p>
       <p><b>5.</b> En <b>«Predicciones»</b> ves lo que puso cada uno, pero solo de cada partido <b>una vez que ha empezado</b> (así nadie copia).</p>
-      <p><b>6.</b> Un usuario por dispositivo. Para empezar de cero, usa <b>«Borrar»</b>.</p>
+      <p><b>6.</b> Entra desde <b>cualquier dispositivo</b> con tu mismo <b>nombre y PIN</b> y verás tus pronósticos. Para empezar de cero, usa <b>«Borrar»</b>.</p>
     </div>
     <button class="btn-primary" id="help-close" style="width:100%;margin-top:6px">¡Entendido!</button>
   </div>
@@ -84,6 +105,7 @@
     </nav>
     <div class="header-right">
       <span class="username-display" id="username-display"></span>
+      <button class="btn-outline" id="pin-btn" title="Tu PIN — para entrar desde otro dispositivo">🔑</button>
       <button class="btn-outline" id="change-user-btn">Borrar</button>
     </div>
   </div>
@@ -165,11 +187,12 @@
   </section>
 </main>
 
-<script src="js/config.js?v=17"></script>
-<script src="js/api.js?v=17"></script>
-<script src="js/data.js?v=17"></script>
-<script src="js/bracket.js?v=17"></script>
-<script src="js/app.js?v=17"></script>
-<script src="js/music.js?v=17"></script>
+<script src="js/config.js?v=19"></script>
+<script src="js/cache.js?v=19"></script>
+<script src="js/api.js?v=19"></script>
+<script src="js/data.js?v=19"></script>
+<script src="js/bracket.js?v=19"></script>
+<script src="js/app.js?v=19"></script>
+<script src="js/music.js?v=19"></script>
 </body>
 </html>

@@ -1,10 +1,8 @@
 const me = localStorage.getItem('wc2026_username');
 if (me) document.getElementById('username-display').textContent = me;
 
-async function loadLeaderboard() {
-  try {
-    const data = await api.getAll();
-
+let lbRendered = false;
+function applyLeaderboard(data) {
     // Resultados reales por partido (grupos + eliminatorias).
     const realResults = {};
     (data.results || []).forEach(r => {
@@ -24,7 +22,7 @@ async function loadLeaderboard() {
       (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away };
     });
     const players = Object.keys(byUser);
-    if (players.length === 0) { renderEmpty(); return; }
+    if (players.length === 0) { renderEmpty(); lbRendered = true; return; }
 
     const rows = players.map(user => {
       let g = 0, ko = 0, exact = 0;
@@ -42,9 +40,17 @@ async function loadLeaderboard() {
 
     rows.sort((a, b) => b.total - a.total || b.exact - a.exact || a.user.localeCompare(b.user));
     renderLeaderboard(rows, playedGroup, playedKo);
+    lbRendered = true;
+}
+
+async function loadLeaderboard() {
+  try {
+    applyLeaderboard(await api.getAll());
   } catch (err) {
-    document.getElementById('lb-body').innerHTML =
-      `<div class="lb-loading" style="color:var(--red)">No se pudieron cargar los datos. Revisa SHEET_API_URL en js/config.js.</div>`;
+    if (!lbRendered) {
+      document.getElementById('lb-body').innerHTML =
+        `<div class="lb-loading" style="color:var(--red)">No se pudieron cargar los datos. Revisa tu conexión e inténtalo de nuevo.</div>`;
+    }
     console.error(err);
   }
 }
@@ -94,5 +100,8 @@ function escHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Pinta al instante lo último guardado (si hay) y luego refresca de verdad.
+const lbCached = CacheStore.get('getAll');
+if (lbCached) { try { applyLeaderboard(lbCached); } catch (_) {} }
 loadLeaderboard();
 setInterval(loadLeaderboard, 30000);
