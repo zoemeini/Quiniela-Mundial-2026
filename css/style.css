@@ -745,6 +745,23 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .music-vol-ico { font-size: 15px; flex-shrink: 0; }
 #music-vol { flex: 1; height: 6px; accent-color: var(--green); cursor: pointer; }
 
+/* ── Group modal (predictions for one group) ───────────── */
+.group-modal {
+  max-width: 680px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  text-align: left;
+  padding: 20px;
+}
+.group-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 16px; position: sticky; top: -20px;
+  background: var(--bg2); padding: 6px 0 10px; z-index: 1;
+}
+.group-modal-head h2 { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 800; }
+#group-modal-body .matches-grid { grid-template-columns: 1fr; gap: 10px; }
+
 /* ── Modal actions / delete confirm ────────────────────── */
 .modal-actions { display: flex; gap: 10px; justify-content: center; }
 .modal-actions .btn-outline,

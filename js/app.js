@@ -164,29 +164,27 @@ function buildUI() {
     '<div class="day-stepper">' +
       '<button class="day-arrow" id="nav-prev" aria-label="Día anterior">‹</button>' +
       '<select class="day-select" id="day-select">' +
+        '<option value="">📅 Ir a un día…</option>' +
         days.map(k => `<option value="${k}">${dayLabel(k)}</option>`).join('') +
       '</select>' +
       '<button class="day-arrow" id="nav-next" aria-label="Día siguiente">›</button>' +
     '</div>';
   document.getElementById('nav-upcoming').addEventListener('click', () => renderGroupTab('upcoming'));
-  document.getElementById('day-select').addEventListener('change', e => renderGroupTab(e.target.value));
+  document.getElementById('day-select').addEventListener('change', e => { if (e.target.value) renderGroupTab(e.target.value); });
   document.getElementById('nav-prev').addEventListener('click', () => stepDay(-1));
   document.getElementById('nav-next').addEventListener('click', () => stepDay(1));
   renderGroupTab(currentGroupTab);
   buildGroupSummary();
 }
 
-// Mueve un día adelante/atrás (desde «Próximos», ‹ va al último día y › al primero).
+// Las flechas recorren los días con vuelta (‹ en el primero → último, › en el último → primero).
+// Desde «Próximos»: › va al primer día, ‹ al último.
 function stepDay(dir) {
   const days = dayKeysSorted();
+  const cur = days.indexOf(currentGroupTab);
   let idx;
-  if (currentGroupTab === 'upcoming' || currentGroupTab.indexOf('group:') === 0) {
-    idx = dir > 0 ? 0 : days.length - 1;
-  } else {
-    idx = days.indexOf(currentGroupTab) + dir;
-  }
-  if (idx < 0) { renderGroupTab('upcoming'); return; }
-  if (idx > days.length - 1) idx = days.length - 1;
+  if (cur >= 0) idx = (cur + dir + days.length) % days.length;
+  else idx = dir > 0 ? 0 : days.length - 1;
   renderGroupTab(days[idx]);
 }
 
@@ -196,7 +194,7 @@ function renderGroupTab(tabKey) {
   const upBtn = document.getElementById('nav-upcoming');
   if (upBtn) upBtn.classList.toggle('active', tabKey === 'upcoming');
   const sel = document.getElementById('day-select');
-  if (sel && tabKey !== 'upcoming' && tabKey.indexOf('group:') !== 0) sel.value = tabKey;
+  if (sel) sel.value = (tabKey !== 'upcoming' && tabKey.indexOf('group:') !== 0) ? tabKey : '';
   const content = document.getElementById('day-content');
   let matches, header;
   if (tabKey === 'upcoming') {
@@ -219,6 +217,7 @@ function renderGroupTab(tabKey) {
 
 // Refresca la pestaña «Próximos» cuando cambian los partidos (otro día), sin molestar si estás escribiendo.
 function maybeRefreshUpcoming() {
+  if (groupModalOpen) return; // no tocar el fondo mientras el modal de grupo está abierto
   if (currentGroupTab !== 'upcoming') return;
   const focused = document.activeElement && /^sc-/.test(document.activeElement.id || '');
   if (focused) return;
@@ -241,20 +240,36 @@ function buildGroupSummary() {
   el.innerHTML = html;
 }
 
-// Al tocar un grupo en el resumen: muestra los 6 partidos de ese grupo con tus pronósticos.
+// Al tocar un grupo en el resumen: abre una VENTANA (modal) con los 6 partidos de
+// ese grupo y tus pronósticos. Se superpone a todo y al cerrar vuelves donde estabas.
+let groupModalOpen = false;
 function renderGroupView(g) {
-  currentGroupTab = 'group:' + g;
-  const upBtn = document.getElementById('nav-upcoming');
-  if (upBtn) upBtn.classList.remove('active');
   const c = groupColor(g);
-  const content = document.getElementById('day-content');
-  const matches = getMatchesByGroup(g).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
-  content.innerHTML = `<div class="group-header" style="color:${c};border-left:4px solid ${c};padding-left:10px">Grupo ${g} · tus pronósticos</div>
-                       <div class="matches-grid" id="day-grid"></div>`;
-  const grid = document.getElementById('day-grid');
-  matches.forEach(m => grid.appendChild(buildMatchCard(m)));
-  content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const title = document.getElementById('group-modal-title');
+  title.textContent = 'Grupo ' + g + ' · tus pronósticos';
+  title.style.color = c;
+  document.querySelector('#group-modal .modal').style.borderTop = '4px solid ' + c;
+  // Vaciamos #day-content para que no haya casillas duplicadas mientras el modal está abierto.
+  document.getElementById('day-content').innerHTML = '';
+  const body = document.getElementById('group-modal-body');
+  body.innerHTML = '<div class="matches-grid" id="group-modal-grid"></div>';
+  const grid = document.getElementById('group-modal-grid');
+  getMatchesByGroup(g).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
+    .forEach(m => grid.appendChild(buildMatchCard(m)));
+  groupModalOpen = true;
+  document.getElementById('group-modal').classList.remove('hidden');
 }
+function closeGroupModal() {
+  groupModalOpen = false;
+  document.getElementById('group-modal').classList.add('hidden');
+  document.getElementById('group-modal-body').innerHTML = ''; // libera los IDs de las casillas
+  renderGroupTab(currentGroupTab); // restaura la vista de días/próximos
+}
+document.getElementById('group-modal-close').addEventListener('click', closeGroupModal);
+document.getElementById('group-modal').addEventListener('click', e => {
+  if (e.target.id === 'group-modal') closeGroupModal(); // clic en el fondo
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && groupModalOpen) closeGroupModal(); });
 
 function buildMatchCard(match) {
   const locked = lockedM(match);
@@ -414,6 +429,7 @@ function updateDayChecks() {
   const sel = document.getElementById('day-select');
   if (!sel) return;
   Array.from(sel.options).forEach(opt => {
+    if (!opt.value) return; // placeholder «Ir a un día…»
     const matches = MATCHES.filter(m => madridDayKey(m.kickoff) === opt.value);
     const done = matches.length > 0 && matches.every(m => predictions[m.id] !== undefined);
     opt.textContent = dayLabel(opt.value) + (done ? ' ✓' : '');

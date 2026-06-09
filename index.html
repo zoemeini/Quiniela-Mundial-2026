@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=12">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 </head>
 <body>
@@ -37,6 +37,17 @@
       <button class="btn-danger" id="delete-confirm">Sí, borrar y empezar</button>
     </div>
     <p class="modal-note">Solo puedes tener un usuario por dispositivo — así nadie juega dos veces.</p>
+  </div>
+</div>
+
+<!-- Modal de un grupo (pronósticos de ese grupo) -->
+<div id="group-modal" class="modal-overlay hidden">
+  <div class="modal group-modal">
+    <div class="group-modal-head">
+      <h2 id="group-modal-title">Grupo</h2>
+      <button class="btn-outline" id="group-modal-close">✕ Cerrar</button>
+    </div>
+    <div id="group-modal-body"></div>
   </div>
 </div>
 
@@ -128,11 +139,11 @@
   </section>
 </main>
 
-<script src="js/config.js?v=11"></script>
-<script src="js/api.js?v=11"></script>
-<script src="js/data.js?v=11"></script>
-<script src="js/bracket.js?v=11"></script>
-<script src="js/app.js?v=11"></script>
-<script src="js/music.js?v=11"></script>
+<script src="js/config.js?v=12"></script>
+<script src="js/api.js?v=12"></script>
+<script src="js/data.js?v=12"></script>
+<script src="js/bracket.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
+<script src="js/music.js?v=12"></script>
 </body>
 </html>
