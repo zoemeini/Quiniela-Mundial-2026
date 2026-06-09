@@ -73,31 +73,89 @@ document.getElementById('admin-ko-btn').addEventListener('click', () => {
   document.getElementById('admin-groups-btn').classList.remove('active');
 });
 
+// ── Navegador por días (mismo estilo que la página principal) ───────────
+let adminDay = null, adminDays = [], adminByDay = {};
+
+function adminDayLabel(key) {
+  const lbl = formatKickoff(adminByDay[key][0].kickoff).date; // p.ej. "vie, 12 jun"
+  return lbl.charAt(0).toUpperCase() + lbl.slice(1);
+}
+// Primer día (por fecha) que sea hoy o posterior; si ya pasaron todos, el último.
+function adminNearestDay() {
+  const today = madridDayKey(new Date());
+  return adminDays.find(k => k >= today) || adminDays[adminDays.length - 1];
+}
+
 function buildAdminUI() {
   const container = document.getElementById('admin-groups');
   container.innerHTML = '';
 
-  // Partidos de grupos en ORDEN CRONOLÓGICO, separados por día de juego, para
-  // que el día del partido baste con bajar por la lista en orden.
+  // Partidos de grupos en orden cronológico, agrupados por día de juego.
   const sorted = MATCHES.slice().sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
-  const days = [];
-  const byDay = {};
+  adminDays = [];
+  adminByDay = {};
   sorted.forEach(m => {
     const key = madridDayKey(m.kickoff);
-    if (!byDay[key]) { byDay[key] = []; days.push(key); }
-    byDay[key].push(m);
+    if (!adminByDay[key]) { adminByDay[key] = []; adminDays.push(key); }
+    adminByDay[key].push(m);
   });
 
-  days.forEach(key => {
-    const lbl = formatKickoff(byDay[key][0].kickoff).date; // p.ej. "vie, 12 jun"
-    const title = '📅 ' + lbl.charAt(0).toUpperCase() + lbl.slice(1);
-    const section = document.createElement('div');
-    section.className = 'admin-group';
-    section.innerHTML = `<div class="admin-group-title">${title}</div>
-                         <div id="admin-day-${key}"></div>`;
-    container.appendChild(section);
-    const grid = section.querySelector(`#admin-day-${key}`);
-    byDay[key].forEach(match => grid.appendChild(buildAdminMatchRow(match)));
+  if (!adminDay || !adminByDay[adminDay]) adminDay = adminNearestDay();
+
+  // Barra de navegación: «📅 Hoy» + ‹ desplegable de días ›.
+  const nav = document.createElement('div');
+  nav.className = 'day-nav';
+  nav.style.marginBottom = '20px';
+  nav.innerHTML =
+    '<button class="tab-btn" id="admin-today">📅 Hoy</button>' +
+    '<div class="day-stepper">' +
+      '<button class="day-arrow" id="admin-prev" aria-label="Día anterior">‹</button>' +
+      '<select class="day-select" id="admin-day-select">' +
+        adminDays.map(k => `<option value="${k}">${adminDayLabel(k)}</option>`).join('') +
+      '</select>' +
+      '<button class="day-arrow" id="admin-next" aria-label="Día siguiente">›</button>' +
+    '</div>';
+  container.appendChild(nav);
+
+  const content = document.createElement('div');
+  content.id = 'admin-day-content';
+  container.appendChild(content);
+
+  document.getElementById('admin-today').addEventListener('click', () => renderAdminDay(adminNearestDay()));
+  document.getElementById('admin-prev').addEventListener('click', () => adminStepDay(-1));
+  document.getElementById('admin-next').addEventListener('click', () => adminStepDay(1));
+  document.getElementById('admin-day-select').addEventListener('change', e => renderAdminDay(e.target.value));
+
+  renderAdminDay(adminDay);
+}
+
+function adminStepDay(dir) {
+  const i = adminDays.indexOf(adminDay);
+  const n = (i + dir + adminDays.length) % adminDays.length;
+  renderAdminDay(adminDays[n]);
+}
+
+function renderAdminDay(key) {
+  adminDay = key;
+  const sel = document.getElementById('admin-day-select');
+  if (sel) sel.value = key;
+  const todayBtn = document.getElementById('admin-today');
+  if (todayBtn) todayBtn.classList.toggle('active', key === adminNearestDay());
+  const content = document.getElementById('admin-day-content');
+  content.innerHTML = `<div class="admin-group"><div class="admin-group-title">📅 ${adminDayLabel(key)}</div><div id="admin-day-grid"></div></div>`;
+  const grid = document.getElementById('admin-day-grid');
+  (adminByDay[key] || []).forEach(match => grid.appendChild(buildAdminMatchRow(match)));
+  updateAdminDayChecks();
+}
+
+// Marca con ✓ en el desplegable los días con TODOS los resultados ya metidos.
+function updateAdminDayChecks() {
+  const sel = document.getElementById('admin-day-select');
+  if (!sel) return;
+  Array.from(sel.options).forEach(opt => {
+    const matches = adminByDay[opt.value] || [];
+    const done = matches.length > 0 && matches.every(m => results[m.id] && results[m.id].status === 'finished');
+    opt.textContent = adminDayLabel(opt.value) + (done ? ' ✓' : '');
   });
 }
 
@@ -160,6 +218,7 @@ async function saveResult(matchId) {
     btn.textContent = 'Actualizar';
     btn.disabled = false;
 
+    updateAdminDayChecks(); // marca el día con ✓ si ya están todos sus resultados
     // Al completar los grupos aparecen los equipos reales de dieciseisavos.
     recomputeRealBr();
     buildAdminKoUI();
