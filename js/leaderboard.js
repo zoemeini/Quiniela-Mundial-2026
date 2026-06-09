@@ -66,7 +66,11 @@ function renderLeaderboard(rows, playedGroup, playedKo) {
     const rank = idx + 1;
     const isMe = row.user === me;
     const div = document.createElement('div');
-    div.className = 'lb-row' + (isMe ? ' me' : '');
+    div.className = 'lb-row clickable' + (isMe ? ' me' : '');
+    div.title = `Ver los pronósticos de ${row.user}`;
+    div.addEventListener('click', () => {
+      location.href = 'predicciones.html?u=' + encodeURIComponent(row.user);
+    });
     const rankClass = rank <= 3 ? `top-${rank}` : '';
     const rankLabel = rank <= 3 ? rankIcons[rank - 1] : rank;
     div.innerHTML = `

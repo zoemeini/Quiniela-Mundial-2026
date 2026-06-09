@@ -37,7 +37,10 @@ async function load() {
     document.getElementById('pred-content').classList.remove('hidden');
     const sel = document.getElementById('pred-player');
     sel.innerHTML = players.map(p => `<option value="${escAttr(p)}">${escHtml(p)}</option>`).join('');
-    if (me && players.includes(me)) sel.value = me;
+    // ?u=Nombre (al pulsar un jugador en la clasificación) tiene prioridad; si no, tú.
+    const wanted = new URLSearchParams(location.search).get('u');
+    if (wanted && players.includes(wanted)) sel.value = wanted;
+    else if (me && players.includes(me)) sel.value = me;
     sel.addEventListener('change', () => renderPlayer(sel.value));
     renderPlayer(sel.value);
   } catch (err) {

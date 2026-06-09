@@ -10,8 +10,7 @@ let koReal       = {};   // { koMatchId: { winner, gh, ga } }  (eliminatorias, r
 let realBr       = { complete: false, resolved: {} }; // equipos reales del cuadro
 let saveTimers   = {};
 let currentPhase = 'groups';
-let groupTabs    = [];        // ['upcoming', '2026-06-11', ...]
-let currentGroupTab = 'upcoming';
+let currentGroupTab = 'upcoming'; // 'upcoming' | dayKey ('2026-06-11') | 'group:C'
 let currentKoRound = 'R32';
 
 const lockedM = m => matchLocked(m.kickoff);
@@ -157,26 +156,47 @@ function upcomingMatches() {
 }
 
 function buildUI() {
-  const tabsEl = document.getElementById('day-tabs');
-  tabsEl.innerHTML = '';
-  groupTabs = ['upcoming'].concat(dayKeysSorted());
-  groupTabs.forEach(key => {
-    const btn = document.createElement('button');
-    btn.className = 'tab-btn' + (key === currentGroupTab ? ' active' : '');
-    btn.dataset.tab = key;
-    btn.innerHTML = (key === 'upcoming' ? '⏳ Próximos' : dayLabel(key))
-      + ` <span class="tab-check" id="daycheck-${key}"></span>`;
-    btn.addEventListener('click', () => renderGroupTab(key));
-    tabsEl.appendChild(btn);
-  });
+  const nav = document.getElementById('day-tabs');
+  nav.className = 'day-nav';
+  const days = dayKeysSorted();
+  nav.innerHTML =
+    '<button class="tab-btn" id="nav-upcoming">⏳ Próximos</button>' +
+    '<div class="day-stepper">' +
+      '<button class="day-arrow" id="nav-prev" aria-label="Día anterior">‹</button>' +
+      '<select class="day-select" id="day-select">' +
+        days.map(k => `<option value="${k}">${dayLabel(k)}</option>`).join('') +
+      '</select>' +
+      '<button class="day-arrow" id="nav-next" aria-label="Día siguiente">›</button>' +
+    '</div>';
+  document.getElementById('nav-upcoming').addEventListener('click', () => renderGroupTab('upcoming'));
+  document.getElementById('day-select').addEventListener('change', e => renderGroupTab(e.target.value));
+  document.getElementById('nav-prev').addEventListener('click', () => stepDay(-1));
+  document.getElementById('nav-next').addEventListener('click', () => stepDay(1));
   renderGroupTab(currentGroupTab);
   buildGroupSummary();
+}
+
+// Mueve un día adelante/atrás (desde «Próximos», ‹ va al último día y › al primero).
+function stepDay(dir) {
+  const days = dayKeysSorted();
+  let idx;
+  if (currentGroupTab === 'upcoming' || currentGroupTab.indexOf('group:') === 0) {
+    idx = dir > 0 ? 0 : days.length - 1;
+  } else {
+    idx = days.indexOf(currentGroupTab) + dir;
+  }
+  if (idx < 0) { renderGroupTab('upcoming'); return; }
+  if (idx > days.length - 1) idx = days.length - 1;
+  renderGroupTab(days[idx]);
 }
 
 let lastUpcomingKey = '';
 function renderGroupTab(tabKey) {
   currentGroupTab = tabKey;
-  document.querySelectorAll('#day-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabKey));
+  const upBtn = document.getElementById('nav-upcoming');
+  if (upBtn) upBtn.classList.toggle('active', tabKey === 'upcoming');
+  const sel = document.getElementById('day-select');
+  if (sel && tabKey !== 'upcoming' && tabKey.indexOf('group:') !== 0) sel.value = tabKey;
   const content = document.getElementById('day-content');
   let matches, header;
   if (tabKey === 'upcoming') {
@@ -224,7 +244,8 @@ function buildGroupSummary() {
 // Al tocar un grupo en el resumen: muestra los 6 partidos de ese grupo con tus pronósticos.
 function renderGroupView(g) {
   currentGroupTab = 'group:' + g;
-  document.querySelectorAll('#day-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  const upBtn = document.getElementById('nav-upcoming');
+  if (upBtn) upBtn.classList.remove('active');
   const c = groupColor(g);
   const content = document.getElementById('day-content');
   const matches = getMatchesByGroup(g).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
@@ -390,12 +411,12 @@ function updateProgress() {
   if (f) f.style.width = `${pct}%`;
 }
 function updateDayChecks() {
-  groupTabs.forEach(key => {
-    if (key === 'upcoming') return;
-    const matches = MATCHES.filter(m => madridDayKey(m.kickoff) === key);
+  const sel = document.getElementById('day-select');
+  if (!sel) return;
+  Array.from(sel.options).forEach(opt => {
+    const matches = MATCHES.filter(m => madridDayKey(m.kickoff) === opt.value);
     const done = matches.length > 0 && matches.every(m => predictions[m.id] !== undefined);
-    const el = document.getElementById(`daycheck-${key}`);
-    if (el) el.textContent = done ? '✓' : '';
+    opt.textContent = dayLabel(opt.value) + (done ? ' ✓' : '');
   });
 }
 

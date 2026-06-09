@@ -225,6 +225,28 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .tab-btn.active { background: var(--accent-soft); border-color: var(--green); color: var(--green); }
 .tab-btn .tab-check { font-size: 10px; margin-left: 4px; color: var(--green); }
 
+/* ── Day navigator (Próximos + ‹ day › dropdown) ───────── */
+.day-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.day-stepper {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px;
+}
+.day-arrow {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--bg3); color: var(--text); font-size: 20px; line-height: 1;
+  display: grid; place-items: center; transition: background .15s;
+}
+.day-arrow:hover { background: var(--border); }
+.day-select {
+  background: transparent; border: none; color: var(--text);
+  font-weight: 700; font-size: 14px; padding: 4px 6px; cursor: pointer; outline: none;
+  min-width: 130px; text-align: center;
+}
+.day-select option { background: var(--bg2); color: var(--text); }
+
 /* ── Group Panel ───────────────────────────────────────── */
 .group-panel { display: none; }
 .group-panel.active { display: block; }
@@ -386,6 +408,8 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 }
 .lb-row:last-child { border-bottom: none; }
 .lb-row:hover { background: var(--bg3); }
+.lb-row.clickable { cursor: pointer; }
+.lb-row.clickable:hover { background: var(--bg3); box-shadow: inset 3px 0 0 var(--green); }
 .lb-row.me { background: var(--green-dim); border-left: 3px solid var(--green); }
 
 .lb-rank { font-weight: 700; color: var(--muted); }

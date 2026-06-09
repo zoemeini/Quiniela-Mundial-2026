@@ -42,15 +42,15 @@ const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 const GROUP_COLORS = {
   A: '#ef4444', // red
   B: '#3b82f6', // blue
-  C: '#f59e0b', // amber
+  C: '#c98a00', // mustard yellow
   D: '#22c55e', // green
   E: '#a855f7', // purple
-  F: '#fde047', // yellow
+  F: '#ffe600', // bright yellow
   G: '#06b6d4', // cyan
   H: '#ec4899', // pink
-  I: '#84cc16', // lime
+  I: '#1f7a33', // forest green
   J: '#f97316', // orange
-  K: '#8b5cf6', // violet
+  K: '#c4b5fd', // light lavender
   L: '#14b8a6', // teal
 };
 function groupColor(g) { return GROUP_COLORS[g] || '#34d399'; }
