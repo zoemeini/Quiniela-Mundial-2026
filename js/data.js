@@ -42,13 +42,13 @@ const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 const GROUP_COLORS = {
   A: '#ef4444', // red
   B: '#3b82f6', // blue
-  C: '#c98a00', // mustard yellow
+  C: '#a82d4d', // burgundy
   D: '#22c55e', // green
   E: '#a855f7', // purple
   F: '#ffe600', // bright yellow
   G: '#06b6d4', // cyan
   H: '#ec4899', // pink
-  I: '#1f7a33', // forest green
+  I: '#166534', // deep forest green
   J: '#f97316', // orange
   K: '#c4b5fd', // light lavender
   L: '#14b8a6', // teal
