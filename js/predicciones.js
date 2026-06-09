@@ -18,6 +18,7 @@ function resultFor(matchId) {
 }
 function startedById(matchId) { const m = getMatchById(matchId) || getKoMatch(matchId); return m ? matchLocked(m.kickoff) : false; }
 
+let initialized = false;
 async function load() {
   const subtitle = document.getElementById('pred-subtitle');
   document.getElementById('pred-locked').classList.add('hidden');
@@ -33,15 +34,21 @@ async function load() {
     const players = Object.keys(allPreds).sort((a, b) => a.localeCompare(b));
     if (players.length === 0) { subtitle.textContent = 'Todavía no hay predicciones.'; return; }
 
-    subtitle.textContent = 'El pronóstico de cada partido se revela cuando empieza ese partido · solo lectura';
+    subtitle.textContent = 'El pronóstico de cada partido se revela en cuanto empieza ese partido · solo lectura';
     document.getElementById('pred-content').classList.remove('hidden');
     const sel = document.getElementById('pred-player');
+    const prev = sel.value;
     sel.innerHTML = players.map(p => `<option value="${escAttr(p)}">${escHtml(p)}</option>`).join('');
-    // ?u=Nombre (al pulsar un jugador en la clasificación) tiene prioridad; si no, tú.
-    const wanted = new URLSearchParams(location.search).get('u');
-    if (wanted && players.includes(wanted)) sel.value = wanted;
-    else if (me && players.includes(me)) sel.value = me;
-    sel.addEventListener('change', () => renderPlayer(sel.value));
+    if (!initialized) {
+      // ?u=Nombre (al pulsar un jugador en la clasificación) tiene prioridad; si no, tú.
+      const wanted = new URLSearchParams(location.search).get('u');
+      sel.value = (wanted && players.includes(wanted)) ? wanted
+                : (me && players.includes(me)) ? me : players[0];
+      sel.addEventListener('change', () => renderPlayer(sel.value));
+      initialized = true;
+    } else if (players.includes(prev)) {
+      sel.value = prev; // conserva tu selección en los refrescos automáticos
+    }
     renderPlayer(sel.value);
   } catch (err) {
     subtitle.textContent = 'No se pudieron cargar las predicciones. Revisa SHEET_API_URL.';
@@ -103,3 +110,4 @@ function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<
 function escAttr(s) { return escHtml(s); }
 
 load();
+setInterval(load, 60000); // refresca datos y revela los partidos en cuanto empiezan
