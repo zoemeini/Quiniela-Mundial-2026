@@ -932,23 +932,23 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .refresh-btn:hover { border-color: var(--green); color: var(--green); }
 
 /* ── Minijuego «¿Más o menos?» (beta, dentro del admin) ───────── */
-.mg-hud { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+.mg-hud { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
 .mg-hud b { color: var(--green); }
 .mg-card {
   background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 18px 16px; text-align: center; margin: 0 auto 12px; max-width: 440px;
+  padding: 12px 14px; text-align: center; margin: 0 auto 8px; max-width: 440px;
 }
-.mg-card .team-flag-img { width: 44px; height: auto; border-radius: 3px; margin: 0 auto 8px; display: block; }
-.mg-name { font-size: 20px; font-weight: 800; font-family: 'Sora', sans-serif; line-height: 1.2; }
-.mg-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
-.mg-val { font-size: 30px; font-weight: 800; color: var(--green); margin-top: 6px; transition: color .2s; }
+.mg-card .team-flag-img { width: 34px; height: auto; border-radius: 3px; margin: 0 auto 5px; display: block; }
+.mg-name { font-size: 17px; font-weight: 800; font-family: 'Sora', sans-serif; line-height: 1.2; }
+.mg-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.mg-val { font-size: 24px; font-weight: 800; color: var(--green); margin-top: 3px; transition: color .2s; }
 .mg-val.mg-hidden { color: var(--muted); letter-spacing: 2px; }
 .mg-val.mg-ok { color: var(--green); }
 .mg-val.mg-bad { color: var(--red); }
-.mg-vs { text-align: center; font-weight: 600; margin: 2px 0 12px; color: var(--text); }
-.mg-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.mg-vs { text-align: center; font-weight: 600; margin: 2px 0 8px; color: var(--text); }
+.mg-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
 .mg-btn {
-  border-radius: 999px; padding: 12px 20px; font-size: 15px; font-weight: 700;
+  border-radius: 999px; padding: 10px 16px; font-size: 14px; font-weight: 700;
   border: 1px solid var(--border); background: var(--bg3); color: var(--text);
   cursor: pointer; transition: transform .1s, border-color .15s, background .15s;
 }
@@ -957,9 +957,9 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-more { background: var(--accent-soft); color: var(--green); border-color: var(--green); }
 .mg-end {
   text-align: center; max-width: 440px; margin: 0 auto;
-  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 18px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px;
 }
-.mg-end-emoji { font-size: 46px; }
+.mg-end-emoji { font-size: 40px; }
 .mg-end h3 { font-size: 20px; margin: 8px 0; }
 .mg-end p { color: var(--muted); margin: 4px 0; }
 .mg-note { font-size: 12px; color: var(--gold); margin-top: 16px; }
@@ -989,11 +989,11 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 }
 
 /* Banner del tema del día */
-.mg-theme { text-align: center; font-size: 13px; color: var(--text); background: var(--accent-soft); border: 1px solid var(--green); border-radius: 999px; padding: 7px 12px; margin-bottom: 12px; }
+.mg-theme { text-align: center; font-size: 13px; color: var(--text); background: var(--accent-soft); border: 1px solid var(--green); border-radius: 999px; padding: 6px 12px; margin-bottom: 8px; }
 .mg-theme b { font-family: 'Sora', sans-serif; }
 
 /* Pestañas Jugar / Ranking */
-.mg-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.mg-tabs { display: flex; gap: 8px; margin-bottom: 8px; }
 .mg-tab {
   flex: 1; padding: 8px; border-radius: 999px; cursor: pointer;
   background: var(--bg3); color: var(--muted); font-weight: 700; font-size: 13px;
@@ -1018,7 +1018,7 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-rank-score { font-weight: 800; color: var(--green); font-size: 16px; min-width: 24px; text-align: right; }
 
 /* Beta: previsualizar otros días */
-.mg-daypreview { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mg-daypreview { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .mg-day-arrow { width: 26px; height: 26px; border-radius: 6px; background: var(--bg3); color: var(--text); font-size: 15px; }
 .mg-day-arrow:hover { background: var(--border); }
 .mg-day-lbl { font-weight: 700; color: var(--text); min-width: 80px; text-align: center; }
@@ -1026,17 +1026,29 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-day-reset { font-size: 11px; color: var(--green); text-decoration: underline; background: none; }
 
 /* Modo «Adivina con pistas» */
-.mg-clues { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
-.mg-clue { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.mg-clues { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+.mg-clue { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 7px 12px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
 .mg-clue b { color: var(--green); }
 .mg-clue.locked { opacity: .4; }
 .mg-clue .team-flag-img { width: 22px; height: auto; border-radius: 2px; vertical-align: middle; }
-.mg-guess-row { display: flex; gap: 8px; margin-top: 12px; }
-.mg-guess-input { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 15px; outline: none; }
+.mg-guess-row { display: flex; gap: 8px; margin-top: 10px; }
+.mg-guess-field { position: relative; flex: 1; }
+.mg-guess-input { width: 100%; box-sizing: border-box; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 15px; outline: none; }
 .mg-guess-input:focus { border-color: var(--green); }
-.mg-guess-btn { border-radius: 999px; padding: 10px 18px; font-weight: 700; background: var(--accent); color: #052e1a; }
-.mg-pts-hint { text-align: center; font-size: 12px; color: var(--gold); margin-top: 10px; }
-.mg-tries { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; justify-content: center; }
+.mg-guess-btn { border-radius: 999px; padding: 10px 18px; font-weight: 700; background: var(--accent); color: #052e1a; white-space: nowrap; }
+/* Lista de sugerencias propia (aparece solo al escribir) */
+.mg-suggest {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 10;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: var(--shadow); max-height: 168px; overflow-y: auto;
+}
+.mg-suggest.hidden { display: none; }
+.mg-sug-item { display: flex; align-items: center; gap: 8px; padding: 8px 11px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.mg-sug-item:last-child { border-bottom: none; }
+.mg-sug-item:hover, .mg-sug-item.active { background: var(--accent-soft); color: var(--green); }
+.mg-sug-item .team-flag-img { width: 20px; height: auto; border-radius: 2px; }
+.mg-pts-hint { text-align: center; font-size: 12px; color: var(--gold); margin-top: 8px; }
+.mg-tries { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; justify-content: center; }
 .mg-try { font-size: 12px; border-radius: 999px; padding: 3px 10px; border: 1px solid var(--border); }
 .mg-try.bad { color: var(--red); border-color: var(--red); }
 .mg-reveal { margin: 10px 0; font-size: 18px; }
@@ -1060,7 +1072,7 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-panel-title { font-weight: 800; font-family: 'Sora', sans-serif; font-size: 14px; }
 .mg-close { width: 30px; height: 30px; border-radius: 8px; background: var(--bg3); color: var(--text); font-size: 14px; flex-shrink: 0; }
 .mg-close:hover { background: var(--border); }
-.mg-timer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.mg-timer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .mg-timer-track { flex: 1; height: 8px; background: var(--bg3); border-radius: 999px; overflow: hidden; }
 .mg-timer-bar { height: 100%; width: 100%; background: var(--green); border-radius: 999px; transition: width .15s linear; }
 .mg-timer-bar.low { background: var(--red); }

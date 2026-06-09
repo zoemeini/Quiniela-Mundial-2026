@@ -377,21 +377,24 @@ const MG_ROTATION = [
       const rng = mulberry32(seedInt() ^ 0x9e3779b9); // semilla distinta de ¿Más o menos?
       this.secret = MG_PISTAS_POOL[Math.floor(rng() * MG_PISTAS_POOL.length)];
       const p = this.secret;
-      this.clues = [
+      const clues = [
         { k: 'Posición', v: p.pos },
         { k: 'Edad', v: p.age + ' años' },
         { k: 'País', v: `${flag(p.iso)} ${p.pais}` },
         { k: 'Club', v: p.club },
         { k: 'Dorsal', v: '#' + p.num },
       ];
-      this.shown = 1; this.attempts = 0; this.solved = false; gameOver = false; busy = false;
+      // Baraja el orden de las pistas con la semilla del día: no siempre se
+      // empieza por la misma, pero el orden es igual para todos cada día.
+      for (let i = clues.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = clues[i]; clues[i] = clues[j]; clues[j] = t; }
+      this.clues = clues;
+      this.shown = 1; this.attempts = 0; this.solved = false; this._tries = []; gameOver = false; busy = false;
       this.render();
       startTimer(45000, () => this.timeUp());
     },
     points() { return Math.max(1, 7 - (this.attempts + 1)); }, // puntos si aciertas en el PRÓXIMO intento
     render() {
       const wrap = el('mg-board'); if (!wrap) return;
-      const opts = MG_PISTAS_POOL.map(p => `<option value="${p.n}"></option>`).join('');
       let cluesHtml = '';
       this.clues.forEach((c, i) => {
         const locked = i >= this.shown;
@@ -400,16 +403,48 @@ const MG_ROTATION = [
       wrap.innerHTML = `
         <div class="mg-clues">${cluesHtml}</div>
         <div class="mg-guess-row">
-          <input class="mg-guess-input" id="mg-guess" list="mg-pool" placeholder="¿Quién es?" autocomplete="off">
+          <div class="mg-guess-field">
+            <input class="mg-guess-input" id="mg-guess" placeholder="Escribe un nombre…" autocomplete="off" autocorrect="off" spellcheck="false">
+            <div class="mg-suggest hidden" id="mg-suggest"></div>
+          </div>
           <button class="mg-guess-btn" id="mg-guess-btn">Adivinar</button>
         </div>
-        <datalist id="mg-pool">${opts}</datalist>
         <div class="mg-pts-hint">Vale ahora: <b>${this.points()}</b> pts · Intento ${this.attempts + 1}/${this.max}</div>
         <div class="mg-tries" id="mg-tries"></div>`;
       el('mg-guess-btn').addEventListener('click', () => this.guess());
-      el('mg-guess').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); this.guess(); } });
+      this.setupAutocomplete();
       setHud(`Adivina al jugador · Mejor de hoy: <b>${getBest()}</b> 🔥`);
       this.renderTries();
+    },
+    // Autocompletado propio: solo sugiere al escribir (≥2 letras). Al hacer
+    // clic en el campo NO se despliegan todos los jugadores de golpe.
+    setupAutocomplete() {
+      const inp = el('mg-guess'), box = el('mg-suggest');
+      if (!inp || !box) return;
+      const self = this;
+      let active = -1, items = [];
+      const hide = () => { box.classList.add('hidden'); box.innerHTML = ''; active = -1; items = []; };
+      const pick = name => { inp.value = name; hide(); inp.focus(); };
+      const upd = () => { Array.from(box.children).forEach((n, i) => n.classList.toggle('active', i === active)); };
+      const show = q => {
+        const nq = norm(q);
+        if (nq.length < 2) { hide(); return; }
+        items = MG_PISTAS_POOL.filter(p => { const np = norm(p.n); return np.includes(nq) || np.split(' ').some(w => w.startsWith(nq)); }).slice(0, 5);
+        if (!items.length) { hide(); return; }
+        active = -1;
+        box.innerHTML = items.map((p, i) => `<div class="mg-sug-item" data-i="${i}">${flag(p.iso)}<span>${p.n}</span></div>`).join('');
+        box.classList.remove('hidden');
+        Array.from(box.children).forEach(node => node.addEventListener('mousedown', e => { e.preventDefault(); pick(items[+node.dataset.i].n); }));
+      };
+      inp.addEventListener('input', () => show(inp.value));
+      inp.addEventListener('keydown', e => {
+        const opened = !box.classList.contains('hidden');
+        if (e.key === 'ArrowDown' && opened) { e.preventDefault(); active = Math.min(active + 1, items.length - 1); upd(); }
+        else if (e.key === 'ArrowUp' && opened) { e.preventDefault(); active = Math.max(active - 1, 0); upd(); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (opened && active >= 0 && items[active]) pick(items[active].n); else { hide(); self.guess(); } }
+        else if (e.key === 'Escape') { hide(); }
+      });
+      inp.addEventListener('blur', () => setTimeout(hide, 120));
     },
     renderTries() {
       const t = el('mg-tries'); if (!t) return;
