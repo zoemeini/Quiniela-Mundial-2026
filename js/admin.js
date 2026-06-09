@@ -59,19 +59,19 @@ async function initAdmin() {
   buildAdminKoUI();
 }
 
-// Sub-conmutador grupos / eliminatorias / minijuego
-function showAdminTab(which) { // 'groups' | 'ko' | 'game'
-  document.getElementById('admin-groups').classList.toggle('hidden', which !== 'groups');
-  document.getElementById('admin-ko').classList.toggle('hidden', which !== 'ko');
-  document.getElementById('admin-minigame').classList.toggle('hidden', which !== 'game');
-  document.getElementById('admin-groups-btn').classList.toggle('active', which === 'groups');
-  document.getElementById('admin-ko-btn').classList.toggle('active', which === 'ko');
-  document.getElementById('admin-game-btn').classList.toggle('active', which === 'game');
-  if (which === 'game' && window.initMinigame) window.initMinigame();
-}
-document.getElementById('admin-groups-btn').addEventListener('click', () => showAdminTab('groups'));
-document.getElementById('admin-ko-btn').addEventListener('click', () => showAdminTab('ko'));
-document.getElementById('admin-game-btn').addEventListener('click', () => showAdminTab('game'));
+// Sub-conmutador grupos / eliminatorias
+document.getElementById('admin-groups-btn').addEventListener('click', () => {
+  document.getElementById('admin-groups').classList.remove('hidden');
+  document.getElementById('admin-ko').classList.add('hidden');
+  document.getElementById('admin-groups-btn').classList.add('active');
+  document.getElementById('admin-ko-btn').classList.remove('active');
+});
+document.getElementById('admin-ko-btn').addEventListener('click', () => {
+  document.getElementById('admin-groups').classList.add('hidden');
+  document.getElementById('admin-ko').classList.remove('hidden');
+  document.getElementById('admin-ko-btn').classList.add('active');
+  document.getElementById('admin-groups-btn').classList.remove('active');
+});
 
 // ── Navegador por días (mismo estilo que la página principal) ───────────
 let adminDay = null, adminDays = [], adminByDay = {};

@@ -948,3 +948,45 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-end h3 { font-size: 20px; margin: 8px 0; }
 .mg-end p { color: var(--muted); margin: 4px 0; }
 .mg-note { font-size: 12px; color: var(--gold); margin-top: 16px; }
+
+/* Burbuja flotante 🎮 (abajo-izquierda) + panel del minijuego */
+.mg-fab {
+  position: fixed;
+  left: 18px; bottom: 18px;
+  z-index: 300;
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #052e1a;
+  font-size: 24px;
+  display: grid; place-items: center;
+  box-shadow: 0 10px 26px rgba(34,197,94,.5);
+  transition: transform .15s;
+}
+.mg-fab:hover { transform: scale(1.08); }
+.mg-fab.active { transform: scale(1.05); }
+.mg-panel {
+  position: fixed;
+  left: 18px; bottom: 84px;
+  z-index: 300;
+  width: 380px; max-width: calc(100vw - 36px);
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+.mg-panel.hidden { display: none; }
+.mg-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.mg-panel-title { font-weight: 800; font-family: 'Sora', sans-serif; font-size: 14px; }
+.mg-close { width: 30px; height: 30px; border-radius: 8px; background: var(--bg3); color: var(--text); font-size: 14px; flex-shrink: 0; }
+.mg-close:hover { background: var(--border); }
+.mg-timer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.mg-timer-track { flex: 1; height: 8px; background: var(--bg3); border-radius: 999px; overflow: hidden; }
+.mg-timer-bar { height: 100%; width: 100%; background: var(--green); border-radius: 999px; transition: width .15s linear; }
+.mg-timer-bar.low { background: var(--red); }
+.mg-timer-num { font-weight: 700; font-size: 13px; min-width: 30px; text-align: right; color: var(--muted); }
+.mg-timer-num.low { color: var(--red); }
+.mg-panel .mg-card { max-width: none; }

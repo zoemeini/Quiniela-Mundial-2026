@@ -1,13 +1,14 @@
 // ============================================================
 //  Minijuego diario «¿Más o menos?» (Higher / Lower)
-//  EN PRUEBAS dentro del panel de admin (los amigos aún no lo ven).
+//  EN PRUEBAS: aparece como una BURBUJA flotante 🎮 (abajo-izquierda),
+//  solo en el panel de admin → los amigos aún no lo ven.
 //
 //  Mecánica: ¿el siguiente jugador vale MÁS o MENOS que el actual?
-//  Aciertas → sigues y sumas; fallas → fin del día. La secuencia es la
-//  MISMA para todos cada día (semilla = fecha) para poder competir.
+//  Tienes 15 s por pregunta (si se agota, fallas → así no da tiempo a
+//  buscar la respuesta). Aciertas → sigues; fallas → fin del día.
+//  La secuencia es la MISMA para todos cada día (semilla = fecha).
 //
-//  Depende de data.js (madridDayKey). Define window.initMinigame(),
-//  que llama admin.js al abrir la pestaña del juego.
+//  Depende de data.js (madridDayKey).
 // ============================================================
 
 // Valor de mercado APROXIMADO en millones de € (fácil de editar a mano).
@@ -65,12 +66,9 @@ const MG_PLAYERS = [
 ];
 
 (function () {
-  let initialized = false;
-  let seq = [];     // orden del día (jugadores, sin valores iguales consecutivos)
-  let idx = 0;      // A = seq[idx], B = seq[idx+1]
-  let score = 0;
-  let busy = false; // bloquea durante la animación de revelado
-  let over = false;
+  const ROUND_MS = 15000; // 15 s por pregunta
+  let seq = [], idx = 0, score = 0, busy = false, over = false, started = false;
+  let deadline = 0, timerId = null, open = false;
 
   const el = id => document.getElementById(id);
   const dayKey = () => madridDayKey(new Date());
@@ -85,7 +83,6 @@ const MG_PLAYERS = [
       return ((t ^ t >>> 14) >>> 0) / 4294967296;
     };
   }
-
   function buildDailySeq() {
     const rng = mulberry32(seedInt());
     const arr = MG_PLAYERS.slice();
@@ -106,15 +103,75 @@ const MG_PLAYERS = [
     });
     return out;
   }
-
   function flag(iso) {
     return `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" ` +
            `srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">`;
   }
-
   const bestKey = () => 'wc2026_mg_best_' + dayKey();
   const getBest = () => parseInt(localStorage.getItem(bestKey()) || '0', 10) || 0;
   function setBest(v) { if (v > getBest()) localStorage.setItem(bestKey(), String(v)); }
+
+  // ── Burbuja flotante 🎮 + panel (abajo-izquierda, como el reproductor) ──
+  const fab = document.createElement('button');
+  fab.className = 'mg-fab';
+  fab.type = 'button';
+  fab.setAttribute('aria-label', 'Reto del día');
+  fab.textContent = '🎮';
+
+  const panel = document.createElement('div');
+  panel.className = 'mg-panel hidden';
+  panel.innerHTML =
+    '<div class="mg-panel-head">' +
+      '<span class="mg-panel-title">🎮 Reto del día · ¿Más o menos?</span>' +
+      '<button type="button" class="mg-close" id="mg-close" aria-label="Cerrar">✕</button>' +
+    '</div>' +
+    '<div class="mg-timer-row">' +
+      '<div class="mg-timer-track"><div class="mg-timer-bar" id="mg-timer-bar"></div></div>' +
+      '<span class="mg-timer-num" id="mg-timer-num">15s</span>' +
+    '</div>' +
+    '<div class="mg-hud" id="mg-hud"></div>' +
+    '<div id="mg-board"></div>';
+
+  document.body.appendChild(panel);
+  document.body.appendChild(fab);
+
+  fab.addEventListener('click', function () {
+    open = !open;
+    panel.classList.toggle('hidden', !open);
+    fab.classList.toggle('active', open);
+    if (open && !started) start(); // primera vez: empieza el reto
+  });
+  el('mg-close').addEventListener('click', function () {
+    open = false;
+    panel.classList.add('hidden');
+    fab.classList.remove('active');
+    // El temporizador SIGUE corriendo aunque cierres (anti-trampas: no puedes
+    // cerrar para buscar la respuesta y volver con tiempo de sobra).
+  });
+
+  // ── Temporizador (15 s por pregunta) ──
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  function startTimer() {
+    stopTimer();
+    deadline = Date.now() + ROUND_MS;
+    tick();
+    timerId = setInterval(tick, 150);
+  }
+  function tick() {
+    const remaining = Math.max(0, deadline - Date.now());
+    const pct = (remaining / ROUND_MS) * 100;
+    const secs = Math.ceil(remaining / 1000);
+    const low = remaining <= 5000;
+    const bar = el('mg-timer-bar'), num = el('mg-timer-num');
+    if (bar) { bar.style.width = pct + '%'; bar.classList.toggle('low', low); }
+    if (num) { num.textContent = secs + 's'; num.classList.toggle('low', low); }
+    if (remaining <= 0) { stopTimer(); timeUp(); }
+  }
+  function resetTimerBar() {
+    const bar = el('mg-timer-bar'), num = el('mg-timer-num');
+    if (bar) { bar.style.width = '100%'; bar.classList.remove('low'); }
+    if (num) { num.textContent = '15s'; num.classList.remove('low'); }
+  }
 
   function updateHud() {
     const h = el('mg-hud');
@@ -123,7 +180,7 @@ const MG_PLAYERS = [
 
   function start() {
     seq = buildDailySeq();
-    idx = 0; score = 0; over = false; busy = false;
+    idx = 0; score = 0; over = false; busy = false; started = true;
     render();
   }
 
@@ -153,11 +210,17 @@ const MG_PLAYERS = [
     el('mg-more').addEventListener('click', () => guess('mas'));
     el('mg-less').addEventListener('click', () => guess('menos'));
     updateHud();
+    startTimer(); // arranca los 15 s de esta pregunta
+  }
+
+  function disableButtons() {
+    ['mg-more', 'mg-less'].forEach(id => { const b = el(id); if (b) b.disabled = true; });
   }
 
   function guess(dir) {
     if (busy || over) return;
     busy = true;
+    stopTimer(); // el reloj se detiene al responder
     const A = seq[idx], B = seq[idx + 1];
     const correct = B.v > A.v ? 'mas' : 'menos'; // sin empates (ver buildDailySeq)
     const ok = dir === correct;
@@ -168,7 +231,7 @@ const MG_PLAYERS = [
       bval.classList.remove('mg-hidden');
       bval.classList.add(ok ? 'mg-ok' : 'mg-bad');
     }
-    ['mg-more', 'mg-less'].forEach(id => { const b = el(id); if (b) b.disabled = true; });
+    disableButtons();
 
     if (ok) {
       score++;
@@ -178,17 +241,37 @@ const MG_PLAYERS = [
     } else {
       over = true;
       setBest(score);
-      setTimeout(renderOver, 1200);
+      setTimeout(() => renderOver('wrong'), 1200);
     }
   }
 
-  function renderOver() {
+  function timeUp() {
+    if (over || busy) return;
+    over = true;
+    const B = seq[idx + 1];
+    const bval = el('mg-bval');
+    if (B && bval) {
+      bval.textContent = B.v + ' M€';
+      bval.classList.remove('mg-hidden');
+      bval.classList.add('mg-bad');
+    }
+    disableButtons();
+    setBest(score);
+    setTimeout(() => renderOver('time'), 1000);
+  }
+
+  function renderOver(reason) {
+    stopTimer();
+    resetTimerBar();
     const wrap = el('mg-board');
     if (!wrap) return;
+    const head = reason === 'time'
+      ? { e: '⏰', t: '¡Se acabó el tiempo!' }
+      : { e: '😅', t: '¡Fallaste!' };
     wrap.innerHTML = `
       <div class="mg-end">
-        <div class="mg-end-emoji">😅</div>
-        <h3>¡Fallaste!</h3>
+        <div class="mg-end-emoji">${head.e}</div>
+        <h3>${head.t}</h3>
         <p>Puntuación de hoy: <b>${score}</b> acierto${score === 1 ? '' : 's'} seguidos.</p>
         <p class="mg-end-best">Tu mejor de hoy: <b>${getBest()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
@@ -199,6 +282,8 @@ const MG_PLAYERS = [
   }
 
   function renderWin() {
+    stopTimer();
+    resetTimerBar();
     const wrap = el('mg-board');
     if (!wrap) return;
     wrap.innerHTML = `
@@ -211,10 +296,4 @@ const MG_PLAYERS = [
     el('mg-again').addEventListener('click', start);
     updateHud();
   }
-
-  window.initMinigame = function () {
-    if (initialized) return; // se monta una sola vez
-    initialized = true;
-    start();
-  };
 })();
