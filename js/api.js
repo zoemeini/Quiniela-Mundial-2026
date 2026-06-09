@@ -3,7 +3,7 @@
 // This is the most reliable way to call a Google Apps Script
 // web app from a browser (no CORS preflight, response readable).
 
-async function apiCall(action, params = {}, _retries = 1) {
+async function apiCall(action, params = {}, _retries = 3) {
   if (!SHEET_API_URL || SHEET_API_URL.indexOf('PASTE_YOUR') === 0) {
     throw new Error('SHEET_API_URL is not set — edit js/config.js');
   }
@@ -14,10 +14,14 @@ async function apiCall(action, params = {}, _retries = 1) {
 
   let res;
   try {
-    res = await fetch(url.toString());
+    // Algunos móviles abortan peticiones lentas: forzamos un timeout propio + reintentos.
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const to = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+    res = await fetch(url.toString(), ctrl ? { signal: ctrl.signal } : undefined);
+    if (to) clearTimeout(to);
     if (!res.ok) throw new Error('HTTP ' + res.status);
   } catch (netErr) {
-    // Reintenta una vez ante fallos de red (habituales en móvil con cobertura débil).
+    // Reintenta varias veces ante fallos de red (habituales en móvil con cobertura débil).
     if (_retries > 0) {
       await new Promise(r => setTimeout(r, 900));
       return apiCall(action, params, _retries - 1);

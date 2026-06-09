@@ -916,6 +916,21 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   .modal { padding: 28px 20px; }
 }
 
+/* ── Barra de actualización (estado + botón 🔄) ───────── */
+.refresh-bar {
+  display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
+  font-size: 12px; color: var(--muted); margin: -8px 0 16px;
+}
+.refresh-bar .rf-load { color: var(--muted); }
+.refresh-bar .rf-ok   { color: var(--green); }
+.refresh-bar .rf-err  { color: var(--gold); font-weight: 600; }
+.refresh-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  border-radius: 999px; padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all .15s;
+}
+.refresh-btn:hover { border-color: var(--green); color: var(--green); }
+
 /* ── Minijuego «¿Más o menos?» (beta, dentro del admin) ───────── */
 .mg-hud { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 14px; }
 .mg-hud b { color: var(--green); }

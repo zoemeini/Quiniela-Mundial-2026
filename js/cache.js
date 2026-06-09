@@ -31,3 +31,28 @@ var CacheStore = {
     catch (_) { /* almacenamiento lleno/no disponible: ignorar */ }
   }
 };
+
+// ── Barra de actualización (estado + botón 🔄) ─────────────────────────────
+// Muestra si los datos son frescos o guardados, y permite forzar una recarga.
+// Clave en el móvil: si la actualización en segundo plano falla, el usuario
+// VE que está viendo datos guardados y puede reintentar (antes era invisible).
+var RefreshUI = {
+  mount: function (afterEl, onRefresh) {
+    if (!afterEl || document.getElementById('refresh-bar')) return;
+    var bar = document.createElement('div');
+    bar.id = 'refresh-bar';
+    bar.className = 'refresh-bar';
+    bar.innerHTML = '<span id="refresh-msg"></span> <button type="button" class="refresh-btn" id="refresh-btn">🔄 Actualizar</button>';
+    afterEl.insertAdjacentElement('afterend', bar);
+    var btn = document.getElementById('refresh-btn');
+    if (btn && typeof onRefresh === 'function') btn.addEventListener('click', onRefresh);
+  },
+  set: function (state) {
+    var msg = document.getElementById('refresh-msg');
+    if (!msg) return;
+    if (state === 'loading')      { msg.textContent = 'Actualizando…';                              msg.className = 'rf-load'; }
+    else if (state === 'ok')      { msg.textContent = 'Actualizado ✓';                              msg.className = 'rf-ok'; }
+    else if (state === 'cache')   { msg.textContent = 'Mostrando datos guardados…';                 msg.className = ''; }
+    else if (state === 'error')   { msg.textContent = '⚠️ Sin conexión — mostrando datos guardados'; msg.className = 'rf-err'; }
+  }
+};

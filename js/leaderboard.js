@@ -44,13 +44,16 @@ function applyLeaderboard(data) {
 }
 
 async function loadLeaderboard() {
+  RefreshUI.set('loading');
   try {
     applyLeaderboard(await api.getAll());
+    RefreshUI.set('ok');
   } catch (err) {
     if (!lbRendered) {
       document.getElementById('lb-body').innerHTML =
         `<div class="lb-loading" style="color:var(--red)">No se pudieron cargar los datos. Revisa tu conexión e inténtalo de nuevo.</div>`;
     }
+    RefreshUI.set('error');
     console.error(err);
   }
 }
@@ -100,8 +103,10 @@ function escHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Barra de estado + botón 🔄 (para que en el móvil no se queden datos viejos).
+RefreshUI.mount(document.getElementById('lb-subtitle'), loadLeaderboard);
 // Pinta al instante lo último guardado (si hay) y luego refresca de verdad.
 const lbCached = CacheStore.get('getAll');
-if (lbCached) { try { applyLeaderboard(lbCached); } catch (_) {} }
+if (lbCached) { try { applyLeaderboard(lbCached); RefreshUI.set('cache'); } catch (_) {} }
 loadLeaderboard();
 setInterval(loadLeaderboard, 30000);

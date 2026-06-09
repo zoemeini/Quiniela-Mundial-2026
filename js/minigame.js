@@ -103,6 +103,52 @@ const MG_THEMES = [
       { n: 'Kevin De Bruyne', iso: 'be', v: 18 }, { n: 'Harry Kane', iso: 'gb-eng', v: 17 },
     ],
   },
+  {
+    key: 'champions', emoji: '🥅', label: 'Goles en la Champions',
+    sub: 'goles en la Champions (histórico)', unit: 'goles', verb: 'tiene', metric: 'goles en Champions',
+    players: [
+      { n: 'Cristiano Ronaldo', iso: 'pt', v: 140 }, { n: 'Lionel Messi', iso: 'ar', v: 129 },
+      { n: 'Robert Lewandowski', iso: 'pl', v: 105 }, { n: 'Karim Benzema', iso: 'fr', v: 90 },
+      { n: 'Raúl', iso: 'es', v: 71 }, { n: 'Thomas Müller', iso: 'de', v: 57 },
+      { n: 'Ruud van Nistelrooy', iso: 'nl', v: 56 }, { n: 'Kylian Mbappé', iso: 'fr', v: 55 },
+      { n: 'Erling Haaland', iso: 'no', v: 50 }, { n: 'Zlatan Ibrahimović', iso: 'se', v: 48 },
+      { n: 'Mohamed Salah', iso: 'eg', v: 45 }, { n: 'Didier Drogba', iso: 'ci', v: 44 },
+      { n: 'Neymar Jr', iso: 'br', v: 43 }, { n: 'Sergio Agüero', iso: 'ar', v: 41 },
+      { n: 'Harry Kane', iso: 'gb-eng', v: 38 }, { n: 'Antoine Griezmann', iso: 'fr', v: 35 },
+      { n: 'Ángel Di María', iso: 'ar', v: 30 }, { n: 'Vinícius Júnior', iso: 'br', v: 28 },
+    ],
+  },
+  {
+    key: 'caps', emoji: '🎽', label: 'Partidos con su selección',
+    sub: 'partidos internacionales', unit: 'partidos', verb: 'tiene', metric: 'partidos con su selección',
+    players: [
+      { n: 'Cristiano Ronaldo', iso: 'pt', v: 220 }, { n: 'Lionel Messi', iso: 'ar', v: 190 },
+      { n: 'Luka Modrić', iso: 'hr', v: 185 }, { n: 'Sergio Ramos', iso: 'es', v: 180 },
+      { n: 'Robert Lewandowski', iso: 'pl', v: 155 }, { n: 'Ángel Di María', iso: 'ar', v: 145 },
+      { n: 'Luis Suárez', iso: 'uy', v: 142 }, { n: 'Pepe', iso: 'pt', v: 140 },
+      { n: 'Antoine Griezmann', iso: 'fr', v: 137 }, { n: 'Thomas Müller', iso: 'de', v: 131 },
+      { n: 'Son Heung-min', iso: 'kr', v: 130 }, { n: 'Neymar Jr', iso: 'br', v: 128 },
+      { n: 'Kevin De Bruyne', iso: 'be', v: 110 }, { n: 'Harry Kane', iso: 'gb-eng', v: 100 },
+      { n: 'Karim Benzema', iso: 'fr', v: 97 }, { n: 'Kylian Mbappé', iso: 'fr', v: 90 },
+      { n: 'Mohamed Salah', iso: 'eg', v: 100 }, { n: 'Jude Bellingham', iso: 'gb-eng', v: 40 },
+      { n: 'Vinícius Júnior', iso: 'br', v: 40 }, { n: 'Lamine Yamal', iso: 'es', v: 20 },
+    ],
+  },
+  {
+    key: 'fichaje', emoji: '💸', label: 'Fichaje más caro',
+    sub: 'su traspaso más caro', unit: 'M€', verb: 'costó', metric: '',
+    players: [
+      { n: 'Neymar Jr', iso: 'br', v: 222 }, { n: 'Kylian Mbappé', iso: 'fr', v: 180 },
+      { n: 'Philippe Coutinho', iso: 'br', v: 145 }, { n: 'Ousmane Dembélé', iso: 'fr', v: 140 },
+      { n: 'João Félix', iso: 'pt', v: 126 }, { n: 'Florian Wirtz', iso: 'de', v: 125 },
+      { n: 'Enzo Fernández', iso: 'ar', v: 121 }, { n: 'Jack Grealish', iso: 'gb-eng', v: 117 },
+      { n: 'Cristiano Ronaldo', iso: 'pt', v: 117 }, { n: 'Declan Rice', iso: 'gb-eng', v: 116 },
+      { n: 'Moisés Caicedo', iso: 'ec', v: 116 }, { n: 'Romelu Lukaku', iso: 'be', v: 113 },
+      { n: 'Paul Pogba', iso: 'fr', v: 105 }, { n: 'Jude Bellingham', iso: 'gb-eng', v: 103 },
+      { n: 'Gareth Bale', iso: 'gb-wls', v: 101 }, { n: 'Antony', iso: 'br', v: 95 },
+      { n: 'Harry Maguire', iso: 'gb-eng', v: 87 }, { n: 'Rúben Dias', iso: 'pt', v: 68 },
+    ],
+  },
 ];
 
 (function () {

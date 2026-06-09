@@ -52,10 +52,13 @@ function applyPred(data) {
 }
 
 async function load() {
+  RefreshUI.set('loading');
   try {
     applyPred(await api.getAll());
+    RefreshUI.set('ok');
   } catch (err) {
     if (!predRendered) document.getElementById('pred-subtitle').textContent = 'No se pudieron cargar las predicciones. Revisa tu conexión.';
+    RefreshUI.set('error');
     console.error(err);
   }
 }
@@ -113,8 +116,10 @@ function renderPlayer(user) {
 function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escAttr(s) { return escHtml(s); }
 
+// Barra de estado + botón 🔄 (para que en el móvil no se queden datos viejos).
+RefreshUI.mount(document.getElementById('pred-subtitle'), load);
 // Pinta al instante lo último guardado (si hay) y luego refresca de verdad.
 const predCached = CacheStore.get('getAll');
-if (predCached) { try { applyPred(predCached); } catch (_) {} }
+if (predCached) { try { applyPred(predCached); RefreshUI.set('cache'); } catch (_) {} }
 load();
 setInterval(load, 60000); // refresca datos y revela los partidos en cuanto empiezan
