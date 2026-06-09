@@ -49,8 +49,10 @@
       events: {
         onReady: function (e) { try { e.target.setVolume(parseInt(volEl.value, 10)); e.target.playVideo(); } catch (_) {} },
         onStateChange: function (e) {
-          if (e.data === 1) toggleEl.textContent = '⏸';
-          else if (e.data === 2 || e.data === 0) toggleEl.textContent = '▶';
+          // El pulso del botón refleja si SUENA (no si el panel está abierto).
+          var playing = (e.data === 1);
+          toggleEl.textContent = playing ? '⏸' : '▶';
+          fab.classList.toggle('playing', playing);
         }
       }
     });
@@ -58,14 +60,12 @@
 
   fab.addEventListener('click', function () {
     open = !open;
-    fab.classList.toggle('playing', open);
     if (open) {
       panel.classList.remove('hidden');
-      if (!player) loadApi(createPlayer);
-      else { try { player.playVideo(); } catch (_) {} }
+      if (!player) loadApi(createPlayer); // primera vez: crea el reproductor y empieza a sonar
+      // Si ya existe, solo mostramos el panel; NO tocamos la reproducción.
     } else {
-      panel.classList.add('hidden');
-      if (player) { try { player.pauseVideo(); } catch (_) {} }
+      panel.classList.add('hidden'); // minimizar: la música SIGUE sonando
     }
   });
 
