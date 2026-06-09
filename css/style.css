@@ -954,17 +954,56 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   position: fixed;
   left: 18px; bottom: 18px;
   z-index: 300;
-  width: 54px; height: 54px;
-  border-radius: 50%;
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 18px 11px 14px;
+  border-radius: 999px;
   background: var(--accent);
   color: #052e1a;
-  font-size: 24px;
-  display: grid; place-items: center;
+  font-family: 'Sora', sans-serif; font-weight: 800; font-size: 14px;
   box-shadow: 0 10px 26px rgba(34,197,94,.5);
+  animation: mgPulse 2.2s ease-in-out infinite;
   transition: transform .15s;
 }
-.mg-fab:hover { transform: scale(1.08); }
-.mg-fab.active { transform: scale(1.05); }
+.mg-fab:hover { transform: translateY(-2px) scale(1.03); }
+.mg-fab.active { animation: none; }
+.mg-fab-emoji { font-size: 22px; line-height: 1; }
+.mg-fab-label { white-space: nowrap; }
+@keyframes mgPulse {
+  0%, 100% { box-shadow: 0 8px 22px rgba(34,197,94,.45); transform: scale(1); }
+  50%      { box-shadow: 0 12px 34px rgba(34,197,94,.95); transform: scale(1.04); }
+}
+
+/* Pestañas Jugar / Ranking */
+.mg-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.mg-tab {
+  flex: 1; padding: 8px; border-radius: 999px; cursor: pointer;
+  background: var(--bg3); color: var(--muted); font-weight: 700; font-size: 13px;
+  border: 1px solid var(--border); transition: all .15s;
+}
+.mg-tab:hover { color: var(--text); }
+.mg-tab.active { background: var(--accent-soft); color: var(--green); border-color: var(--green); }
+
+/* Ranking del juego */
+.mg-rank-head { font-weight: 800; font-family: 'Sora', sans-serif; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.mg-rank-tag { font-size: 10px; font-weight: 800; color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; padding: 1px 7px; letter-spacing: .5px; }
+.mg-rank-sub { font-size: 11px; color: var(--muted); margin: 4px 0 12px; }
+.mg-rank-list { display: flex; flex-direction: column; gap: 6px; }
+.mg-rank-row {
+  display: grid; grid-template-columns: 28px 1fr auto auto; align-items: center; gap: 10px;
+  padding: 9px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+}
+.mg-rank-row.me { border-color: var(--green); background: var(--accent-soft); }
+.mg-rank-pos { font-weight: 800; text-align: center; }
+.mg-rank-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-rank-streak { font-size: 12px; color: var(--muted); }
+.mg-rank-score { font-weight: 800; color: var(--green); font-size: 16px; min-width: 24px; text-align: right; }
+
+/* Beta: previsualizar otros días */
+.mg-daypreview { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mg-day-arrow { width: 26px; height: 26px; border-radius: 6px; background: var(--bg3); color: var(--text); font-size: 15px; }
+.mg-day-arrow:hover { background: var(--border); }
+.mg-day-lbl { font-weight: 700; color: var(--text); min-width: 80px; text-align: center; }
+.mg-day-reset { font-size: 11px; color: var(--green); text-decoration: underline; background: none; }
 .mg-panel {
   position: fixed;
   left: 18px; bottom: 84px;

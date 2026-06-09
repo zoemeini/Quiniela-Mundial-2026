@@ -1,18 +1,19 @@
 // ============================================================
 //  Minijuego diario «¿Más o menos?» (Higher / Lower)
-//  EN PRUEBAS: aparece como una BURBUJA flotante 🎮 (abajo-izquierda),
+//  EN PRUEBAS: burbuja flotante 🎮 «Reto del día» (abajo-izquierda),
 //  solo en el panel de admin → los amigos aún no lo ven.
 //
 //  Mecánica: ¿el siguiente jugador vale MÁS o MENOS que el actual?
-//  Tienes 15 s por pregunta (si se agota, fallas → así no da tiempo a
-//  buscar la respuesta). Aciertas → sigues; fallas → fin del día.
+//  Tienes 15 s por pregunta (si se agota, fallas → no da tiempo a buscar).
 //  La secuencia es la MISMA para todos cada día (semilla = fecha).
 //
-//  Depende de data.js (madridDayKey).
+//  Pestañas del panel: ▶️ Jugar  ·  🏆 Ranking (ejemplo).
+//  Beta: abajo puedes previsualizar el reto de OTROS días.
+//
+//  Depende de data.js (madridDayKey, formatKickoff).
 // ============================================================
 
 // Valor de mercado APROXIMADO en millones de € (fácil de editar a mano).
-// No hace falta que sea exacto: es para jugar. iso = bandera (flagcdn).
 const MG_PLAYERS = [
   { n: 'Vinícius Júnior',      iso: 'br',     v: 200 },
   { n: 'Kylian Mbappé',        iso: 'fr',     v: 180 },
@@ -68,13 +69,15 @@ const MG_PLAYERS = [
 (function () {
   const ROUND_MS = 15000; // 15 s por pregunta
   let seq = [], idx = 0, score = 0, busy = false, over = false, started = false;
-  let deadline = 0, timerId = null, open = false;
+  let deadline = 0, timerId = null, open = false, previewOffset = 0, view = 'play';
+  let paused = false, pausedRemaining = 0;
 
   const el = id => document.getElementById(id);
-  const dayKey = () => madridDayKey(new Date());
+  const gameDate = () => { const d = new Date(); d.setDate(d.getDate() + previewOffset); return d; };
+  const dayKey = () => madridDayKey(gameDate());
   const seedInt = () => parseInt(dayKey().replace(/-/g, ''), 10) || 1;
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-  // PRNG con semilla → la secuencia del día es igual para todos.
   function mulberry32(a) {
     return function () {
       a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -90,7 +93,6 @@ const MG_PLAYERS = [
       const j = Math.floor(rng() * (i + 1));
       const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
     }
-    // Evita valores iguales consecutivos (así MÁS/MENOS siempre tiene respuesta).
     const out = [], leftover = [];
     arr.forEach(p => {
       if (out.length === 0 || out[out.length - 1].v !== p.v) out.push(p);
@@ -111,12 +113,12 @@ const MG_PLAYERS = [
   const getBest = () => parseInt(localStorage.getItem(bestKey()) || '0', 10) || 0;
   function setBest(v) { if (v > getBest()) localStorage.setItem(bestKey(), String(v)); }
 
-  // ── Burbuja flotante 🎮 + panel (abajo-izquierda, como el reproductor) ──
+  // ── Burbuja flotante 🎮 «Reto del día» + panel (abajo-izquierda) ──
   const fab = document.createElement('button');
   fab.className = 'mg-fab';
   fab.type = 'button';
   fab.setAttribute('aria-label', 'Reto del día');
-  fab.textContent = '🎮';
+  fab.innerHTML = '<span class="mg-fab-emoji">🎮</span><span class="mg-fab-label">Reto del día</span>';
 
   const panel = document.createElement('div');
   panel.className = 'mg-panel hidden';
@@ -125,12 +127,20 @@ const MG_PLAYERS = [
       '<span class="mg-panel-title">🎮 Reto del día · ¿Más o menos?</span>' +
       '<button type="button" class="mg-close" id="mg-close" aria-label="Cerrar">✕</button>' +
     '</div>' +
-    '<div class="mg-timer-row">' +
-      '<div class="mg-timer-track"><div class="mg-timer-bar" id="mg-timer-bar"></div></div>' +
-      '<span class="mg-timer-num" id="mg-timer-num">15s</span>' +
+    '<div class="mg-tabs">' +
+      '<button type="button" class="mg-tab active" id="mg-tab-play">▶️ Jugar</button>' +
+      '<button type="button" class="mg-tab" id="mg-tab-rank">🏆 Ranking</button>' +
     '</div>' +
-    '<div class="mg-hud" id="mg-hud"></div>' +
-    '<div id="mg-board"></div>';
+    '<div id="mg-play-view">' +
+      '<div class="mg-timer-row">' +
+        '<div class="mg-timer-track"><div class="mg-timer-bar" id="mg-timer-bar"></div></div>' +
+        '<span class="mg-timer-num" id="mg-timer-num">15s</span>' +
+      '</div>' +
+      '<div class="mg-hud" id="mg-hud"></div>' +
+      '<div id="mg-board"></div>' +
+      '<div class="mg-daypreview" id="mg-daypreview"></div>' +
+    '</div>' +
+    '<div id="mg-rank" class="hidden"></div>';
 
   document.body.appendChild(panel);
   document.body.appendChild(fab);
@@ -139,21 +149,54 @@ const MG_PLAYERS = [
     open = !open;
     panel.classList.toggle('hidden', !open);
     fab.classList.toggle('active', open);
-    if (open && !started) start(); // primera vez: empieza el reto
+    if (open) {
+      if (view === 'rank') renderRanking();
+      else if (!started) start();
+      else resumeGameTimer(); // retoma la pregunta donde la dejaste
+    } else {
+      pauseGameTimer(); // al minimizar, el reloj se pausa
+    }
   });
   el('mg-close').addEventListener('click', function () {
     open = false;
     panel.classList.add('hidden');
     fab.classList.remove('active');
-    // El temporizador SIGUE corriendo aunque cierres (anti-trampas: no puedes
-    // cerrar para buscar la respuesta y volver con tiempo de sobra).
+    pauseGameTimer();
   });
+  el('mg-tab-play').addEventListener('click', () => switchView('play'));
+  el('mg-tab-rank').addEventListener('click', () => switchView('rank'));
+
+  function switchView(v) {
+    view = v;
+    el('mg-tab-play').classList.toggle('active', v === 'play');
+    el('mg-tab-rank').classList.toggle('active', v === 'rank');
+    el('mg-play-view').classList.toggle('hidden', v !== 'play');
+    el('mg-rank').classList.toggle('hidden', v !== 'rank');
+    // El reloj corre SOLO mientras miras la pregunta (mirar el ranking no penaliza).
+    if (v === 'play') { if (!started) start(); else resumeGameTimer(); }
+    else { pauseGameTimer(); renderRanking(); }
+  }
 
   // ── Temporizador (15 s por pregunta) ──
   function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
   function startTimer() {
     stopTimer();
+    paused = false;
     deadline = Date.now() + ROUND_MS;
+    tick();
+    timerId = setInterval(tick, 150);
+  }
+  // Pausa el reloj al salir de la pregunta (ranking / minimizar) y lo reanuda al volver.
+  function pauseGameTimer() {
+    if (!started || over || busy || !timerId) return;
+    pausedRemaining = Math.max(0, deadline - Date.now());
+    stopTimer();
+    paused = true;
+  }
+  function resumeGameTimer() {
+    if (!started || over || busy || !paused) return;
+    paused = false;
+    deadline = Date.now() + pausedRemaining;
     tick();
     timerId = setInterval(tick, 150);
   }
@@ -182,6 +225,7 @@ const MG_PLAYERS = [
     seq = buildDailySeq();
     idx = 0; score = 0; over = false; busy = false; started = true;
     render();
+    renderDayPreview();
   }
 
   function render() {
@@ -210,7 +254,7 @@ const MG_PLAYERS = [
     el('mg-more').addEventListener('click', () => guess('mas'));
     el('mg-less').addEventListener('click', () => guess('menos'));
     updateHud();
-    startTimer(); // arranca los 15 s de esta pregunta
+    startTimer();
   }
 
   function disableButtons() {
@@ -220,9 +264,9 @@ const MG_PLAYERS = [
   function guess(dir) {
     if (busy || over) return;
     busy = true;
-    stopTimer(); // el reloj se detiene al responder
+    stopTimer();
     const A = seq[idx], B = seq[idx + 1];
-    const correct = B.v > A.v ? 'mas' : 'menos'; // sin empates (ver buildDailySeq)
+    const correct = B.v > A.v ? 'mas' : 'menos';
     const ok = dir === correct;
 
     const bval = el('mg-bval');
@@ -234,13 +278,10 @@ const MG_PLAYERS = [
     disableButtons();
 
     if (ok) {
-      score++;
-      setBest(score);
-      updateHud();
+      score++; setBest(score); updateHud();
       setTimeout(() => { idx++; busy = false; render(); }, 1100);
     } else {
-      over = true;
-      setBest(score);
+      over = true; setBest(score);
       setTimeout(() => renderOver('wrong'), 1200);
     }
   }
@@ -295,5 +336,55 @@ const MG_PLAYERS = [
       </div>`;
     el('mg-again').addEventListener('click', start);
     updateHud();
+  }
+
+  // ── Beta: previsualizar el reto de otros días ──
+  function renderDayPreview() {
+    const dp = el('mg-daypreview');
+    if (!dp) return;
+    const isToday = previewOffset === 0;
+    const lbl = cap(formatKickoff(dayKey() + 'T12:00:00Z').date);
+    dp.innerHTML =
+      '🔧 <b>Beta</b> · ver otro día: ' +
+      '<button class="mg-day-arrow" id="mg-day-prev" aria-label="Día anterior">‹</button>' +
+      `<span class="mg-day-lbl">${isToday ? 'Hoy' : lbl}</span>` +
+      '<button class="mg-day-arrow" id="mg-day-next" aria-label="Día siguiente">›</button>' +
+      (isToday ? '' : ' <button class="mg-day-reset" id="mg-day-reset">Volver a hoy</button>');
+    el('mg-day-prev').addEventListener('click', () => { previewOffset--; start(); });
+    el('mg-day-next').addEventListener('click', () => { previewOffset++; start(); });
+    const r = el('mg-day-reset'); if (r) r.addEventListener('click', () => { previewOffset = 0; start(); });
+  }
+
+  // ── Ranking (DATOS DE EJEMPLO — aún no hay backend del juego) ──
+  function renderRanking() {
+    const rank = el('mg-rank');
+    if (!rank) return;
+    const me = (localStorage.getItem('wc2026_username') || 'Tú').trim() || 'Tú';
+    const best = getBest();
+    const demo = [
+      { n: 'Albert',      s: 14, st: 6 },
+      { n: 'Alex Martos', s: 12, st: 4 },
+      { n: 'Marc',        s: 11, st: 5 },
+      { n: me + ' (tú)',  s: best, st: 1, me: true },
+      { n: 'Laura',       s: 8,  st: 2 },
+      { n: 'Jordi',       s: 6,  st: 3 },
+    ];
+    demo.sort((a, b) => b.s - a.s || b.st - a.st);
+    const medals = ['🥇', '🥈', '🥉'];
+    let rows = '';
+    demo.forEach((d, i) => {
+      const pos = i < 3 ? medals[i] : (i + 1);
+      rows += `<div class="mg-rank-row${d.me ? ' me' : ''}">` +
+        `<span class="mg-rank-pos">${pos}</span>` +
+        `<span class="mg-rank-name">${d.n}</span>` +
+        `<span class="mg-rank-streak">🔥 ${d.st}</span>` +
+        `<span class="mg-rank-score">${d.s}</span>` +
+      `</div>`;
+    });
+    rank.innerHTML =
+      '<div class="mg-rank-head">🏆 Ranking del día <span class="mg-rank-tag">EJEMPLO</span></div>' +
+      '<div class="mg-rank-sub">Aciertos seguidos de hoy · 🔥 = días seguidos jugando (racha)</div>' +
+      '<div class="mg-rank-list">' + rows + '</div>' +
+      '<p class="mg-note">Vista previa con datos inventados. En la versión final se guardarán las puntuaciones reales de tus amigos cada día, con ranking y rachas de verdad.</p>';
   }
 })();
