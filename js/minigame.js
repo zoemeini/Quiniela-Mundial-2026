@@ -3,71 +3,111 @@
 //  EN PRUEBAS: burbuja flotante 🎮 «Reto del día» (abajo-izquierda),
 //  solo en el panel de admin → los amigos aún no lo ven.
 //
-//  Mecánica: ¿el siguiente jugador vale MÁS o MENOS que el actual?
-//  Tienes 15 s por pregunta (si se agota, fallas → no da tiempo a buscar).
-//  La secuencia es la MISMA para todos cada día (semilla = fecha).
-//
-//  Pestañas del panel: ▶️ Jugar  ·  🏆 Ranking (ejemplo).
-//  Beta: abajo puedes previsualizar el reto de OTROS días.
+//  CADA DÍA UN TEMA DISTINTO (rota por fecha, igual para todos):
+//    💰 valor de mercado · ⚽ goles en Mundiales · 📏 altura ·
+//    🎂 edad · 📱 seguidores en Instagram.
+//  ¿El siguiente jugador tiene MÁS o MENOS (de ese dato) que el actual?
+//  15 s por pregunta (si se agota, fallas → no da tiempo a buscar).
 //
 //  Depende de data.js (madridDayKey, formatKickoff).
 // ============================================================
 
-// Valor de mercado APROXIMADO en millones de € (fácil de editar a mano).
-const MG_PLAYERS = [
-  { n: 'Vinícius Júnior',      iso: 'br',     v: 200 },
-  { n: 'Kylian Mbappé',        iso: 'fr',     v: 180 },
-  { n: 'Erling Haaland',       iso: 'no',     v: 180 },
-  { n: 'Jude Bellingham',      iso: 'gb-eng', v: 180 },
-  { n: 'Lamine Yamal',         iso: 'es',     v: 180 },
-  { n: 'Florian Wirtz',        iso: 'de',     v: 140 },
-  { n: 'Jamal Musiala',        iso: 'de',     v: 140 },
-  { n: 'Bukayo Saka',          iso: 'gb-eng', v: 140 },
-  { n: 'Rodri',                iso: 'es',     v: 130 },
-  { n: 'Phil Foden',           iso: 'gb-eng', v: 130 },
-  { n: 'Cole Palmer',          iso: 'gb-eng', v: 130 },
-  { n: 'Federico Valverde',    iso: 'uy',     v: 130 },
-  { n: 'Declan Rice',          iso: 'gb-eng', v: 110 },
-  { n: 'Martin Ødegaard',      iso: 'no',     v: 110 },
-  { n: 'Lautaro Martínez',     iso: 'ar',     v: 110 },
-  { n: 'Harry Kane',           iso: 'gb-eng', v: 100 },
-  { n: 'Pedri',                iso: 'es',     v: 100 },
-  { n: 'Victor Osimhen',       iso: 'ng',     v: 100 },
-  { n: 'Julián Álvarez',       iso: 'ar',     v: 90 },
-  { n: 'Gavi',                 iso: 'es',     v: 90 },
-  { n: 'Eduardo Camavinga',    iso: 'fr',     v: 90 },
-  { n: 'Alexander Isak',       iso: 'se',     v: 90 },
-  { n: 'Khvicha Kvaratskhelia',iso: 'ge',     v: 85 },
-  { n: 'Aurélien Tchouaméni',  iso: 'fr',     v: 80 },
-  { n: 'Bruno Guimarães',      iso: 'br',     v: 80 },
-  { n: 'Pau Cubarsí',          iso: 'es',     v: 80 },
-  { n: 'Rafael Leão',          iso: 'pt',     v: 75 },
-  { n: 'Rúben Dias',           iso: 'pt',     v: 75 },
-  { n: 'Enzo Fernández',       iso: 'ar',     v: 70 },
-  { n: 'Alexis Mac Allister',  iso: 'ar',     v: 70 },
-  { n: 'Nico Williams',        iso: 'es',     v: 70 },
-  { n: 'João Neves',           iso: 'pt',     v: 70 },
-  { n: 'Achraf Hakimi',        iso: 'ma',     v: 60 },
-  { n: 'Dani Olmo',            iso: 'es',     v: 60 },
-  { n: 'Theo Hernández',       iso: 'fr',     v: 50 },
-  { n: 'Bruno Fernandes',      iso: 'pt',     v: 50 },
-  { n: 'Mohamed Salah',        iso: 'eg',     v: 50 },
-  { n: 'Son Heung-min',        iso: 'kr',     v: 40 },
-  { n: 'Gianluigi Donnarumma', iso: 'it',     v: 40 },
-  { n: 'Mike Maignan',         iso: 'fr',     v: 35 },
-  { n: 'Kevin De Bruyne',      iso: 'be',     v: 30 },
-  { n: 'Alisson Becker',       iso: 'br',     v: 30 },
-  { n: 'Lionel Messi',         iso: 'ar',     v: 30 },
-  { n: 'Thibaut Courtois',     iso: 'be',     v: 25 },
-  { n: 'Antoine Griezmann',    iso: 'fr',     v: 25 },
-  { n: 'Neymar Jr',            iso: 'br',     v: 20 },
-  { n: 'Cristiano Ronaldo',    iso: 'pt',     v: 15 },
-  { n: 'Robert Lewandowski',   iso: 'pl',     v: 15 },
-  { n: 'Luka Modrić',          iso: 'hr',     v: 10 },
+// Cada tema tiene su propia lista. Valores APROXIMADOS (fácil de editar).
+//   n = nombre · iso = bandera (flagcdn) · v = dato del tema
+const MG_THEMES = [
+  {
+    key: 'valor', emoji: '💰', label: 'Valor de mercado',
+    sub: 'valor de mercado', unit: 'M€', verb: 'vale', metric: '',
+    players: [
+      { n: 'Vinícius Júnior', iso: 'br', v: 200 }, { n: 'Kylian Mbappé', iso: 'fr', v: 180 },
+      { n: 'Erling Haaland', iso: 'no', v: 180 }, { n: 'Jude Bellingham', iso: 'gb-eng', v: 180 },
+      { n: 'Lamine Yamal', iso: 'es', v: 180 }, { n: 'Florian Wirtz', iso: 'de', v: 140 },
+      { n: 'Jamal Musiala', iso: 'de', v: 140 }, { n: 'Bukayo Saka', iso: 'gb-eng', v: 140 },
+      { n: 'Rodri', iso: 'es', v: 130 }, { n: 'Phil Foden', iso: 'gb-eng', v: 130 },
+      { n: 'Cole Palmer', iso: 'gb-eng', v: 130 }, { n: 'Federico Valverde', iso: 'uy', v: 130 },
+      { n: 'Lautaro Martínez', iso: 'ar', v: 110 }, { n: 'Harry Kane', iso: 'gb-eng', v: 100 },
+      { n: 'Pedri', iso: 'es', v: 100 }, { n: 'Victor Osimhen', iso: 'ng', v: 100 },
+      { n: 'Julián Álvarez', iso: 'ar', v: 90 }, { n: 'Rafael Leão', iso: 'pt', v: 75 },
+      { n: 'Achraf Hakimi', iso: 'ma', v: 60 }, { n: 'Mohamed Salah', iso: 'eg', v: 50 },
+      { n: 'Son Heung-min', iso: 'kr', v: 40 }, { n: 'Kevin De Bruyne', iso: 'be', v: 30 },
+      { n: 'Lionel Messi', iso: 'ar', v: 30 }, { n: 'Antoine Griezmann', iso: 'fr', v: 25 },
+      { n: 'Neymar Jr', iso: 'br', v: 20 }, { n: 'Cristiano Ronaldo', iso: 'pt', v: 15 },
+      { n: 'Luka Modrić', iso: 'hr', v: 10 },
+    ],
+  },
+  {
+    key: 'goles', emoji: '⚽', label: 'Goles en Mundiales',
+    sub: 'goles en Mundiales (histórico)', unit: 'goles', verb: 'tiene', metric: 'goles en Mundiales',
+    players: [
+      { n: 'Miroslav Klose', iso: 'de', v: 16 }, { n: 'Ronaldo Nazário', iso: 'br', v: 15 },
+      { n: 'Gerd Müller', iso: 'de', v: 14 }, { n: 'Just Fontaine', iso: 'fr', v: 13 },
+      { n: 'Lionel Messi', iso: 'ar', v: 13 }, { n: 'Pelé', iso: 'br', v: 12 },
+      { n: 'Kylian Mbappé', iso: 'fr', v: 12 }, { n: 'Jürgen Klinsmann', iso: 'de', v: 11 },
+      { n: 'Sándor Kocsis', iso: 'hu', v: 11 }, { n: 'Gabriel Batistuta', iso: 'ar', v: 10 },
+      { n: 'Gary Lineker', iso: 'gb-eng', v: 10 }, { n: 'Thomas Müller', iso: 'de', v: 10 },
+      { n: 'Roberto Baggio', iso: 'it', v: 9 }, { n: 'Paolo Rossi', iso: 'it', v: 9 },
+      { n: 'Diego Maradona', iso: 'ar', v: 8 }, { n: 'Cristiano Ronaldo', iso: 'pt', v: 8 },
+      { n: 'Neymar Jr', iso: 'br', v: 8 }, { n: 'Rivaldo', iso: 'br', v: 8 },
+      { n: 'Davor Šuker', iso: 'hr', v: 6 }, { n: 'Salvatore Schillaci', iso: 'it', v: 6 },
+      { n: 'Geoff Hurst', iso: 'gb-eng', v: 5 }, { n: 'Zinedine Zidane', iso: 'fr', v: 5 },
+    ],
+  },
+  {
+    key: 'altura', emoji: '📏', label: 'Altura',
+    sub: 'altura', unit: 'cm', verb: 'mide', metric: '',
+    players: [
+      { n: 'Thibaut Courtois', iso: 'be', v: 199 }, { n: 'Erling Haaland', iso: 'no', v: 195 },
+      { n: 'Virgil van Dijk', iso: 'nl', v: 193 }, { n: 'Manuel Neuer', iso: 'de', v: 193 },
+      { n: 'Rodri', iso: 'es', v: 191 }, { n: 'Romelu Lukaku', iso: 'be', v: 191 },
+      { n: 'Harry Kane', iso: 'gb-eng', v: 188 }, { n: 'Cristiano Ronaldo', iso: 'pt', v: 187 },
+      { n: 'Jude Bellingham', iso: 'gb-eng', v: 186 }, { n: 'Robert Lewandowski', iso: 'pl', v: 185 },
+      { n: 'Son Heung-min', iso: 'kr', v: 183 }, { n: 'Kevin De Bruyne', iso: 'be', v: 181 },
+      { n: 'Lamine Yamal', iso: 'es', v: 180 }, { n: 'Bruno Fernandes', iso: 'pt', v: 179 },
+      { n: 'Kylian Mbappé', iso: 'fr', v: 178 }, { n: 'Vinícius Júnior', iso: 'br', v: 176 },
+      { n: 'Neymar Jr', iso: 'br', v: 175 }, { n: 'Mohamed Salah', iso: 'eg', v: 175 },
+      { n: 'Pedri', iso: 'es', v: 174 }, { n: 'Luka Modrić', iso: 'hr', v: 172 },
+      { n: 'Antoine Griezmann', iso: 'fr', v: 172 }, { n: 'Lionel Messi', iso: 'ar', v: 170 },
+    ],
+  },
+  {
+    key: 'edad', emoji: '🎂', label: 'Edad (2026)',
+    sub: 'edad en 2026', unit: 'años', verb: 'tiene', metric: 'años',
+    players: [
+      { n: 'Pepe', iso: 'pt', v: 43 }, { n: 'Cristiano Ronaldo', iso: 'pt', v: 41 },
+      { n: 'Luka Modrić', iso: 'hr', v: 40 }, { n: 'Luis Suárez', iso: 'uy', v: 39 },
+      { n: 'Lionel Messi', iso: 'ar', v: 38 }, { n: 'Karim Benzema', iso: 'fr', v: 38 },
+      { n: 'Ángel Di María', iso: 'ar', v: 38 }, { n: 'Robert Lewandowski', iso: 'pl', v: 37 },
+      { n: 'Antoine Griezmann', iso: 'fr', v: 35 }, { n: 'Neymar Jr', iso: 'br', v: 34 },
+      { n: 'Kevin De Bruyne', iso: 'be', v: 34 }, { n: 'Mohamed Salah', iso: 'eg', v: 33 },
+      { n: 'Harry Kane', iso: 'gb-eng', v: 32 }, { n: 'Kylian Mbappé', iso: 'fr', v: 27 },
+      { n: 'Vinícius Júnior', iso: 'br', v: 25 }, { n: 'Erling Haaland', iso: 'no', v: 25 },
+      { n: 'Jamal Musiala', iso: 'de', v: 23 }, { n: 'Florian Wirtz', iso: 'de', v: 23 },
+      { n: 'Pedri', iso: 'es', v: 23 }, { n: 'Jude Bellingham', iso: 'gb-eng', v: 22 },
+      { n: 'Gavi', iso: 'es', v: 21 }, { n: 'Pau Cubarsí', iso: 'es', v: 19 },
+      { n: 'Lamine Yamal', iso: 'es', v: 18 },
+    ],
+  },
+  {
+    key: 'instagram', emoji: '📱', label: 'Seguidores en Instagram',
+    sub: 'seguidores en Instagram (aprox.)', unit: 'M', verb: 'tiene', metric: 'seguidores',
+    players: [
+      { n: 'Cristiano Ronaldo', iso: 'pt', v: 650 }, { n: 'Lionel Messi', iso: 'ar', v: 510 },
+      { n: 'Neymar Jr', iso: 'br', v: 230 }, { n: 'Kylian Mbappé', iso: 'fr', v: 120 },
+      { n: 'David Beckham', iso: 'gb-eng', v: 88 }, { n: 'Ronaldinho', iso: 'br', v: 80 },
+      { n: 'Karim Benzema', iso: 'fr', v: 75 }, { n: 'Mohamed Salah', iso: 'eg', v: 70 },
+      { n: 'Sergio Ramos', iso: 'es', v: 65 }, { n: 'Paul Pogba', iso: 'fr', v: 60 },
+      { n: 'Marcelo', iso: 'br', v: 58 }, { n: 'James Rodríguez', iso: 'co', v: 50 },
+      { n: 'Vinícius Júnior', iso: 'br', v: 50 }, { n: 'Erling Haaland', iso: 'no', v: 45 },
+      { n: 'Jude Bellingham', iso: 'gb-eng', v: 42 }, { n: 'Lamine Yamal', iso: 'es', v: 40 },
+      { n: 'Robert Lewandowski', iso: 'pl', v: 38 }, { n: 'Luka Modrić', iso: 'hr', v: 30 },
+      { n: 'Kevin De Bruyne', iso: 'be', v: 18 }, { n: 'Harry Kane', iso: 'gb-eng', v: 17 },
+    ],
+  },
 ];
 
 (function () {
   const ROUND_MS = 15000; // 15 s por pregunta
+  let theme = MG_THEMES[0];
   let seq = [], idx = 0, score = 0, busy = false, over = false, started = false;
   let deadline = 0, timerId = null, open = false, previewOffset = 0, view = 'play';
   let paused = false, pausedRemaining = 0;
@@ -77,6 +117,16 @@ const MG_PLAYERS = [
   const dayKey = () => madridDayKey(gameDate());
   const seedInt = () => parseInt(dayKey().replace(/-/g, ''), 10) || 1;
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+  // Día como número entero → el TEMA rota cada día (igual para todos).
+  function dayOrdinal() {
+    const p = dayKey().split('-');
+    return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000);
+  }
+  function currentTheme() {
+    const i = ((dayOrdinal() % MG_THEMES.length) + MG_THEMES.length) % MG_THEMES.length;
+    return MG_THEMES[i];
+  }
 
   function mulberry32(a) {
     return function () {
@@ -88,7 +138,7 @@ const MG_PLAYERS = [
   }
   function buildDailySeq() {
     const rng = mulberry32(seedInt());
-    const arr = MG_PLAYERS.slice();
+    const arr = theme.players.slice();
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));
       const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
@@ -109,6 +159,7 @@ const MG_PLAYERS = [
     return `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" ` +
            `srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">`;
   }
+  const fmtV = v => `${v} ${theme.unit}`;
   const bestKey = () => 'wc2026_mg_best_' + dayKey();
   const getBest = () => parseInt(localStorage.getItem(bestKey()) || '0', 10) || 0;
   function setBest(v) { if (v > getBest()) localStorage.setItem(bestKey(), String(v)); }
@@ -132,6 +183,7 @@ const MG_PLAYERS = [
       '<button type="button" class="mg-tab" id="mg-tab-rank">🏆 Ranking</button>' +
     '</div>' +
     '<div id="mg-play-view">' +
+      '<div class="mg-theme" id="mg-theme"></div>' +
       '<div class="mg-timer-row">' +
         '<div class="mg-timer-track"><div class="mg-timer-bar" id="mg-timer-bar"></div></div>' +
         '<span class="mg-timer-num" id="mg-timer-num">15s</span>' +
@@ -152,9 +204,9 @@ const MG_PLAYERS = [
     if (open) {
       if (view === 'rank') renderRanking();
       else if (!started) start();
-      else resumeGameTimer(); // retoma la pregunta donde la dejaste
+      else resumeGameTimer();
     } else {
-      pauseGameTimer(); // al minimizar, el reloj se pausa
+      pauseGameTimer();
     }
   });
   el('mg-close').addEventListener('click', function () {
@@ -172,12 +224,11 @@ const MG_PLAYERS = [
     el('mg-tab-rank').classList.toggle('active', v === 'rank');
     el('mg-play-view').classList.toggle('hidden', v !== 'play');
     el('mg-rank').classList.toggle('hidden', v !== 'rank');
-    // El reloj corre SOLO mientras miras la pregunta (mirar el ranking no penaliza).
     if (v === 'play') { if (!started) start(); else resumeGameTimer(); }
     else { pauseGameTimer(); renderRanking(); }
   }
 
-  // ── Temporizador (15 s por pregunta) ──
+  // ── Temporizador (15 s por pregunta; pausa al mirar ranking / minimizar) ──
   function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
   function startTimer() {
     stopTimer();
@@ -186,7 +237,6 @@ const MG_PLAYERS = [
     tick();
     timerId = setInterval(tick, 150);
   }
-  // Pausa el reloj al salir de la pregunta (ranking / minimizar) y lo reanuda al volver.
   function pauseGameTimer() {
     if (!started || over || busy || !timerId) return;
     pausedRemaining = Math.max(0, deadline - Date.now());
@@ -220,10 +270,16 @@ const MG_PLAYERS = [
     const h = el('mg-hud');
     if (h) h.innerHTML = `Aciertos: <b>${score}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`;
   }
+  function renderThemeBanner() {
+    const tb = el('mg-theme');
+    if (tb) tb.innerHTML = `🎯 Tema de hoy: <b>${theme.emoji} ${theme.label}</b>`;
+  }
 
   function start() {
+    theme = currentTheme();
     seq = buildDailySeq();
     idx = 0; score = 0; over = false; busy = false; started = true;
+    renderThemeBanner();
     render();
     renderDayPreview();
   }
@@ -233,21 +289,22 @@ const MG_PLAYERS = [
     if (!wrap) return;
     const A = seq[idx], B = seq[idx + 1];
     if (!B) { renderWin(); return; }
+    const metric = theme.metric ? ' ' + theme.metric : '';
     wrap.innerHTML = `
       <div class="mg-card">
         ${flag(A.iso)}
         <div class="mg-name">${A.n}</div>
-        <div class="mg-sub">valor de mercado</div>
-        <div class="mg-val">${A.v} M€</div>
+        <div class="mg-sub">${theme.sub}</div>
+        <div class="mg-val">${fmtV(A.v)}</div>
       </div>
-      <div class="mg-vs">¿<b>${B.n}</b> vale más o menos?</div>
+      <div class="mg-vs">¿<b>${B.n}</b> ${theme.verb} más o menos${metric}?</div>
       <div class="mg-card mg-card-b">
         ${flag(B.iso)}
         <div class="mg-name">${B.n}</div>
-        <div class="mg-sub">valor de mercado</div>
-        <div class="mg-val mg-hidden" id="mg-bval">??? M€</div>
+        <div class="mg-sub">${theme.sub}</div>
+        <div class="mg-val mg-hidden" id="mg-bval">??? ${theme.unit}</div>
         <div class="mg-buttons">
-          <button class="mg-btn mg-more" id="mg-more">⬆️ MÁS de ${A.v} M€</button>
+          <button class="mg-btn mg-more" id="mg-more">⬆️ MÁS de ${fmtV(A.v)}</button>
           <button class="mg-btn mg-less" id="mg-less">⬇️ MENOS</button>
         </div>
       </div>`;
@@ -271,7 +328,7 @@ const MG_PLAYERS = [
 
     const bval = el('mg-bval');
     if (bval) {
-      bval.textContent = B.v + ' M€';
+      bval.textContent = fmtV(B.v);
       bval.classList.remove('mg-hidden');
       bval.classList.add(ok ? 'mg-ok' : 'mg-bad');
     }
@@ -292,7 +349,7 @@ const MG_PLAYERS = [
     const B = seq[idx + 1];
     const bval = el('mg-bval');
     if (B && bval) {
-      bval.textContent = B.v + ' M€';
+      bval.textContent = fmtV(B.v);
       bval.classList.remove('mg-hidden');
       bval.classList.add('mg-bad');
     }
@@ -338,17 +395,19 @@ const MG_PLAYERS = [
     updateHud();
   }
 
-  // ── Beta: previsualizar el reto de otros días ──
+  // ── Beta: previsualizar el reto (y el TEMA) de otros días ──
   function renderDayPreview() {
     const dp = el('mg-daypreview');
     if (!dp) return;
     const isToday = previewOffset === 0;
     const lbl = cap(formatKickoff(dayKey() + 'T12:00:00Z').date);
+    const th = currentTheme();
     dp.innerHTML =
       '🔧 <b>Beta</b> · ver otro día: ' +
       '<button class="mg-day-arrow" id="mg-day-prev" aria-label="Día anterior">‹</button>' +
       `<span class="mg-day-lbl">${isToday ? 'Hoy' : lbl}</span>` +
       '<button class="mg-day-arrow" id="mg-day-next" aria-label="Día siguiente">›</button>' +
+      `<span class="mg-day-theme">${th.emoji} ${th.label}</span>` +
       (isToday ? '' : ' <button class="mg-day-reset" id="mg-day-reset">Volver a hoy</button>');
     el('mg-day-prev').addEventListener('click', () => { previewOffset--; start(); });
     el('mg-day-next').addEventListener('click', () => { previewOffset++; start(); });
@@ -362,12 +421,9 @@ const MG_PLAYERS = [
     const me = (localStorage.getItem('wc2026_username') || 'Tú').trim() || 'Tú';
     const best = getBest();
     const demo = [
-      { n: 'Albert',      s: 14, st: 6 },
-      { n: 'Alex Martos', s: 12, st: 4 },
-      { n: 'Marc',        s: 11, st: 5 },
-      { n: me + ' (tú)',  s: best, st: 1, me: true },
-      { n: 'Laura',       s: 8,  st: 2 },
-      { n: 'Jordi',       s: 6,  st: 3 },
+      { n: 'Albert', s: 14, st: 6 }, { n: 'Alex Martos', s: 12, st: 4 },
+      { n: 'Marc', s: 11, st: 5 }, { n: me + ' (tú)', s: best, st: 1, me: true },
+      { n: 'Laura', s: 8, st: 2 }, { n: 'Jordi', s: 6, st: 3 },
     ];
     demo.sort((a, b) => b.s - a.s || b.st - a.st);
     const medals = ['🥇', '🥈', '🥉'];
