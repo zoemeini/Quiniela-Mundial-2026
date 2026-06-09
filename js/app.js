@@ -38,9 +38,42 @@ function loadUser() {
 function applyUser() {
   document.getElementById('username-display').textContent = currentUser;
   document.getElementById('username-modal').classList.add('hidden');
+  // La primera vez, muestra el «¿Cómo funciona?».
+  if (!localStorage.getItem('wc2026_help_seen')) {
+    localStorage.setItem('wc2026_help_seen', '1');
+    setTimeout(showHelp, 400);
+  }
   loadData();
   setInterval(loadData, 60000);
 }
+
+// ── ¿Cómo funciona? (modal de ayuda) ─────────────────────
+function showHelp() { document.getElementById('help-modal').classList.remove('hidden'); }
+function hideHelp() { document.getElementById('help-modal').classList.add('hidden'); }
+document.getElementById('help-btn').addEventListener('click', showHelp);
+document.getElementById('help-close').addEventListener('click', hideHelp);
+document.getElementById('help-modal').addEventListener('click', e => { if (e.target.id === 'help-modal') hideHelp(); });
+
+// ── Aviso de partidos que empiezan pronto sin rellenar ───
+function updateNudge() {
+  const el = document.getElementById('nudge-banner');
+  if (!el) return;
+  const now = Date.now(), H = 24 * 3600 * 1000;
+  let n = 0;
+  const soon = m => !matchLocked(m.kickoff) && !predictions[m.id] && (new Date(m.kickoff).getTime() - now) <= H;
+  MATCHES.forEach(m => { if (soon(m)) n++; });
+  KO_MATCHES.forEach(m => { const r = realBr.resolved[m.id]; if (r && r.home && r.away && soon(m)) n++; });
+  if (n <= 0) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  document.getElementById('nudge-text').textContent =
+    `Tienes ${n} partido${n > 1 ? 's' : ''} por rellenar que empieza${n > 1 ? 'n' : ''} pronto (próximas 24 h).`;
+}
+document.getElementById('nudge-banner').addEventListener('click', () => {
+  showPhase('groups');
+  renderGroupTab('upcoming');
+  const c = document.getElementById('day-content');
+  if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 document.getElementById('username-submit').addEventListener('click', () => {
   const val = document.getElementById('username-input').value.trim();
   if (!val) return;
@@ -336,6 +369,7 @@ function onScoreChange(matchId) {
   dirty[matchId] = { home, away };
   updateProgress();
   updateDayChecks();
+  updateNudge();
   setStatus(matchId, 'saving', '…');
   clearTimeout(saveTimers[matchId]);
   saveTimers[matchId] = setTimeout(() => savePrediction(matchId), 600);
@@ -385,6 +419,7 @@ async function loadData() {
 
     syncGroupCards();
     maybeRefreshUpcoming(); // mantiene «Próximos» al día (3 días) en tiempo real
+    updateNudge();
     // Eliminatorias: re-render solo si no estás escribiendo una casilla KO ahora mismo.
     const editingKo = document.activeElement && /^sc-M/.test(document.activeElement.id || '');
     if (currentPhase === 'ko' && !editingKo) renderKnockout();

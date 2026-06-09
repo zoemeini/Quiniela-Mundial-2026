@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Predicciones · Porrita Mundial 2026</title>
+  <title>Resultados · Porrita Mundial 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
@@ -20,8 +20,8 @@
     </div>
     <nav class="header-nav">
       <a href="index.html" class="nav-link">Mis Pronósticos</a>
-      <a href="predicciones.html" class="nav-link active">Predicciones</a>
-      <a href="resultados.html" class="nav-link">Resultados</a>
+      <a href="predicciones.html" class="nav-link">Predicciones</a>
+      <a href="resultados.html" class="nav-link active">Resultados</a>
       <a href="leaderboard.html" class="nav-link">Clasificación</a>
     </nav>
     <div class="header-right">
@@ -31,30 +31,16 @@
 </header>
 
 <main class="main">
-  <div class="leaderboard-title">👁️ Predicciones de todos</div>
-  <div class="leaderboard-subtitle" id="pred-subtitle">Cargando…</div>
-
-  <!-- Bloqueado hasta el cierre -->
-  <div class="ko-locked-msg hidden" id="pred-locked">
-    🔒 Las predicciones de los demás se mostrarán <b>cuando se cierren los pronósticos</b> (11 de junio, antes del primer partido).
-    <div class="ko-locked-progress">Así nadie puede copiar antes de tiempo. Hasta entonces, solo tú ves las tuyas en «Mis Pronósticos».</div>
-  </div>
-
-  <!-- Contenido (tras el cierre) -->
-  <div id="pred-content" class="hidden">
-    <div class="pred-controls">
-      <label for="pred-player">Ver las predicciones de:</label>
-      <select class="admin-select" id="pred-player"></select>
-    </div>
-    <div id="pred-view"></div>
-  </div>
+  <div class="leaderboard-title">📣 Resultados y aciertos</div>
+  <div class="leaderboard-subtitle" id="res-subtitle">Cargando…</div>
+  <div id="res-body"></div>
 </main>
 
 <script src="js/config.js?v=16"></script>
 <script src="js/api.js?v=16"></script>
 <script src="js/data.js?v=16"></script>
 <script src="js/bracket.js?v=16"></script>
-<script src="js/predicciones.js?v=16"></script>
+<script src="js/resultados.js?v=16"></script>
 <script src="js/music.js?v=16"></script>
 </body>
 </html>

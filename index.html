@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=16">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 </head>
 <body>
@@ -51,16 +51,35 @@
   </div>
 </div>
 
+<!-- Modal ¿Cómo funciona? -->
+<div id="help-modal" class="modal-overlay hidden">
+  <div class="modal help-modal">
+    <div class="modal-icon">⚽</div>
+    <h2>¿Cómo funciona?</h2>
+    <div class="help-body">
+      <p><b>1.</b> Pronostica el <b>marcador</b> de cada partido. Se guarda solo.</p>
+      <p><b>2.</b> Cada partido se <b>cierra a su hora de inicio</b>; puedes editar hasta entonces. Lo que no rellenes cuenta como <b>0–0</b>.</p>
+      <p><b>3. Puntos:</b> <span class="badge badge-green">+5</span> resultado exacto · <span class="badge badge-gold">+3</span> acertar el vencedor · <span class="badge badge-red">0</span> fallo.</p>
+      <p><b>4. Eliminatorias:</b> se abren al terminar los grupos, ronda por ronda, con los equipos reales clasificados.</p>
+      <p><b>5.</b> En <b>«Predicciones»</b> ves lo que puso cada uno, pero solo de cada partido <b>una vez que ha empezado</b> (así nadie copia).</p>
+      <p><b>6.</b> Un usuario por dispositivo. Para empezar de cero, usa <b>«Borrar»</b>.</p>
+    </div>
+    <button class="btn-primary" id="help-close" style="width:100%;margin-top:6px">¡Entendido!</button>
+  </div>
+</div>
+
 <!-- Cabecera -->
 <header class="header">
   <div class="header-content">
     <div class="header-left">
       <span class="trophy">🏆</span>
       <span class="header-title">Porrita Mundial 2026</span>
+      <button class="help-btn" id="help-btn" title="¿Cómo funciona?" aria-label="¿Cómo funciona?">?</button>
     </div>
     <nav class="header-nav">
       <a href="index.html" class="nav-link active">Mis Pronósticos</a>
       <a href="predicciones.html" class="nav-link">Predicciones</a>
+      <a href="resultados.html" class="nav-link">Resultados</a>
       <a href="leaderboard.html" class="nav-link">Clasificación</a>
     </nav>
     <div class="header-right">
@@ -79,6 +98,13 @@
   <div class="locked-banner hidden" id="locked-banner">
     🔒 Los pronósticos están cerrados — ¡el torneo ha comenzado! Consulta la <a href="leaderboard.html" style="color:inherit;text-decoration:underline">clasificación</a>.
   </div>
+
+  <!-- Aviso: partidos sin rellenar que empiezan pronto -->
+  <button class="nudge-banner hidden" id="nudge-banner">
+    <span class="nudge-ico">⏰</span>
+    <span id="nudge-text"></span>
+    <span class="nudge-cta">Rellenar →</span>
+  </button>
 
   <!-- Leyenda de puntuación -->
   <div class="scoring-legend">
@@ -139,11 +165,11 @@
   </section>
 </main>
 
-<script src="js/config.js?v=15"></script>
-<script src="js/api.js?v=15"></script>
-<script src="js/data.js?v=15"></script>
-<script src="js/bracket.js?v=15"></script>
-<script src="js/app.js?v=15"></script>
-<script src="js/music.js?v=15"></script>
+<script src="js/config.js?v=16"></script>
+<script src="js/api.js?v=16"></script>
+<script src="js/data.js?v=16"></script>
+<script src="js/bracket.js?v=16"></script>
+<script src="js/app.js?v=16"></script>
+<script src="js/music.js?v=16"></script>
 </body>
 </html>
