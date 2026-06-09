@@ -42,7 +42,7 @@ const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 const GROUP_COLORS = {
   A: '#ef4444', // red
   B: '#3b82f6', // blue
-  C: '#a82d4d', // burgundy
+  C: '#8a1f3d', // dark burgundy
   D: '#22c55e', // green
   E: '#a855f7', // purple
   F: '#ffe600', // bright yellow
