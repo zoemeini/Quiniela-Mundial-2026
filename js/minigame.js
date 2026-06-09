@@ -149,6 +149,21 @@ const MG_THEMES = [
       { n: 'Harry Maguire', iso: 'gb-eng', v: 87 }, { n: 'Rúben Dias', iso: 'pt', v: 68 },
     ],
   },
+  {
+    key: 'selecciones', emoji: '🏆', label: 'Victorias en Mundiales',
+    sub: 'partidos ganados en Mundiales (histórico)', unit: 'victorias', verb: 'tiene', metric: 'victorias en Mundiales',
+    players: [
+      { n: 'Brasil', iso: 'br', v: 76 }, { n: 'Alemania', iso: 'de', v: 68 },
+      { n: 'Argentina', iso: 'ar', v: 47 }, { n: 'Italia', iso: 'it', v: 45 },
+      { n: 'Francia', iso: 'fr', v: 39 }, { n: 'Inglaterra', iso: 'gb-eng', v: 32 },
+      { n: 'España', iso: 'es', v: 31 }, { n: 'Países Bajos', iso: 'nl', v: 30 },
+      { n: 'Uruguay', iso: 'uy', v: 24 }, { n: 'Bélgica', iso: 'be', v: 20 },
+      { n: 'Suecia', iso: 'se', v: 19 }, { n: 'México', iso: 'mx', v: 16 },
+      { n: 'Portugal', iso: 'pt', v: 14 }, { n: 'Croacia', iso: 'hr', v: 13 },
+      { n: 'Chile', iso: 'cl', v: 11 }, { n: 'Estados Unidos', iso: 'us', v: 9 },
+      { n: 'Japón', iso: 'jp', v: 6 }, { n: 'Marruecos', iso: 'ma', v: 5 },
+    ],
+  },
 ];
 
 (function () {
