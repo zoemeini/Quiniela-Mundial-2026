@@ -239,7 +239,7 @@ const MG_PORTERIA_POOL = [
   { desc: 'Iniesta · gol de la final vs Países Bajos (2010)',    x: 0.78, y: 0.64 },
   { desc: 'Di María · gol en la final vs Francia (2022)',        x: 0.18, y: 0.68 },
   { desc: 'Mbappé · volea en la final vs Argentina (2022)',      x: 0.84, y: 0.78 },
-  { desc: 'Richarlison · chilena vs Serbia (2022)',              x: 0.55, y: 0.28 },
+  { desc: 'Pavard · volea vs Argentina (2018)',                  x: 0.16, y: 0.16 },
   // reserva (también de Mundiales)
   { desc: 'Messi · gol vs México (2022)',                        x: 0.20, y: 0.72 },
   { desc: 'Zidane · cabezazo en la final vs Brasil (1998)',      x: 0.32, y: 0.58 },
