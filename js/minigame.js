@@ -235,14 +235,15 @@ const MG_FOTO_POOL = [
 // x,y = punto de entrada en la PORTERÍA (fracción 0–1; x: izq→der, y: arriba→abajo),
 //       desde la vista del público/portero. Valores APROXIMADOS, fáciles de editar.
 const MG_PORTERIA_POOL = [
-  { desc: 'Maradona · «el gol del siglo» vs Inglaterra (1986)', x: 0.40, y: 0.80 },
-  { desc: 'Iniesta · gol de la final vs Países Bajos (2010)',   x: 0.76, y: 0.66 },
-  { desc: 'Zidane · cabezazo en la final vs Brasil (1998)',     x: 0.32, y: 0.58 },
-  { desc: 'Ronaldinho · lob a Seaman vs Inglaterra (2002)',     x: 0.17, y: 0.15 },
-  { desc: 'James Rodríguez · volea vs Uruguay (2014)',          x: 0.15, y: 0.14 },
-  { desc: 'Carlos Alberto · gol de la final vs Italia (1970)',  x: 0.85, y: 0.80 },
-  { desc: 'Maxi Rodríguez · volea vs México (2006)',            x: 0.16, y: 0.18 },
-  { desc: 'Robin van Persie · cabezazo vs España (2014)',       x: 0.52, y: 0.28 },
+  { desc: 'Maradona · «el gol del siglo» vs Inglaterra (1986)',  x: 0.38, y: 0.80 },
+  { desc: 'Iniesta · gol de la final vs Países Bajos (2010)',    x: 0.78, y: 0.64 },
+  { desc: 'Di María · gol en la final vs Francia (2022)',        x: 0.18, y: 0.68 },
+  { desc: 'Mbappé · volea en la final vs Argentina (2022)',      x: 0.84, y: 0.78 },
+  { desc: 'Richarlison · chilena vs Serbia (2022)',              x: 0.55, y: 0.28 },
+  // reserva (también de Mundiales)
+  { desc: 'Messi · gol vs México (2022)',                        x: 0.20, y: 0.72 },
+  { desc: 'Zidane · cabezazo en la final vs Brasil (1998)',      x: 0.32, y: 0.58 },
+  { desc: 'James Rodríguez · volea vs Uruguay (2014)',           x: 0.15, y: 0.14 },
 ];
 
 // ── Sudokus 6×6 con solución ÚNICA verificada (0 = vacía, 1–6 = símbolo).
