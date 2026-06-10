@@ -181,6 +181,49 @@ document.getElementById('pin-set-submit').addEventListener('click', submitSetPin
 document.getElementById('pin-set-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitSetPin(); });
 document.getElementById('pin-set-cancel').addEventListener('click', closePinModal);
 document.getElementById('pin-modal').addEventListener('click', e => { if (e.target.id === 'pin-modal') closePinModal(); });
+// ── Cambiar de nombre (conserva pronósticos y puntos) ────
+function openRenameModal() {
+  document.getElementById('rename-input').value = currentUser || '';
+  document.getElementById('rename-pin').value = localStorage.getItem('wc2026_pin') || '';
+  document.getElementById('rename-error').classList.add('hidden');
+  document.getElementById('rename-modal').classList.remove('hidden');
+  setTimeout(() => { const i = document.getElementById('rename-input'); if (i) { i.focus(); i.select(); } }, 50);
+}
+function closeRenameModal() { document.getElementById('rename-modal').classList.add('hidden'); }
+function submitRename() {
+  const newName = document.getElementById('rename-input').value.trim();
+  const pin = document.getElementById('rename-pin').value.trim();
+  const err = document.getElementById('rename-error');
+  const btn = document.getElementById('rename-submit');
+  err.classList.add('hidden');
+  if (!newName) { err.textContent = 'Escribe el nuevo nombre.'; err.classList.remove('hidden'); return; }
+  if (newName === currentUser) { err.textContent = 'Ese ya es tu nombre actual.'; err.classList.remove('hidden'); return; }
+  const old = btn.textContent; btn.disabled = true; btn.textContent = 'Guardando…';
+  api.rename({ user: currentUser, newName: newName, pin: pin })
+    .then(resp => {
+      const prev = currentUser;
+      currentUser = resp.user || newName;
+      localStorage.setItem('wc2026_username', currentUser);
+      try { localStorage.removeItem('wc2026_cache_user_' + prev); } catch (_) {}
+      document.getElementById('username-display').textContent = currentUser;
+      closeRenameModal();
+      btn.disabled = false; btn.textContent = old;
+      loadData();
+    })
+    .catch(e => {
+      const msg = String(e && e.message || '');
+      err.textContent = /PIN|cogido|está|largo|mismo/.test(msg) ? msg : 'No se pudo cambiar ahora mismo. Inténtalo de nuevo.';
+      err.classList.remove('hidden');
+      btn.disabled = false; btn.textContent = old;
+    });
+}
+document.getElementById('rename-btn').addEventListener('click', openRenameModal);
+document.getElementById('rename-submit').addEventListener('click', submitRename);
+document.getElementById('rename-pin').addEventListener('keydown', e => { if (e.key === 'Enter') submitRename(); });
+document.getElementById('rename-input').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('rename-pin').focus(); });
+document.getElementById('rename-cancel').addEventListener('click', closeRenameModal);
+document.getElementById('rename-modal').addEventListener('click', e => { if (e.target.id === 'rename-modal') closeRenameModal(); });
+
 // "Borrar" no permite cambiar de nombre libremente: borra tu usuario (y todos
 // tus pronósticos) y solo entonces puedes crear uno nuevo. Evita jugar 2 veces.
 document.getElementById('change-user-btn').addEventListener('click', () => {

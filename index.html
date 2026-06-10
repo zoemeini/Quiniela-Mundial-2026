@@ -47,6 +47,26 @@
   </div>
 </div>
 
+<!-- Modal: cambiar de nombre -->
+<div id="rename-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-icon">✏️</div>
+    <h2>Cambiar tu nombre</h2>
+    <p>Ponte el nombre que quieras 😎. Tus <b>pronósticos y puntos se conservan</b>; solo cambia cómo te ven los demás.</p>
+    <div class="input-group">
+      <input type="text" id="rename-input" placeholder="Nuevo nombre…" maxlength="30" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <input type="tel" id="rename-pin" placeholder="Tu PIN (4 cifras)" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <button id="rename-submit" class="btn-primary">Guardar</button>
+    </div>
+    <div class="error-msg hidden" id="rename-error"></div>
+    <div class="modal-actions" style="margin-top:12px">
+      <button class="btn-outline" id="rename-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal de borrado de usuario -->
 <div id="delete-modal" class="modal-overlay hidden">
   <div class="modal">
@@ -105,6 +125,7 @@
     </nav>
     <div class="header-right">
       <span class="username-display" id="username-display"></span>
+      <button class="btn-outline" id="rename-btn" title="Cambiar tu nombre">✏️</button>
       <button class="btn-outline" id="pin-btn" title="Tu PIN — para entrar desde otro dispositivo">🔑</button>
       <button class="btn-outline" id="change-user-btn">Borrar</button>
     </div>
@@ -189,10 +210,10 @@
 
 <script src="js/config.js?v=30"></script>
 <script src="js/cache.js?v=30"></script>
-<script src="js/api.js?v=30"></script>
+<script src="js/api.js?v=32"></script>
 <script src="js/data.js?v=30"></script>
 <script src="js/bracket.js?v=30"></script>
-<script src="js/app.js?v=31"></script>
+<script src="js/app.js?v=32"></script>
 <script src="js/music.js?v=30"></script>
 </body>
 </html>

@@ -167,6 +167,7 @@ function doGet(e) {
   try {
     if (action === 'getAll')           return json(getAll());
     if (action === 'auth')             return json(auth(e.parameter));
+    if (action === 'rename')           return json(rename(e.parameter));
     if (action === 'getUser')          return json(getUser(e.parameter));
     if (action === 'savePrediction')   return json(savePrediction(e.parameter));
     if (action === 'deletePrediction') return json(deletePrediction(e.parameter));
@@ -234,6 +235,83 @@ function auth(p) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// Cambiar el NOMBRE de un jugador (conservando sus pronósticos y puntos).
+//  - Renombra sus filas en Predictions y Bracket.
+//  - Renombra su fila en Users (o la crea). Si tenía PIN, debe coincidir.
+//  - El nuevo nombre no puede estar ya cogido por otra persona.
+function rename(p) {
+  var user  = (p.user    || '').toString().trim();
+  var nuevo = (p.newName || '').toString().trim();
+  var pin   = (p.pin     || '').toString().trim();
+  if (!user || !nuevo) return { ok: false, error: 'Falta el nombre' };
+  if (nuevo.length > 30) return { ok: false, error: 'Ese nombre es demasiado largo' };
+  if (nuevo === user) return { ok: false, error: 'Es el mismo nombre' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var us = usersSheet();
+    var last = us.getLastRow();
+    var curRow = -1, curPin = null;
+    var rows = last > 1 ? us.getRange(2, 1, last - 1, 2).getValues() : [];
+    for (var i = 0; i < rows.length; i++) {
+      var nm = String(rows[i][0]).trim();
+      if (nm === nuevo) return { ok: false, error: 'Ese nombre ya está cogido. Elige otro.' };
+      if (nm === user) { curRow = i + 2; curPin = String(rows[i][1]).trim(); }
+    }
+    if (curRow > 0 && curPin && curPin !== pin) return { ok: false, error: 'PIN incorrecto.' };
+    ['Predictions', 'Bracket'].forEach(function (name) {
+      var s = sheetByName(name);
+      if (!s || s.getLastRow() < 2) return;
+      var col = s.getRange(2, 2, s.getLastRow() - 1, 1).getValues(); // col 2 = Jugador
+      for (var j = 0; j < col.length; j++) {
+        if (String(col[j][0]).trim() === user) s.getRange(j + 2, 2).setValue(nuevo);
+      }
+    });
+    if (curRow > 0) us.getRange(curRow, 1).setValue(nuevo);
+    else us.appendRow([nuevo, pin || '', new Date()]);
+    return { ok: true, user: nuevo };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ── Crea el usuario "Dummy" con pronósticos de grupos ALEATORIOS pero REALISTAS.
+//    Ejecútalo UNA VEZ desde el editor (elige seedDummy y pulsa ▶). Re-ejecutarlo
+//    regenera sus pronósticos. Sirve de listón: quien quede por debajo, pringa. ──
+function seedDummy() {
+  var name = 'TontoAQuienLeGaneElDummy';
+  // Marcadores realistas (pocos goles, nada de 80-2), con pesos hacia resultados comunes.
+  var pool = ['0-0','1-0','0-1','1-1','1-1','2-1','1-2','2-0','0-2','2-1','1-2','1-0','0-1','2-2','3-1','1-3','3-0','0-3','2-0','0-2','1-1','2-1'];
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var s = sheetByName('Predictions');
+    if (s.getLastRow() > 1) { // borra filas previas del dummy (re-ejecutable)
+      var players = s.getRange(2, 2, s.getLastRow() - 1, 1).getValues();
+      for (var i = players.length - 1; i >= 0; i--) {
+        if (String(players[i][0]).trim() === name) s.deleteRow(i + 2);
+      }
+    }
+    var out = [];
+    for (var k = 0; k < MATCHES.length; k++) {
+      var sc = pool[Math.floor(Math.random() * pool.length)].split('-');
+      out.push([new Date(), name, MATCHES[k].id, Number(sc[0]), Number(sc[1])]);
+    }
+    s.getRange(s.getLastRow() + 1, 1, out.length, 5).setValues(out);
+    // Reserva el nombre en Users (PIN aleatorio) para que nadie lo robe.
+    var us = usersSheet();
+    var exists = false;
+    if (us.getLastRow() > 1) {
+      var names = us.getRange(2, 1, us.getLastRow() - 1, 1).getValues();
+      for (var j = 0; j < names.length; j++) { if (String(names[j][0]).trim() === name) exists = true; }
+    }
+    if (!exists) us.appendRow([name, String(Math.floor(1000 + Math.random() * 9000)), new Date()]);
+  } finally {
+    lock.releaseLock();
+  }
+  SpreadsheetApp.getUi().alert('Dummy creado: "' + name + '" con ' + MATCHES.length + ' pronósticos de grupos aleatorios y realistas.');
 }
 
 function getAll() {

@@ -38,6 +38,7 @@ const api = {
   // cargue al instante (ver js/cache.js).
   getAll:          ()  => apiCall('getAll').then(d => { if (d && d.ok !== false) CacheStore.set('getAll', d); return d; }),
   auth:            (p) => apiCall('auth', p),              // entrar/registrarse con nombre + PIN
+  rename:          (p) => apiCall('rename', p),            // cambiar de nombre conservando pronósticos
   getUser:         (p) => apiCall('getUser', p).then(d => { if (d && d.ok !== false) CacheStore.set('user_' + (p.user || ''), d); return d; }), // solo los datos de un jugador (rápido)
   savePrediction:  (p) => apiCall('savePrediction', p),
   deletePrediction:(p) => apiCall('deletePrediction', p), // borra el pronóstico de un partido
