@@ -278,29 +278,35 @@ const NAT_NAMES = {
 };
 // Jugadores (probables Mundial 2026) con nacionalidad poco evidente por el nombre.
 // iso = nacionalidad real · d = 3 distractores plausibles.
+// Intercalado a propósito: cada bloque de 5 (un quiz) mezcla 5 selecciones distintas.
 const MG_NAT_POOL = [
+  // Quiz 1
   { n: 'Yunus Musah',         iso: 'us', d: ['gh', 'gb-eng', 'it'] },
-  { n: 'Folarin Balogun',     iso: 'us', d: ['ng', 'gb-eng', 'fr'] },
-  { n: 'Sergiño Dest',        iso: 'us', d: ['nl', 'sr', 'be'] },
-  { n: 'Antonee Robinson',    iso: 'us', d: ['gb-eng', 'jm', 'gb-wls'] },
-  { n: 'Weston McKennie',     iso: 'us', d: ['de', 'gb-eng', 'at'] },
   { n: 'Alphonso Davies',     iso: 'ca', d: ['gh', 'lr', 'gb-eng'] },
-  { n: 'Stephen Eustáquio',   iso: 'ca', d: ['pt', 'br', 'ao'] },
-  { n: 'Jonathan David',      iso: 'ca', d: ['us', 'ht', 'tt'] },
-  { n: 'Tajon Buchanan',      iso: 'ca', d: ['jm', 'gb-eng', 'us'] },
   { n: 'Hakim Ziyech',        iso: 'ma', d: ['nl', 'dz', 'be'] },
-  { n: 'Noussair Mazraoui',   iso: 'ma', d: ['nl', 'tn', 'dz'] },
-  { n: 'Sofyan Amrabat',      iso: 'ma', d: ['nl', 'eg', 'dz'] },
   { n: 'Xherdan Shaqiri',     iso: 'ch', d: ['xk', 'al', 'mk'] },
-  { n: 'Granit Xhaka',        iso: 'ch', d: ['al', 'xk', 'tr'] },
-  { n: 'Breel Embolo',        iso: 'ch', d: ['cm', 'fr', 'be'] },
-  { n: 'Manuel Akanji',       iso: 'ch', d: ['ng', 'gh', 'de'] },
   { n: 'Eduardo Camavinga',   iso: 'fr', d: ['ao', 'cd', 'pt'] },
+  // Quiz 2
+  { n: 'Folarin Balogun',     iso: 'us', d: ['ng', 'gb-eng', 'fr'] },
+  { n: 'Stephen Eustáquio',   iso: 'ca', d: ['pt', 'br', 'ao'] },
+  { n: 'Noussair Mazraoui',   iso: 'ma', d: ['nl', 'tn', 'dz'] },
+  { n: 'Granit Xhaka',        iso: 'ch', d: ['al', 'xk', 'tr'] },
   { n: 'Randal Kolo Muani',   iso: 'fr', d: ['cd', 'cm', 'sn'] },
+  // Quiz 3
+  { n: 'Sergiño Dest',        iso: 'us', d: ['nl', 'sr', 'be'] },
+  { n: 'Jonathan David',      iso: 'ca', d: ['us', 'ht', 'tt'] },
+  { n: 'Sofyan Amrabat',      iso: 'ma', d: ['nl', 'eg', 'dz'] },
+  { n: 'Breel Embolo',        iso: 'ch', d: ['cm', 'fr', 'be'] },
   { n: 'Aurélien Tchouaméni', iso: 'fr', d: ['cm', 'sn', 'ci'] },
+  // Quiz 4
+  { n: 'Antonee Robinson',    iso: 'us', d: ['gb-eng', 'jm', 'gb-wls'] },
+  { n: 'Tajon Buchanan',      iso: 'ca', d: ['jm', 'gb-eng', 'us'] },
+  { n: 'Manuel Akanji',       iso: 'ch', d: ['ng', 'gh', 'de'] },
   { n: 'Piero Hincapié',      iso: 'ec', d: ['co', 'ar', 'it'] },
-  { n: 'Moisés Caicedo',      iso: 'ec', d: ['co', 'pe', 'pa'] },
   { n: 'Sardar Azmoun',       iso: 'ir', d: ['az', 'tm', 'iq'] },
+  // Quiz 5
+  { n: 'Weston McKennie',     iso: 'us', d: ['de', 'gb-eng', 'at'] },
+  { n: 'Moisés Caicedo',      iso: 'ec', d: ['co', 'pe', 'pa'] },
   { n: 'Mehdi Taremi',        iso: 'ir', d: ['iq', 'qa', 'ma'] },
   { n: 'Wataru Endo',         iso: 'jp', d: ['kr', 'cn', 'th'] },
   { n: 'Hwang Hee-chan',      iso: 'kr', d: ['jp', 'cn', 'vn'] },
@@ -311,20 +317,20 @@ const MG_NAT_POOL = [
 //    usa ese día dentro de su pool (tema/jugador/puzzle/gol/quiz). ──
 const MG_ROTATION = [
   // Ciclo 1 (10–17 jun)
-  { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 0 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 0 }, { mode: 'wordle', i: 3 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
+  { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 9 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 26 }, { mode: 'wordle', i: 3 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
   // Ciclo 2 (18–25 jun)
-  { mode: 'mm', theme: 'goles' }, { mode: 'nat', i: 1 }, { mode: 'foto', i: 1 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 1 }, { mode: 'wordle', i: 7 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
+  { mode: 'mm', theme: 'goles' }, { mode: 'nat', i: 1 }, { mode: 'foto', i: 16 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 28 }, { mode: 'wordle', i: 7 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
   // Ciclo 3 (26 jun – 3 jul)
-  { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 2 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 2 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
+  { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 19 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 18 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
   // Ciclo 4 (4–11 jul)
-  { mode: 'mm', theme: 'champions' }, { mode: 'nat', i: 3 }, { mode: 'foto', i: 3 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 3 }, { mode: 'wordle', i: 13 }, { mode: 'porteria', i: 3 }, { mode: 'sudoku', i: 2 },
+  { mode: 'mm', theme: 'champions' }, { mode: 'nat', i: 3 }, { mode: 'foto', i: 18 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 20 }, { mode: 'wordle', i: 13 }, { mode: 'porteria', i: 3 }, { mode: 'sudoku', i: 2 },
   // Ciclo 5 (12–19 jul)
-  { mode: 'mm', theme: 'selecciones' }, { mode: 'nat', i: 4 }, { mode: 'foto', i: 4 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 4 }, { mode: 'wordle', i: 18 }, { mode: 'porteria', i: 4 }, { mode: 'sudoku', i: 6 },
+  { mode: 'mm', theme: 'selecciones' }, { mode: 'nat', i: 4 }, { mode: 'foto', i: 14 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 24 }, { mode: 'wordle', i: 18 }, { mode: 'porteria', i: 4 }, { mode: 'sudoku', i: 6 },
 ];
 
 (function () {
@@ -1068,6 +1074,9 @@ const MG_ROTATION = [
       const occ = currentEntry().i || 0;
       let slice = MG_NAT_POOL.slice(occ * 5, occ * 5 + 5);
       if (slice.length < 5) slice = MG_NAT_POOL.slice(0, 5);
+      // baraja el orden de las 5 preguntas (para que no salga siempre la misma primero)
+      const rng = mulberry32(seedInt() ^ 0x33ce71);
+      for (let i = slice.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = slice[i]; slice[i] = slice[j]; slice[j] = t; }
       this.qs = slice; this.qi = 0; this.score = 0; gameOver = false; busy = false;
       this.render();
     },
