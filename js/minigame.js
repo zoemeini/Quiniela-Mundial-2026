@@ -1299,23 +1299,32 @@ const MG_ROTATION = [
   // ── Clasificación REAL del día (puntuaciones de tus amigos) ──
   function rankingBlockHTML() {
     const d = dayKey(), me = mgUser();
-    const all = mgDedup(); // una entrada por usuario/día (la primera cuenta)
+    const all = mgDedup().filter(r => r.user !== '__dedup_test__'); // una entrada por usuario/día
+    const medals = ['🥇', '🥈', '🥉'];
     const daysOf = u => { const set = {}; all.forEach(r => { if (r.user === u) set[r.day] = 1; }); return set; };
     const streak = u => { const set = daysOf(u); let n = 0, ord = dayOrdinal(); while (set[ordToKey(ord)]) { n++; ord--; } return n; };
+    const row = (i, user, val) => `<div class="mg-rank-row${user === me ? ' me' : ''}"><span class="mg-rank-pos">${i < 3 ? medals[i] : (i + 1)}</span>` +
+      `<span class="mg-rank-name">${esc(user)}${user === me ? ' (tú)' : ''}</span>` +
+      `<span class="mg-rank-streak">🔥 ${streak(user)}</span><span class="mg-rank-score">${val}</span></div>`;
+    // HOY (quien ha jugado el reto de hoy)
     const today = all.filter(r => r.day === d).slice().sort((a, b) => b.score - a.score || streak(b.user) - streak(a.user));
-    const medals = ['🥇', '🥈', '🥉'];
-    let list = '';
-    today.forEach((r, i) => {
-      const mine = r.user === me;
-      list += `<div class="mg-rank-row${mine ? ' me' : ''}"><span class="mg-rank-pos">${i < 3 ? medals[i] : (i + 1)}</span>` +
-        `<span class="mg-rank-name">${esc(r.user)}${mine ? ' (tú)' : ''}</span>` +
-        `<span class="mg-rank-streak">🔥 ${streak(r.user)}</span><span class="mg-rank-score">${r.score}</span></div>`;
-    });
-    if (!today.length) list = '<div class="mg-rank-sub" style="text-align:center;padding:8px 0">Aún nadie ha jugado hoy. ¡Sé el primero! 🎉</div>';
+    const hoy = today.length
+      ? today.map((r, i) => row(i, r.user, r.score)).join('')
+      : '<div class="mg-rank-sub" style="text-align:center;padding:6px 0">Aún nadie más ha jugado hoy. ¡Avisa a tus amigos! 🎉</div>';
+    // GENERAL (acumulado de todos los días) — aquí se ven siempre todos
+    const agg = {};
+    all.forEach(r => { (agg[r.user] || (agg[r.user] = { user: r.user, total: 0 })).total += r.score; });
+    const gen = Object.values(agg).sort((x, y) => y.total - x.total || x.user.localeCompare(y.user));
+    const general = gen.length
+      ? gen.map((a, i) => row(i, a.user, a.total)).join('')
+      : '<div class="mg-rank-sub" style="text-align:center;padding:6px 0">Aún no hay puntuaciones.</div>';
     return '<div id="mg-rankblock" class="mg-rankblock">' +
       '<div class="mg-rank-head">🏆 Clasificación de hoy</div>' +
-      '<div class="mg-rank-sub">Puntos del reto de hoy · 🔥 = días seguidos jugando (racha)</div>' +
-      '<div class="mg-rank-list">' + list + '</div>' +
+      '<div class="mg-rank-sub">Puntos del reto de hoy · 🔥 = días seguidos jugando</div>' +
+      '<div class="mg-rank-list">' + hoy + '</div>' +
+      '<div class="mg-rank-head" style="margin-top:14px">📊 General</div>' +
+      '<div class="mg-rank-sub">Puntos acumulados de todos los retos</div>' +
+      '<div class="mg-rank-list">' + general + '</div>' +
       '</div>';
   }
   function revealRanking() {
