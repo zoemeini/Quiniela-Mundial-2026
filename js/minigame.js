@@ -908,7 +908,7 @@ const MG_ROTATION = [
   // ===========================================================
   //  MODO 6 — Sudoku de fútbol (6×6 con emojis)
   // ===========================================================
-  const SUD_EMO = ['⚽', '🏆', '🧤', '👟', '🟨', '🟥'];
+  const SUD_EMO = ['⚽', '🏆', '🧤', '👟', '🟨', '👕'];
   const SudokuMode = {
     cells: [], sel: -1, startT: 0, tId: null, solved: false,
     start() {
