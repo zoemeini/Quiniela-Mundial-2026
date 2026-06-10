@@ -247,6 +247,24 @@ const MG_PORTERIA_POOL = [
   { desc: 'Iniesta · gol en la final del Mundial (2010)',    x: 0.80, y: 0.74 },
 ];
 
+// ── Sudokus 6×6 con solución ÚNICA verificada (0 = vacía, 1–6 = símbolo).
+//    Cada día se elige uno y se le aplican transformaciones que MANTIENEN la
+//    unicidad (renombrar símbolos + barajar bandas/filas/columnas). ──
+const MG_SUDOKU = [
+  { d: 'Fácil',   p: '610235500040006402052361240613361500' },
+  { d: 'Fácil',   p: '105230023001056042214356040003631420' },
+  { d: 'Fácil',   p: '001456006102365214124563010005450001' },
+  { d: 'Fácil',   p: '035461614005362050040632053240400503' },
+  { d: 'Media',   p: '006140401006040601010030200513035204' },
+  { d: 'Media',   p: '000061360040012403435602056030100006' },
+  { d: 'Media',   p: '100240004051216405003000362004500603' },
+  { d: 'Media',   p: '036052050100000006620014300625062041' },
+  { d: 'Difícil', p: '032061006020000250000100020000504032' },
+  { d: 'Difícil', p: '000050200100304010020406400001605300' },
+  { d: 'Difícil', p: '016400504200000000105023061300000040' },
+  { d: 'Difícil', p: '241000000000052060000500403105100046' },
+];
+
 // ── Calendario diario: qué modo/tema toca cada día (rota, igual para todos) ──
 const MG_ROTATION = [
   { mode: 'mm', theme: 'valor' },
@@ -910,15 +928,14 @@ const MG_ROTATION = [
   // ===========================================================
   const SUD_EMO = ['⚽', '🏆', '🧤', '👟', '🟨', '👕'];
   const SudokuMode = {
-    cells: [], sel: -1, startT: 0, tId: null, solved: false,
+    cells: [], sel: -1, startT: 0, tId: null, solved: false, diff: '',
     start() {
       const rng = mulberry32(seedInt() ^ 0x68e31da4);
-      const sol = this.generate(rng);
-      const N = 36, blanks = 16;
-      const idx = Array.from({ length: N }, (_, i) => i);
-      for (let i = N - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
-      const blankSet = new Set(idx.slice(0, blanks));
-      this.cells = sol.map((v, i) => blankSet.has(i) ? { v: null, given: false } : { v: v, given: true });
+      const base = MG_SUDOKU[Math.floor(rng() * MG_SUDOKU.length)];
+      this.diff = base.d;
+      const arr = base.p.split('').map(ch => { const n = +ch; return n === 0 ? -1 : n - 1; });
+      const puzzle = this.shuffle(arr, rng); // baraja conservando la unicidad
+      this.cells = puzzle.map(v => v < 0 ? { v: null, given: false } : { v: v, given: true });
       this.sel = -1; this.solved = false; gameOver = false; busy = false;
       this.startT = Date.now();
       this.render();
@@ -928,19 +945,13 @@ const MG_ROTATION = [
     startClock() { this.teardown(); this.tId = setInterval(() => { if (open && view === 'play' && Game === SudokuMode && !this.solved) this.updHud(); }, 1000); },
     elapsed() { return Math.floor((Date.now() - this.startT) / 1000); },
     updHud() { setHud(`⏱ ${this.elapsed()}s &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`); },
-    // Genera un sudoku 6×6 válido (cajas 2 filas × 3 columnas) y lo baraja.
-    generate(rng) {
-      let g = [
-        [0, 1, 2, 3, 4, 5],
-        [3, 4, 5, 0, 1, 2],
-        [1, 2, 3, 4, 5, 0],
-        [4, 5, 0, 1, 2, 3],
-        [2, 3, 4, 5, 0, 1],
-        [5, 0, 1, 2, 3, 4],
-      ];
-      const sh = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; };
-      const perm = sh([0, 1, 2, 3, 4, 5]);                 // renombra los símbolos
-      g = g.map(r => r.map(v => perm[v]));
+    // Transforma un puzzle (con sus huecos) conservando la solución ÚNICA:
+    // renombra los símbolos y baraja bandas/filas y pilas/columnas (cajas 2×3).
+    shuffle(arr, rng) {
+      let g = []; for (let r = 0; r < 6; r++) g.push(arr.slice(r * 6, r * 6 + 6));
+      const sh = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+      const perm = sh([0, 1, 2, 3, 4, 5]);                 // renombra los símbolos (no toca huecos)
+      g = g.map(r => r.map(v => v < 0 ? -1 : perm[v]));
       const rows = [];                                     // baraja filas dentro de cada banda (2 filas) y las bandas
       sh([0, 1, 2]).forEach(b => sh([0, 1]).forEach(w => rows.push(g[b * 2 + w])));
       g = rows;
@@ -965,7 +976,7 @@ const MG_ROTATION = [
       wrap.innerHTML = `
         <div class="sud-grid" id="sud-grid">${grid}</div>
         <div class="sud-pal" id="sud-pal">${pal}</div>
-        <div class="sud-hint">Toca una casilla y elige un emoji · cada fila, columna y caja con los 6, sin repetir</div>`;
+        <div class="sud-hint">Dificultad: <b>${this.diff}</b> · toca una casilla y elige un emoji · cada fila/columna/caja con los 6, sin repetir</div>`;
       el('sud-grid').querySelectorAll('.sud-cell').forEach(b => b.addEventListener('click', () => this.selectCell(+b.dataset.i)));
       el('sud-pal').querySelectorAll('.sud-key').forEach(b => b.addEventListener('click', () => this.place(+b.dataset.v)));
       this.paint();
