@@ -212,7 +212,7 @@ const MG_FOTO_POOL = [
   { n: 'Lionel Messi',       wiki: 'Lionel Messi',       iso: 'ar',     pais: 'Argentina',     pos: 'Delantero',     fy: 20 },
   { n: 'Cristiano Ronaldo',  wiki: 'Cristiano Ronaldo',  iso: 'pt',     pais: 'Portugal',      pos: 'Delantero',     fy: 24 },
   { n: 'Kylian Mbappé',      wiki: 'Kylian Mbappé',      iso: 'fr',     pais: 'Francia',       pos: 'Delantero',     fy: 18 },
-  { n: 'Erling Haaland',     wiki: 'Erling Haaland',     iso: 'no',     pais: 'Noruega',       pos: 'Delantero',     fy: 28 },
+  { n: 'Erling Haaland',     wiki: 'Erling Haaland',     iso: 'no',     pais: 'Noruega',       pos: 'Delantero',     fy: 28, zMul: 1.35 },
   { n: 'Neymar Jr',          wiki: 'Neymar',             iso: 'br',     pais: 'Brasil',        pos: 'Delantero',     fy: 24 },
   { n: 'Vinícius Júnior',    wiki: 'Vinícius Júnior',    iso: 'br',     pais: 'Brasil',        pos: 'Delantero',     fy: 22 },
   { n: 'Mohamed Salah',      wiki: 'Mohamed Salah',      iso: 'eg',     pais: 'Egipto',        pos: 'Delantero',     fy: 16 },
@@ -229,6 +229,9 @@ const MG_FOTO_POOL = [
   { n: 'Karim Benzema',      wiki: 'Karim Benzema',      iso: 'fr',     pais: 'Francia',       pos: 'Delantero',     fy: 40 },
   { n: 'Sergio Ramos',       wiki: 'Sergio Ramos',       iso: 'es',     pais: 'España',        pos: 'Defensa',       fy: 28 },
   { n: 'Manuel Neuer',       wiki: 'Manuel Neuer',       iso: 'de',     pais: 'Alemania',      pos: 'Portero',       fy: 13 },
+  // Fotos LOCALES (carpeta Fotos_mini_juego). Usan `src` en vez de Wikipedia.
+  { n: 'Joan García', src: 'Fotos_mini_juego/Joan_Garcia_4.jpg', iso: 'es', pais: 'España',        pos: 'Portero', fy: 36 },
+  { n: 'Tim Payne',   src: 'Fotos_mini_juego/Tim_Payne_4.png',   iso: 'nz', pais: 'Nueva Zelanda', pos: 'Defensa', fy: 40 },
 ];
 
 // ── Datos de «Goles míticos: ¿por dónde entró?» — SOLO goles de Mundiales ──
@@ -318,16 +321,16 @@ const MG_NAT_POOL = [
 //    usa ese día dentro de su pool (tema/jugador/puzzle/gol/quiz). ──
 const MG_ROTATION = [
   // Ciclo 1 (10–17 jun)
-  { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 9 }, { mode: 'punteria' },
+  { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 20 }, { mode: 'punteria' },
   { mode: 'pistas', i: 5 }, { mode: 'wordle', i: 3 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
   // Ciclo 2 (18–25 jun)
-  { mode: 'mm', theme: 'goles' }, { mode: 'nat', i: 1 }, { mode: 'foto', i: 16 }, { mode: 'punteria' },
+  { mode: 'mm', theme: 'goles' }, { mode: 'nat', i: 1 }, { mode: 'foto', i: 21 }, { mode: 'punteria' },
   { mode: 'pistas', i: 2 }, { mode: 'wordle', i: 7 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
   // Ciclo 3 (26 jun – 3 jul)
-  { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 19 }, { mode: 'punteria' },
+  { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 2 }, { mode: 'punteria' },
   { mode: 'pistas', i: 23 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
   // Ciclo 4 (4–11 jul)
-  { mode: 'mm', theme: 'champions' }, { mode: 'nat', i: 3 }, { mode: 'foto', i: 18 }, { mode: 'punteria' },
+  { mode: 'mm', theme: 'champions' }, { mode: 'nat', i: 3 }, { mode: 'foto', i: 3 }, { mode: 'punteria' },
   { mode: 'pistas', i: 6 }, { mode: 'wordle', i: 17 }, { mode: 'porteria', i: 3 }, { mode: 'sudoku', i: 2 },
   // Ciclo 5 (12–19 jul)
   { mode: 'mm', theme: 'selecciones' }, { mode: 'nat', i: 4 }, { mode: 'foto', i: 14 }, { mode: 'punteria' },
@@ -788,22 +791,25 @@ const MG_ROTATION = [
       this.render();
       startTimer(45000, () => this.timeUp());
       const req = ++this._req;
-      fotoFetch(this.secret.wiki).then(url => {
+      const setImg = url => {
         if (req !== this._req) return; // cambió de día/modo: descarta
         const im = el('mg-foto-img'); if (!im) return;
         if (url && url !== 'FAIL') { im.textContent = ''; im.style.backgroundImage = `url("${url}")`; im.classList.remove('loading'); this.applyZoom(true); }
         else { im.classList.remove('loading'); im.classList.add('failed'); im.innerHTML = `Sin foto 😕<br><span class="mg-foto-fallback">${flag(this.secret.iso)} ${this.secret.pais} · ${this.secret.pos}</span>`; }
-      });
+      };
+      if (this.secret.src) setImg(this.secret.src);            // foto local
+      else fotoFetch(this.secret.wiki).then(setImg);           // foto de Wikipedia
     },
     points() { return Math.max(1, 8 - (this.attempts + 1)); },
     applyZoom(instant) {
       const im = el('mg-foto-img');
       if (im) {
         const fy = (this.secret && this.secret.fy != null) ? this.secret.fy : 22;
+        const zMul = (this.secret && this.secret.zMul) || 1; // zoom extra para algunas fotos
         im.style.backgroundPosition = '50% ' + fy + '%'; // recorta a la altura de la CARA
         im.style.transformOrigin = '50% ' + fy + '%';    // y hace zoom justo sobre ese punto
         if (!im.classList.contains('loading') && !im.classList.contains('failed')) {
-          const sc = 'scale(' + this.zooms[Math.min(this.level, this.zooms.length - 1)] + ')';
+          const sc = 'scale(' + (this.zooms[Math.min(this.level, this.zooms.length - 1)] * zMul) + ')';
           if (instant) { // al aparecer, aplicar el zoom SIN animación (si no, se ve la foto entera ~1s y ayuda)
             const prev = im.style.transition; im.style.transition = 'none'; im.style.transform = sc; void im.offsetWidth; im.style.transition = prev || '';
           } else { im.style.transform = sc; }
@@ -889,7 +895,7 @@ const MG_ROTATION = [
       if (win) setBest(score);
       const head = win ? { e: '🎉', t: `¡Acertaste! (${this.attempts}/${this.max})` }
                        : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡No era!' };
-      const url = MG_FOTO_CACHE[this.secret.wiki];
+      const url = this.secret.src || MG_FOTO_CACHE[this.secret.wiki];
       const fy = this.secret.fy != null ? this.secret.fy : 22;
       const photo = (url && url !== 'FAIL') ? `<div class="mg-foto-reveal" style="background-image:url('${url}');background-position:50% ${fy}%"></div>` : '';
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
