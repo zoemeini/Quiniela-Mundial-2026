@@ -329,10 +329,6 @@ const MG_ROTATION = [
       '<span class="mg-panel-title">🎮 Reto del día</span>' +
       '<button type="button" class="mg-close" id="mg-close" aria-label="Cerrar">✕</button>' +
     '</div>' +
-    '<div class="mg-tabs">' +
-      '<button type="button" class="mg-tab active" id="mg-tab-play">▶️ Jugar</button>' +
-      '<button type="button" class="mg-tab" id="mg-tab-rank">🏆 Ranking</button>' +
-    '</div>' +
     '<div id="mg-play-view">' +
       '<div class="mg-theme" id="mg-theme"></div>' +
       '<div class="mg-timer-row">' +
@@ -342,8 +338,7 @@ const MG_ROTATION = [
       '<div class="mg-hud" id="mg-hud"></div>' +
       '<div id="mg-board"></div>' +
       '<div class="mg-daypreview" id="mg-daypreview"></div>' +
-    '</div>' +
-    '<div id="mg-rank" class="hidden"></div>';
+    '</div>';
 
   document.body.appendChild(panel);
   document.body.appendChild(fab);
@@ -352,22 +347,10 @@ const MG_ROTATION = [
     open = !open;
     panel.classList.toggle('hidden', !open);
     fab.classList.toggle('active', open);
-    if (open) { if (view === 'rank') renderRanking(); else if (!started) startDay(); else resumeGameTimer(); }
+    if (open) { if (!started) startDay(); else resumeGameTimer(); }
     else pauseGameTimer();
   });
   el('mg-close').addEventListener('click', function () { open = false; panel.classList.add('hidden'); fab.classList.remove('active'); pauseGameTimer(); });
-  el('mg-tab-play').addEventListener('click', () => switchView('play'));
-  el('mg-tab-rank').addEventListener('click', () => switchView('rank'));
-
-  function switchView(v) {
-    view = v;
-    el('mg-tab-play').classList.toggle('active', v === 'play');
-    el('mg-tab-rank').classList.toggle('active', v === 'rank');
-    el('mg-play-view').classList.toggle('hidden', v !== 'play');
-    el('mg-rank').classList.toggle('hidden', v !== 'rank');
-    if (v === 'play') { if (!started) startDay(); else resumeGameTimer(); }
-    else { pauseGameTimer(); renderRanking(); }
-  }
 
   // ── Temporizador genérico ──
   function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
@@ -473,6 +456,7 @@ const MG_ROTATION = [
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
       setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      revealRanking();
     },
     win() {
       stopTimer(); resetTimerBar();
@@ -480,6 +464,7 @@ const MG_ROTATION = [
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🏆</div><h3>¡Los has acertado TODOS!</h3>
         <p>Puntuación máxima: <b>${this.score}</b></p><button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => this.start());
+      revealRanking();
     },
   };
 
@@ -602,6 +587,7 @@ const MG_ROTATION = [
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
       setHud(`Adivina al jugador · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      revealRanking();
     },
   };
 
@@ -719,6 +705,7 @@ const MG_ROTATION = [
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
       setHud(`Adivina el apellido · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      revealRanking();
     },
   };
 
@@ -862,6 +849,7 @@ const MG_ROTATION = [
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
       setHud(`Mira la foto y adivina · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      revealRanking();
     },
   };
 
@@ -920,6 +908,7 @@ const MG_ROTATION = [
       const a = el('mg-net-actions'); if (a) a.innerHTML = '<button class="btn-primary" id="mg-again">Jugar otra vez</button> <span class="mg-net-note">⚙️ Beta · 1 intento/día en la versión final</span>';
       const ag = el('mg-again'); if (ag) ag.addEventListener('click', () => this.start());
       setHud(`Goles míticos · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      revealRanking();
     },
   };
 
@@ -1022,6 +1011,7 @@ const MG_ROTATION = [
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
       setHud(`⏱ ${t}s &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      revealRanking();
     },
   };
 
@@ -1056,8 +1046,8 @@ const MG_ROTATION = [
   }
 
   // ── Ranking (DATOS DE EJEMPLO — aún no hay backend del juego) ──
-  function renderRanking() {
-    const rank = el('mg-rank'); if (!rank) return;
+  // ── Clasificación: se muestra SOLO al terminar, justo debajo del resultado ──
+  function rankingBlockHTML() {
     const me = (localStorage.getItem('wc2026_username') || 'Tú').trim() || 'Tú';
     const best = getBest();
     const demo = [
@@ -1072,10 +1062,15 @@ const MG_ROTATION = [
       rows += `<div class="mg-rank-row${d.me ? ' me' : ''}"><span class="mg-rank-pos">${i < 3 ? medals[i] : (i + 1)}</span>` +
         `<span class="mg-rank-name">${d.n}</span><span class="mg-rank-streak">🔥 ${d.st}</span><span class="mg-rank-score">${d.s}</span></div>`;
     });
-    rank.innerHTML =
-      '<div class="mg-rank-head">🏆 Ranking del día <span class="mg-rank-tag">EJEMPLO</span></div>' +
+    return '<div id="mg-rankblock" class="mg-rankblock">' +
+      '<div class="mg-rank-head">🏆 Clasificación de hoy <span class="mg-rank-tag">EJEMPLO</span></div>' +
       '<div class="mg-rank-sub">Puntos del reto de hoy · 🔥 = días seguidos jugando (racha)</div>' +
       '<div class="mg-rank-list">' + rows + '</div>' +
-      '<p class="mg-note">Vista previa con datos inventados. En la versión final se guardarán las puntuaciones reales de tus amigos cada día.</p>';
+      '<p class="mg-note">Vista previa con datos inventados. En la versión final se guardarán las puntuaciones reales de tus amigos cada día.</p>' +
+      '</div>';
+  }
+  function revealRanking() {
+    const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
+    b.insertAdjacentHTML('beforeend', rankingBlockHTML());
   }
 })();
