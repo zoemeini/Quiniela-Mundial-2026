@@ -326,12 +326,20 @@ function minigameSheet() {
     s.getRange(1, 1, 1, 5).setValues([['Fecha', 'Jugador', 'Puntos', 'Modo', 'Timestamp']]);
     s.setFrozenRows(1);
     s.getRange(1, 1, 1, 5).setFontWeight('bold');
-    s.getRange('A:A').setNumberFormat('@'); // Fecha como TEXTO (YYYY-MM-DD), no fecha
   }
+  // Fecha SIEMPRE como TEXTO (YYYY-MM-DD), nunca fecha: evita que Google Sheets
+  // la convierta a fecha y se desplace un día por la zona horaria al leerla.
+  s.getRange('A:A').setNumberFormat('@');
   return s;
 }
+// Zona horaria de la hoja (la misma en que se guardó la fecha). Así una celda de
+// fecha se lee en el MISMO día en que se escribió (sin el desfase de UTC).
+function mgTZ() {
+  try { return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || 'Europe/Madrid'; }
+  catch (e) { return 'Europe/Madrid'; }
+}
 function mgToDay(v) {
-  if (Object.prototype.toString.call(v) === '[object Date]') return Utilities.formatDate(v, 'Etc/GMT', 'yyyy-MM-dd');
+  if (Object.prototype.toString.call(v) === '[object Date]') return Utilities.formatDate(v, mgTZ(), 'yyyy-MM-dd');
   return String(v).trim();
 }
 // Guarda la puntuación del reto de hoy. Solo la PRIMERA del día cuenta (no se sobrescribe).

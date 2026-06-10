@@ -1306,25 +1306,15 @@ const MG_ROTATION = [
     const row = (i, user, val) => `<div class="mg-rank-row${user === me ? ' me' : ''}"><span class="mg-rank-pos">${i < 3 ? medals[i] : (i + 1)}</span>` +
       `<span class="mg-rank-name">${esc(user)}${user === me ? ' (tú)' : ''}</span>` +
       `<span class="mg-rank-streak">🔥 ${streak(user)}</span><span class="mg-rank-score">${val}</span></div>`;
-    // HOY (quien ha jugado el reto de hoy)
+    // Clasificación del DÍA: todos los que han jugado el reto de hoy.
     const today = all.filter(r => r.day === d).slice().sort((a, b) => b.score - a.score || streak(b.user) - streak(a.user));
     const hoy = today.length
       ? today.map((r, i) => row(i, r.user, r.score)).join('')
-      : '<div class="mg-rank-sub" style="text-align:center;padding:6px 0">Aún nadie más ha jugado hoy. ¡Avisa a tus amigos! 🎉</div>';
-    // GENERAL (acumulado de todos los días) — aquí se ven siempre todos
-    const agg = {};
-    all.forEach(r => { (agg[r.user] || (agg[r.user] = { user: r.user, total: 0 })).total += r.score; });
-    const gen = Object.values(agg).sort((x, y) => y.total - x.total || x.user.localeCompare(y.user));
-    const general = gen.length
-      ? gen.map((a, i) => row(i, a.user, a.total)).join('')
-      : '<div class="mg-rank-sub" style="text-align:center;padding:6px 0">Aún no hay puntuaciones.</div>';
+      : '<div class="mg-rank-sub" style="text-align:center;padding:6px 0">Aún nadie ha jugado el reto de hoy. ¡Avisa a tus amigos! 🎉</div>';
     return '<div id="mg-rankblock" class="mg-rankblock">' +
       '<div class="mg-rank-head">🏆 Clasificación de hoy</div>' +
       '<div class="mg-rank-sub">Puntos del reto de hoy · 🔥 = días seguidos jugando</div>' +
       '<div class="mg-rank-list">' + hoy + '</div>' +
-      '<div class="mg-rank-head" style="margin-top:14px">📊 General</div>' +
-      '<div class="mg-rank-sub">Puntos acumulados de todos los retos</div>' +
-      '<div class="mg-rank-list">' + general + '</div>' +
       '</div>';
   }
   function revealRanking() {
