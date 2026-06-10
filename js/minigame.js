@@ -427,6 +427,21 @@ const MG_ROTATION = [
   });
   el('mg-close').addEventListener('click', function () { open = false; panel.classList.add('hidden'); fab.classList.remove('active'); pauseGameTimer(); });
 
+  // El icono deja de moverse (y se ve "completado") cuando ya se ha jugado hoy.
+  function setFabDone(done) {
+    fab.classList.toggle('mg-done', !!done);
+    const em = fab.querySelector('.mg-fab-emoji'), lb = fab.querySelector('.mg-fab-label');
+    if (em) em.textContent = done ? '✅' : '🎮';
+    if (lb) lb.textContent = done ? 'Reto completado' : 'Reto del día';
+  }
+  // Al cargar: si ya jugaste hoy (en este equipo, o en otro según el servidor),
+  // el icono nace quieto. Si no, sigue llamando la atención con su pulso.
+  (function initFabState() {
+    if (isDone()) { setFabDone(true); return; }
+    if (!mgUser() || typeof api === 'undefined' || !api.mgGet) return;
+    ensureMgData().then(() => { if (playedTodayServer()) setFabDone(true); }).catch(() => {});
+  })();
+
   // ── Temporizador genérico ──
   function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
   function startTimer(ms, expireCb) {
@@ -1318,6 +1333,7 @@ const MG_ROTATION = [
       '</div>';
   }
   function revealRanking() {
+    setFabDone(true); // reto completado → el icono deja de moverse
     const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
     setDone();       // 1 partida al día (caché local)
     saveMyScore();   // guarda mi puntuación en el servidor (1/día) + en mgRows
