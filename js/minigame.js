@@ -14,9 +14,10 @@
 //     alejando con cada fallo hasta verse entera.
 //   · Goles míticos → marca en la portería por dónde crees que entró un gol
 //     mítico; puntúas según lo cerca que estés del punto real.
+//   · Sudoku de fútbol → sudoku 6×6 con emojis de fútbol; puntúas por tiempo.
 //
 //  Algunos llevan crono (15 s ¿Más o menos?, 45 s Pistas y Foto) para que no
-//  dé tiempo a buscar la respuesta; el Wordle y los Goles míticos no.
+//  dé tiempo a buscar la respuesta; Wordle, Goles míticos y Sudoku no.
 //
 //  Depende de data.js (madridDayKey, formatKickoff).
 // ============================================================
@@ -253,16 +254,19 @@ const MG_ROTATION = [
   { mode: 'pistas' },
   { mode: 'foto' },
   { mode: 'porteria' },
+  { mode: 'sudoku' },
   { mode: 'mm', theme: 'goles' },
   { mode: 'mm', theme: 'altura' },
   { mode: 'wordle' },
   { mode: 'foto' },
+  { mode: 'sudoku' },
   { mode: 'mm', theme: 'edad' },
   { mode: 'pistas' },
   { mode: 'porteria' },
   { mode: 'mm', theme: 'instagram' },
   { mode: 'wordle' },
   { mode: 'foto' },
+  { mode: 'sudoku' },
   { mode: 'mm', theme: 'champions' },
   { mode: 'mm', theme: 'caps' },
   { mode: 'pistas' },
@@ -378,8 +382,9 @@ const MG_ROTATION = [
     else if (entry.mode === 'wordle') { if (tb) tb.innerHTML = '🔤 Reto de hoy: <b>Wordle de jugadores</b>'; Game = WordleMode; }
     else if (entry.mode === 'foto') { if (tb) tb.innerHTML = '📸 Reto de hoy: <b>¿Quién es este jugador?</b>'; Game = FotoMode; }
     else if (entry.mode === 'porteria') { if (tb) tb.innerHTML = '🥅 Reto de hoy: <b>Goles míticos: ¿por dónde entró?</b>'; Game = PorteriaMode; }
+    else if (entry.mode === 'sudoku') { if (tb) tb.innerHTML = '🧩 Reto de hoy: <b>Sudoku de fútbol</b>'; Game = SudokuMode; }
     else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
-    setTimerVisible(entry.mode !== 'wordle' && entry.mode !== 'porteria'); // estos dos no llevan crono
+    setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto'); // solo estos llevan cuenta atrás
     Game.start();
     renderDayPreview();
   }
@@ -900,6 +905,115 @@ const MG_ROTATION = [
     },
   };
 
+  // ===========================================================
+  //  MODO 6 — Sudoku de fútbol (6×6 con emojis)
+  // ===========================================================
+  const SUD_EMO = ['⚽', '🏆', '🧤', '👟', '🟨', '🟥'];
+  const SudokuMode = {
+    cells: [], sel: -1, startT: 0, tId: null, solved: false,
+    start() {
+      const rng = mulberry32(seedInt() ^ 0x68e31da4);
+      const sol = this.generate(rng);
+      const N = 36, blanks = 16;
+      const idx = Array.from({ length: N }, (_, i) => i);
+      for (let i = N - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+      const blankSet = new Set(idx.slice(0, blanks));
+      this.cells = sol.map((v, i) => blankSet.has(i) ? { v: null, given: false } : { v: v, given: true });
+      this.sel = -1; this.solved = false; gameOver = false; busy = false;
+      this.startT = Date.now();
+      this.render();
+      this.startClock();
+    },
+    teardown() { if (this.tId) { clearInterval(this.tId); this.tId = null; } },
+    startClock() { this.teardown(); this.tId = setInterval(() => { if (open && view === 'play' && Game === SudokuMode && !this.solved) this.updHud(); }, 1000); },
+    elapsed() { return Math.floor((Date.now() - this.startT) / 1000); },
+    updHud() { setHud(`⏱ ${this.elapsed()}s &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`); },
+    // Genera un sudoku 6×6 válido (cajas 2 filas × 3 columnas) y lo baraja.
+    generate(rng) {
+      let g = [
+        [0, 1, 2, 3, 4, 5],
+        [3, 4, 5, 0, 1, 2],
+        [1, 2, 3, 4, 5, 0],
+        [4, 5, 0, 1, 2, 3],
+        [2, 3, 4, 5, 0, 1],
+        [5, 0, 1, 2, 3, 4],
+      ];
+      const sh = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; };
+      const perm = sh([0, 1, 2, 3, 4, 5]);                 // renombra los símbolos
+      g = g.map(r => r.map(v => perm[v]));
+      const rows = [];                                     // baraja filas dentro de cada banda (2 filas) y las bandas
+      sh([0, 1, 2]).forEach(b => sh([0, 1]).forEach(w => rows.push(g[b * 2 + w])));
+      g = rows;
+      const colOrder = [];                                 // baraja columnas dentro de cada pila (3 cols) y las pilas
+      sh([0, 1]).forEach(s => sh([0, 1, 2]).forEach(w => colOrder.push(s * 3 + w)));
+      g = g.map(r => colOrder.map(c => r[c]));
+      return g.reduce((a, r) => a.concat(r), []);
+    },
+    render() {
+      const wrap = el('mg-board'); if (!wrap) return;
+      let grid = '';
+      for (let i = 0; i < 36; i++) {
+        const c = this.cells[i], r = Math.floor(i / 6), col = i % 6;
+        const cls = ['sud-cell'];
+        if (c.given) cls.push('given');
+        if (col === 2) cls.push('br');
+        if (r === 1 || r === 3) cls.push('bb');
+        grid += `<button class="${cls.join(' ')}" data-i="${i}"${c.given ? ' disabled' : ''}>${c.v != null ? SUD_EMO[c.v] : ''}</button>`;
+      }
+      let pal = SUD_EMO.map((e, v) => `<button class="sud-key" data-v="${v}">${e}</button>`).join('');
+      pal += '<button class="sud-key sud-erase" data-v="-1">⌫</button>';
+      wrap.innerHTML = `
+        <div class="sud-grid" id="sud-grid">${grid}</div>
+        <div class="sud-pal" id="sud-pal">${pal}</div>
+        <div class="sud-hint">Toca una casilla y elige un emoji · cada fila, columna y caja con los 6, sin repetir</div>`;
+      el('sud-grid').querySelectorAll('.sud-cell').forEach(b => b.addEventListener('click', () => this.selectCell(+b.dataset.i)));
+      el('sud-pal').querySelectorAll('.sud-key').forEach(b => b.addEventListener('click', () => this.place(+b.dataset.v)));
+      this.paint();
+      this.updHud();
+    },
+    selectCell(i) { if (this.solved || this.cells[i].given) return; this.sel = i; this.paint(); },
+    place(v) {
+      if (this.solved || this.sel < 0) return;
+      const c = this.cells[this.sel]; if (c.given) return;
+      c.v = (v < 0) ? null : v;
+      this.paint();
+      this.checkSolved();
+    },
+    conflicts() {
+      const bad = new Set();
+      const check = group => { const seen = {}; group.forEach(i => { const v = this.cells[i].v; if (v == null) return; if (seen[v] != null) { bad.add(i); bad.add(seen[v]); } else seen[v] = i; }); };
+      for (let r = 0; r < 6; r++) { const g = []; for (let c = 0; c < 6; c++) g.push(r * 6 + c); check(g); }
+      for (let c = 0; c < 6; c++) { const g = []; for (let r = 0; r < 6; r++) g.push(r * 6 + c); check(g); }
+      for (let br = 0; br < 3; br++) for (let bc = 0; bc < 2; bc++) { const g = []; for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) g.push((br * 2 + r) * 6 + (bc * 3 + c)); check(g); }
+      return bad;
+    },
+    paint() {
+      const grid = el('sud-grid'); if (!grid) return;
+      const bad = this.conflicts();
+      grid.querySelectorAll('.sud-cell').forEach(b => {
+        const i = +b.dataset.i, c = this.cells[i];
+        b.textContent = c.v != null ? SUD_EMO[c.v] : '';
+        b.classList.toggle('sel', i === this.sel);
+        b.classList.toggle('conflict', bad.has(i));
+      });
+    },
+    checkSolved() {
+      if (this.cells.some(c => c.v == null) || this.conflicts().size > 0) return;
+      this.solved = true; gameOver = true; this.teardown();
+      const t = this.elapsed();
+      const score = Math.min(100, Math.max(20, Math.round(120 - t / 2)));
+      setBest(score);
+      const wrap = el('mg-board'); if (!wrap) return;
+      wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🧩</div><h3>¡Sudoku resuelto!</h3>
+        <p>Tiempo: <b>${t}s</b></p><p>Has ganado <b>${score}</b> pts.</p>
+        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
+        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+      el('mg-again').addEventListener('click', () => this.start());
+      setHud(`⏱ ${t}s &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`);
+    },
+  };
+
   function resetTimerBar() {
     const bar = el('mg-timer-bar'), num = el('mg-timer-num');
     if (bar) { bar.style.width = '100%'; bar.classList.remove('low'); }
@@ -916,6 +1030,7 @@ const MG_ROTATION = [
                   : entry.mode === 'wordle' ? '🔤 Wordle de jugadores'
                   : entry.mode === 'foto' ? '📸 ¿Quién es este jugador?'
                   : entry.mode === 'porteria' ? '🥅 Goles míticos'
+                  : entry.mode === 'sudoku' ? '🧩 Sudoku de fútbol'
                   : (themeByKey(entry.theme).emoji + ' ' + themeByKey(entry.theme).label);
     dp.innerHTML =
       '🔧 <b>Beta</b> · ver otro día: ' +

@@ -1133,6 +1133,33 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-net-actions { text-align: center; }
 .mg-net-actions .btn-primary { width: auto; padding: 9px 22px; }
 .mg-net-note { display: block; font-size: 11px; color: var(--gold); margin-top: 10px; }
+
+/* Modo «Sudoku de fútbol» (6×6 con emojis) */
+.sud-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 0;
+  width: min(100%, 300px); margin: 0 auto 12px;
+  border: 2px solid var(--green); border-radius: 8px; overflow: hidden; background: var(--bg2);
+}
+.sud-cell {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-size: clamp(16px, 5.6vw, 24px); line-height: 1;
+  background: var(--bg2); color: var(--text); border: 1px solid var(--border);
+  cursor: pointer; padding: 0;
+}
+.sud-cell.given { background: var(--bg3); cursor: default; }
+.sud-cell.sel { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--green); }
+.sud-cell.conflict { background: rgba(239, 68, 68, .25); }
+.sud-cell.br { border-right: 2px solid var(--green); }
+.sud-cell.bb { border-bottom: 2px solid var(--green); }
+.sud-pal { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.sud-key {
+  width: 42px; height: 42px; border-radius: 8px; padding: 0;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.sud-key:hover { border-color: var(--green); }
+.sud-erase { font-size: 16px; color: var(--muted); }
+.sud-hint { text-align: center; font-size: 12px; color: var(--muted); }
 .mg-panel {
   position: fixed;
   left: 18px; bottom: 84px;
