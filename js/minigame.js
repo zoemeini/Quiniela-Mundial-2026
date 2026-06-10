@@ -378,6 +378,9 @@ const MG_ROTATION = [
       .catch(() => mgRows || []);
   }
   function playedTodayServer() { const u = mgUser(), d = dayKey(); return !!(mgRows || []).some(r => r.user === u && r.day === d); }
+  // Si el servidor antiguo guardó duplicados, nos quedamos con la PRIMERA fila de
+  // cada (usuario, día) — la que cuenta — para que todos vean lo mismo.
+  function mgDedup() { const seen = {}, out = []; (mgRows || []).forEach(r => { const k = r.day + '|' + r.user; if (!seen[k]) { seen[k] = 1; out.push(r); } }); return out; }
   function myTodayScore() { const u = mgUser(), d = dayKey(); const r = (mgRows || []).find(x => x.user === u && x.day === d); return r ? r.score : getBest(); }
   function ordToKey(ord) { return new Date(ord * 86400000).toISOString().slice(0, 10); }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -1296,7 +1299,7 @@ const MG_ROTATION = [
   // ── Clasificación REAL del día (puntuaciones de tus amigos) ──
   function rankingBlockHTML() {
     const d = dayKey(), me = mgUser();
-    const all = mgRows || [];
+    const all = mgDedup(); // una entrada por usuario/día (la primera cuenta)
     const daysOf = u => { const set = {}; all.forEach(r => { if (r.user === u) set[r.day] = 1; }); return set; };
     const streak = u => { const set = daysOf(u); let n = 0, ord = dayOrdinal(); while (set[ordToKey(ord)]) { n++; ord--; } return n; };
     const today = all.filter(r => r.day === d).slice().sort((a, b) => b.score - a.score || streak(b.user) - streak(a.user));
