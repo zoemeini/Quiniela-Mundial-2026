@@ -175,6 +175,8 @@ function doGet(e) {
     if (action === 'savePick')         return json(savePick(e.parameter));
     if (action === 'saveKnockoutReal') return json(saveKnockoutReal(e.parameter));
     if (action === 'deleteUser')       return json(deleteUser(e.parameter));
+    if (action === 'mgGet')            return json(mgGet());
+    if (action === 'mgSave')           return json(mgSave(e.parameter));
     return json({ ok: false, error: 'Acción desconocida. Prueba ?action=getAll' });
   } catch (err) {
     return json({ ok: false, error: String(err) });
@@ -312,6 +314,64 @@ function seedDummy() {
     lock.releaseLock();
   }
   SpreadsheetApp.getUi().alert('Dummy creado: "' + name + '" con ' + MATCHES.length + ' pronósticos de grupos aleatorios y realistas.');
+}
+
+// ── Minijuego diario: puntuaciones (1 partida al día por jugador) ──
+// Crea la pestaña "MiniGame" si no existe (no hace falta reejecutar setup()).
+function minigameSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var s = ss.getSheetByName('MiniGame');
+  if (!s) {
+    s = ss.insertSheet('MiniGame');
+    s.getRange(1, 1, 1, 5).setValues([['Fecha', 'Jugador', 'Puntos', 'Modo', 'Timestamp']]);
+    s.setFrozenRows(1);
+    s.getRange(1, 1, 1, 5).setFontWeight('bold');
+    s.getRange('A:A').setNumberFormat('@'); // Fecha como TEXTO (YYYY-MM-DD), no fecha
+  }
+  return s;
+}
+function mgToDay(v) {
+  if (Object.prototype.toString.call(v) === '[object Date]') return Utilities.formatDate(v, 'Etc/GMT', 'yyyy-MM-dd');
+  return String(v).trim();
+}
+// Guarda la puntuación del reto de hoy. Solo la PRIMERA del día cuenta (no se sobrescribe).
+function mgSave(p) {
+  var user = (p.user || '').toString().trim();
+  var day  = (p.day  || '').toString().trim();
+  var mode = (p.mode || '').toString().trim();
+  var score = Number(p.score); if (isNaN(score)) score = 0;
+  if (!user || !day) return { ok: false, error: 'falta user o day' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var s = minigameSheet();
+    var last = s.getLastRow();
+    if (last > 1) {
+      var keys = s.getRange(2, 1, last - 1, 2).getValues(); // Fecha, Jugador
+      for (var i = 0; i < keys.length; i++) {
+        if (mgToDay(keys[i][0]) === day && String(keys[i][1]).trim() === user) {
+          return { ok: true, already: true }; // ya jugó hoy → no se sobrescribe
+        }
+      }
+    }
+    s.appendRow([day, user, score, mode, new Date()]);
+    return { ok: true, already: false };
+  } finally {
+    lock.releaseLock();
+  }
+}
+// Devuelve todas las puntuaciones del minijuego (para ranking + rachas).
+function mgGet() {
+  var rows = [];
+  var s = minigameSheet();
+  if (s.getLastRow() > 1) {
+    var d = s.getRange(2, 1, s.getLastRow() - 1, 4).getValues();
+    for (var i = 0; i < d.length; i++) {
+      if (String(d[i][1]).trim() === '') continue;
+      rows.push({ day: mgToDay(d[i][0]), user: String(d[i][1]), score: Number(d[i][2]) || 0, mode: String(d[i][3] || '') });
+    }
+  }
+  return { ok: true, rows: rows };
 }
 
 function getAll() {

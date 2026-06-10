@@ -46,4 +46,6 @@ const api = {
   savePick:        (p) => apiCall('savePick', p),          // pronóstico de eliminatorias
   saveKnockoutReal:(p) => apiCall('saveKnockoutReal', p),  // resultado real (admin)
   deleteUser:      (p) => apiCall('deleteUser', p),        // borra un jugador y sus pronósticos
+  mgGet:           ()  => apiCall('mgGet'),                // puntuaciones del minijuego (ranking + rachas)
+  mgSave:          (p) => apiCall('mgSave', p),            // guarda la puntuación del reto de hoy (1/día)
 };

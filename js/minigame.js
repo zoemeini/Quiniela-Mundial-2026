@@ -367,6 +367,28 @@ const MG_ROTATION = [
   const isDone = () => localStorage.getItem(doneKey()) != null;
   function setDone() { if (!isDone()) localStorage.setItem(doneKey(), String(getBest())); }
 
+  // ── Identidad + servidor (versión real en la web principal) ──
+  function mgUser() { return (localStorage.getItem('wc2026_username') || '').trim(); }
+  let mgRows = null, mgRowsAt = 0, startToken = 0;
+  function ensureMgData() { // caché 25 s; degradado si no hay backend
+    if (mgRows && (Date.now() - mgRowsAt) < 25000) return Promise.resolve(mgRows);
+    if (typeof api === 'undefined' || !api.mgGet) return Promise.resolve(mgRows || []);
+    return api.mgGet()
+      .then(d => { mgRows = (d && d.rows) || []; mgRowsAt = Date.now(); return mgRows; })
+      .catch(() => mgRows || []);
+  }
+  function playedTodayServer() { const u = mgUser(), d = dayKey(); return !!(mgRows || []).some(r => r.user === u && r.day === d); }
+  function myTodayScore() { const u = mgUser(), d = dayKey(); const r = (mgRows || []).find(x => x.user === u && x.day === d); return r ? r.score : getBest(); }
+  function ordToKey(ord) { return new Date(ord * 86400000).toISOString().slice(0, 10); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function saveMyScore() {
+    const u = mgUser(); if (!u) return;
+    const d = dayKey(), score = getBest(), mode = (currentEntry() || {}).mode || '';
+    mgRows = mgRows || [];
+    if (!mgRows.some(r => r.user === u && r.day === d)) mgRows.push({ user: u, day: d, score: score, mode: mode });
+    if (typeof api !== 'undefined' && api.mgSave) api.mgSave({ user: u, day: d, score: score, mode: mode }).catch(() => {});
+  }
+
   // ── Burbuja flotante 🎮 + panel ──
   const fab = document.createElement('button');
   fab.className = 'mg-fab'; fab.type = 'button';
@@ -443,18 +465,32 @@ const MG_ROTATION = [
     else if (entry.mode === 'nat') { if (tb) tb.innerHTML = '🌍 Reto de hoy: <b>¿De qué selección es?</b>'; Game = NatMode; }
     else if (entry.mode === 'punteria') { if (tb) tb.innerHTML = '🎯 Reto de hoy: <b>Puntería: marca goles</b>'; Game = PunteriaMode; }
     else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
-    if (isDone()) { // ya jugaste hoy → bloqueado hasta mañana (1 partida al día)
-      gameOver = true; setTimerVisible(false);
-      setHud(`✅ Completado · Mejor de hoy: <b>${getBest()}</b> 🔥`);
-      const wrap = el('mg-board');
-      if (wrap) wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🔒</div><h3>¡Ya jugaste el reto de hoy!</h3>
-        <p>Tu resultado: <b>${getBest()}</b> pts</p>
-        <p class="mg-note">Solo se juega una vez al día. Vuelve mañana para el próximo reto 🔥</p></div>`;
-      revealRanking();
+    if (!mgUser()) { // sin sesión: no se puede jugar/guardar
+      gameOver = true; setTimerVisible(false); setHud('');
+      const w = el('mg-board');
+      if (w) w.innerHTML = '<div class="mg-end"><div class="mg-end-emoji">👋</div><h3>Entra con tu nombre</h3><p>Entra arriba con tu <b>nombre y PIN</b> para jugar el reto de hoy y aparecer en la clasificación.</p></div>';
       return;
     }
-    setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // estos llevan cuenta atrás
-    Game.start();
+    setTimerVisible(false);
+    const w = el('mg-board');
+    if (w) w.innerHTML = '<div style="text-align:center;padding:28px;color:var(--muted)">Cargando el reto de hoy…</div>';
+    const token = ++startToken;
+    ensureMgData().then(() => {
+      if (token !== startToken) return; // se reabrió/cambió de día mientras cargaba
+      if (isDone() || playedTodayServer()) { showLocked(); return; }
+      setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // llevan cuenta atrás
+      Game.start();
+    });
+  }
+  function showLocked() {
+    gameOver = true; setTimerVisible(false);
+    const sc = myTodayScore();
+    setHud(`✅ Completado · Tu resultado: <b>${sc}</b>`);
+    const wrap = el('mg-board');
+    if (wrap) wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🔒</div><h3>¡Ya jugaste el reto de hoy!</h3>
+      <p>Tu resultado: <b>${sc}</b> pts</p>
+      <p class="mg-note">Solo se juega una vez al día. Vuelve mañana para el próximo reto 🔥</p></div>`;
+    revealRanking();
   }
 
   // ===========================================================
@@ -1257,33 +1293,32 @@ const MG_ROTATION = [
     const r = el('mg-day-reset'); if (r) r.addEventListener('click', () => { previewOffset = 0; startDay(); });
   }
 
-  // ── Ranking (DATOS DE EJEMPLO — aún no hay backend del juego) ──
-  // ── Clasificación: se muestra SOLO al terminar, justo debajo del resultado ──
+  // ── Clasificación REAL del día (puntuaciones de tus amigos) ──
   function rankingBlockHTML() {
-    const me = (localStorage.getItem('wc2026_username') || 'Tú').trim() || 'Tú';
-    const best = getBest();
-    const demo = [
-      { n: 'Albert', s: 6, st: 6 }, { n: 'Alex Martos', s: 5, st: 4 },
-      { n: 'Marc', s: 5, st: 5 }, { n: me + ' (tú)', s: best, st: 1, me: true },
-      { n: 'Laura', s: 4, st: 2 }, { n: 'Jordi', s: 3, st: 3 },
-    ];
-    demo.sort((a, b) => b.s - a.s || b.st - a.st);
+    const d = dayKey(), me = mgUser();
+    const all = mgRows || [];
+    const daysOf = u => { const set = {}; all.forEach(r => { if (r.user === u) set[r.day] = 1; }); return set; };
+    const streak = u => { const set = daysOf(u); let n = 0, ord = dayOrdinal(); while (set[ordToKey(ord)]) { n++; ord--; } return n; };
+    const today = all.filter(r => r.day === d).slice().sort((a, b) => b.score - a.score || streak(b.user) - streak(a.user));
     const medals = ['🥇', '🥈', '🥉'];
-    let rows = '';
-    demo.forEach((d, i) => {
-      rows += `<div class="mg-rank-row${d.me ? ' me' : ''}"><span class="mg-rank-pos">${i < 3 ? medals[i] : (i + 1)}</span>` +
-        `<span class="mg-rank-name">${d.n}</span><span class="mg-rank-streak">🔥 ${d.st}</span><span class="mg-rank-score">${d.s}</span></div>`;
+    let list = '';
+    today.forEach((r, i) => {
+      const mine = r.user === me;
+      list += `<div class="mg-rank-row${mine ? ' me' : ''}"><span class="mg-rank-pos">${i < 3 ? medals[i] : (i + 1)}</span>` +
+        `<span class="mg-rank-name">${esc(r.user)}${mine ? ' (tú)' : ''}</span>` +
+        `<span class="mg-rank-streak">🔥 ${streak(r.user)}</span><span class="mg-rank-score">${r.score}</span></div>`;
     });
+    if (!today.length) list = '<div class="mg-rank-sub" style="text-align:center;padding:8px 0">Aún nadie ha jugado hoy. ¡Sé el primero! 🎉</div>';
     return '<div id="mg-rankblock" class="mg-rankblock">' +
-      '<div class="mg-rank-head">🏆 Clasificación de hoy <span class="mg-rank-tag">EJEMPLO</span></div>' +
+      '<div class="mg-rank-head">🏆 Clasificación de hoy</div>' +
       '<div class="mg-rank-sub">Puntos del reto de hoy · 🔥 = días seguidos jugando (racha)</div>' +
-      '<div class="mg-rank-list">' + rows + '</div>' +
-      '<p class="mg-note">Vista previa con datos inventados. En la versión final se guardarán las puntuaciones reales de tus amigos cada día.</p>' +
+      '<div class="mg-rank-list">' + list + '</div>' +
       '</div>';
   }
   function revealRanking() {
     const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
-    setDone(); // 1 partida al día: marca el reto de hoy como jugado
+    setDone();       // 1 partida al día (caché local)
+    saveMyScore();   // guarda mi puntuación en el servidor (1/día) + en mgRows
     const again = el('mg-again'); // quita "Jugar otra vez": no se puede repetir
     if (again) { const note = document.createElement('p'); note.className = 'mg-note'; note.innerHTML = '🔒 Solo se juega una vez al día · vuelve mañana 🔥'; again.replaceWith(note); }
     b.insertAdjacentHTML('beforeend', rankingBlockHTML());
