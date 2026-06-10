@@ -231,20 +231,18 @@ const MG_FOTO_POOL = [
   { n: 'Manuel Neuer',       wiki: 'Manuel Neuer',       iso: 'de',     pais: 'Alemania',      pos: 'Portero',       fy: 13 },
 ];
 
-// ── Datos de «Goles míticos: ¿por dónde entró?» ──
+// ── Datos de «Goles míticos: ¿por dónde entró?» — SOLO goles de Mundiales ──
 // x,y = punto de entrada en la PORTERÍA (fracción 0–1; x: izq→der, y: arriba→abajo),
 //       desde la vista del público/portero. Valores APROXIMADOS, fáciles de editar.
 const MG_PORTERIA_POOL = [
-  { desc: 'Roberto Carlos · falta vs Francia (1997)',        x: 0.90, y: 0.22 },
-  { desc: 'Zidane · volea en la final de Champions (2002)',  x: 0.16, y: 0.20 },
-  { desc: 'Messi · falta vs Liverpool (2019)',               x: 0.88, y: 0.12 },
   { desc: 'Maradona · «el gol del siglo» vs Inglaterra (1986)', x: 0.40, y: 0.80 },
-  { desc: 'Ronaldinho · falta vs Inglaterra (2002)',         x: 0.20, y: 0.16 },
-  { desc: 'Van Basten · volea en la Eurocopa (1988)',        x: 0.86, y: 0.26 },
-  { desc: 'Beckham · desde su propio campo (1996)',          x: 0.58, y: 0.20 },
-  { desc: 'Ibrahimović · chilena vs Inglaterra (2012)',      x: 0.50, y: 0.18 },
-  { desc: 'Cristiano Ronaldo · chilena vs Juventus (2018)',  x: 0.68, y: 0.24 },
-  { desc: 'Iniesta · gol en la final del Mundial (2010)',    x: 0.80, y: 0.74 },
+  { desc: 'Iniesta · gol de la final vs Países Bajos (2010)',   x: 0.76, y: 0.66 },
+  { desc: 'Zidane · cabezazo en la final vs Brasil (1998)',     x: 0.32, y: 0.58 },
+  { desc: 'Ronaldinho · lob a Seaman vs Inglaterra (2002)',     x: 0.17, y: 0.15 },
+  { desc: 'James Rodríguez · volea vs Uruguay (2014)',          x: 0.15, y: 0.14 },
+  { desc: 'Carlos Alberto · gol de la final vs Italia (1970)',  x: 0.85, y: 0.80 },
+  { desc: 'Maxi Rodríguez · volea vs México (2006)',            x: 0.16, y: 0.18 },
+  { desc: 'Robin van Persie · cabezazo vs España (2014)',       x: 0.52, y: 0.28 },
 ];
 
 // ── Sudokus 6×6 con solución ÚNICA verificada (0 = vacía, 1–6 = símbolo).
@@ -314,19 +312,19 @@ const MG_NAT_POOL = [
 const MG_ROTATION = [
   // Ciclo 1 (10–17 jun)
   { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 0 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 0 }, { mode: 'wordle', i: 0 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
+  { mode: 'pistas', i: 0 }, { mode: 'wordle', i: 3 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
   // Ciclo 2 (18–25 jun)
   { mode: 'mm', theme: 'goles' }, { mode: 'nat', i: 1 }, { mode: 'foto', i: 1 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 1 }, { mode: 'wordle', i: 1 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
+  { mode: 'pistas', i: 1 }, { mode: 'wordle', i: 7 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
   // Ciclo 3 (26 jun – 3 jul)
   { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 2 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 2 }, { mode: 'wordle', i: 2 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
+  { mode: 'pistas', i: 2 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
   // Ciclo 4 (4–11 jul)
   { mode: 'mm', theme: 'champions' }, { mode: 'nat', i: 3 }, { mode: 'foto', i: 3 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 3 }, { mode: 'wordle', i: 3 }, { mode: 'porteria', i: 3 }, { mode: 'sudoku', i: 2 },
+  { mode: 'pistas', i: 3 }, { mode: 'wordle', i: 13 }, { mode: 'porteria', i: 3 }, { mode: 'sudoku', i: 2 },
   // Ciclo 5 (12–19 jul)
   { mode: 'mm', theme: 'selecciones' }, { mode: 'nat', i: 4 }, { mode: 'foto', i: 4 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 4 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 4 }, { mode: 'sudoku', i: 6 },
+  { mode: 'pistas', i: 4 }, { mode: 'wordle', i: 18 }, { mode: 'porteria', i: 4 }, { mode: 'sudoku', i: 6 },
 ];
 
 (function () {
@@ -662,6 +660,7 @@ const MG_ROTATION = [
     },
     teardown() { if (this._keyHandler) { document.removeEventListener('keydown', this._keyHandler); this._keyHandler = null; } },
     len() { return this.sol.length; },
+    diffLabel() { const n = this.len(); return n <= 4 ? 'Fácil' : n <= 6 ? 'Media' : 'Difícil'; },
     normLetter(ch) { return (ch || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); },
     type(ch) {
       if (gameOver) return;
@@ -695,7 +694,7 @@ const MG_ROTATION = [
     render() {
       const wrap = el('mg-board'); if (!wrap) return;
       wrap.innerHTML = `
-        <div class="mg-wd-hint">${flag(this.player.iso)} <b>${this.player.pais}</b> · ${this.player.pos} · ${this.len()} letras</div>
+        <div class="mg-wd-hint">🔤 Apellido de futbolista · ${this.len()} letras · <b>${this.diffLabel()}</b></div>
         <div class="mg-wd-grid" id="mg-wd-grid" style="--cols:${this.len()}"></div>
         <div class="mg-wd-msg" id="mg-wd-msg"></div>
         <div class="mg-wd-keys" id="mg-wd-keys"></div>`;
