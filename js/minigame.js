@@ -265,32 +265,68 @@ const MG_SUDOKU = [
   { d: 'Difícil', p: '241000000000052060000500403105100046' },
 ];
 
-// ── Calendario diario: qué modo/tema toca cada día (rota, igual para todos) ──
+// ── «¿De qué selección es?» — nombres de países (para las opciones) ──
+const NAT_NAMES = {
+  'us': 'EE. UU.', 'ca': 'Canadá', 'gh': 'Ghana', 'gb-eng': 'Inglaterra', 'it': 'Italia',
+  'ng': 'Nigeria', 'fr': 'Francia', 'nl': 'Países Bajos', 'sr': 'Surinam', 'be': 'Bélgica',
+  'jm': 'Jamaica', 'gb-wls': 'Gales', 'de': 'Alemania', 'at': 'Austria', 'lr': 'Liberia',
+  'ht': 'Haití', 'tt': 'Trinidad y Tobago', 'ma': 'Marruecos', 'dz': 'Argelia', 'ch': 'Suiza',
+  'xk': 'Kosovo', 'al': 'Albania', 'mk': 'Macedonia del Norte', 'tr': 'Turquía', 'cm': 'Camerún',
+  'ao': 'Angola', 'cd': 'RD Congo', 'sn': 'Senegal', 'ci': 'Costa de Marfil', 'ec': 'Ecuador',
+  'co': 'Colombia', 'ar': 'Argentina', 'pe': 'Perú', 'pa': 'Panamá', 'ir': 'Irán',
+  'az': 'Azerbaiyán', 'tm': 'Turkmenistán', 'iq': 'Irak', 'qa': 'Catar', 'jp': 'Japón',
+  'kr': 'Corea del Sur', 'cn': 'China', 'th': 'Tailandia', 'vn': 'Vietnam',
+  'pt': 'Portugal', 'br': 'Brasil', 'tn': 'Túnez', 'eg': 'Egipto',
+};
+// Jugadores (probables Mundial 2026) con nacionalidad poco evidente por el nombre.
+// iso = nacionalidad real · d = 3 distractores plausibles.
+const MG_NAT_POOL = [
+  { n: 'Yunus Musah',         iso: 'us', d: ['gh', 'gb-eng', 'it'] },
+  { n: 'Folarin Balogun',     iso: 'us', d: ['ng', 'gb-eng', 'fr'] },
+  { n: 'Sergiño Dest',        iso: 'us', d: ['nl', 'sr', 'be'] },
+  { n: 'Antonee Robinson',    iso: 'us', d: ['gb-eng', 'jm', 'gb-wls'] },
+  { n: 'Weston McKennie',     iso: 'us', d: ['de', 'gb-eng', 'at'] },
+  { n: 'Alphonso Davies',     iso: 'ca', d: ['gh', 'lr', 'gb-eng'] },
+  { n: 'Stephen Eustáquio',   iso: 'ca', d: ['pt', 'br', 'ao'] },
+  { n: 'Jonathan David',      iso: 'ca', d: ['us', 'ht', 'tt'] },
+  { n: 'Tajon Buchanan',      iso: 'ca', d: ['jm', 'gb-eng', 'us'] },
+  { n: 'Hakim Ziyech',        iso: 'ma', d: ['nl', 'dz', 'be'] },
+  { n: 'Noussair Mazraoui',   iso: 'ma', d: ['nl', 'tn', 'dz'] },
+  { n: 'Sofyan Amrabat',      iso: 'ma', d: ['nl', 'eg', 'dz'] },
+  { n: 'Xherdan Shaqiri',     iso: 'ch', d: ['xk', 'al', 'mk'] },
+  { n: 'Granit Xhaka',        iso: 'ch', d: ['al', 'xk', 'tr'] },
+  { n: 'Breel Embolo',        iso: 'ch', d: ['cm', 'fr', 'be'] },
+  { n: 'Manuel Akanji',       iso: 'ch', d: ['ng', 'gh', 'de'] },
+  { n: 'Eduardo Camavinga',   iso: 'fr', d: ['ao', 'cd', 'pt'] },
+  { n: 'Randal Kolo Muani',   iso: 'fr', d: ['cd', 'cm', 'sn'] },
+  { n: 'Aurélien Tchouaméni', iso: 'fr', d: ['cm', 'sn', 'ci'] },
+  { n: 'Piero Hincapié',      iso: 'ec', d: ['co', 'ar', 'it'] },
+  { n: 'Moisés Caicedo',      iso: 'ec', d: ['co', 'pe', 'pa'] },
+  { n: 'Sardar Azmoun',       iso: 'ir', d: ['az', 'tm', 'iq'] },
+  { n: 'Mehdi Taremi',        iso: 'ir', d: ['iq', 'qa', 'ma'] },
+  { n: 'Wataru Endo',         iso: 'jp', d: ['kr', 'cn', 'th'] },
+  { n: 'Hwang Hee-chan',      iso: 'kr', d: ['jp', 'cn', 'vn'] },
+];
+
+// ── Calendario: un reto por día del 10-jun-2026 al 19-jul-2026 (40 días).
+//    Contenido distinto cada día y modos bien alternados; `i` = qué contenido
+//    usa ese día dentro de su pool (tema/jugador/puzzle/gol/quiz). ──
 const MG_ROTATION = [
-  { mode: 'mm', theme: 'valor' },
-  { mode: 'wordle' },
-  { mode: 'pistas' },
-  { mode: 'foto' },
-  { mode: 'porteria' },
-  { mode: 'sudoku' },
-  { mode: 'mm', theme: 'goles' },
-  { mode: 'mm', theme: 'altura' },
-  { mode: 'wordle' },
-  { mode: 'foto' },
-  { mode: 'sudoku' },
-  { mode: 'mm', theme: 'edad' },
-  { mode: 'pistas' },
-  { mode: 'porteria' },
-  { mode: 'mm', theme: 'instagram' },
-  { mode: 'wordle' },
-  { mode: 'foto' },
-  { mode: 'sudoku' },
-  { mode: 'mm', theme: 'champions' },
-  { mode: 'mm', theme: 'caps' },
-  { mode: 'pistas' },
-  { mode: 'porteria' },
-  { mode: 'mm', theme: 'fichaje' },
-  { mode: 'mm', theme: 'selecciones' },
+  // Ciclo 1 (10–17 jun)
+  { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 0 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 0 }, { mode: 'wordle', i: 0 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
+  // Ciclo 2 (18–25 jun)
+  { mode: 'mm', theme: 'goles' }, { mode: 'nat', i: 1 }, { mode: 'foto', i: 1 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 1 }, { mode: 'wordle', i: 1 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
+  // Ciclo 3 (26 jun – 3 jul)
+  { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 2 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 2 }, { mode: 'wordle', i: 2 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
+  // Ciclo 4 (4–11 jul)
+  { mode: 'mm', theme: 'champions' }, { mode: 'nat', i: 3 }, { mode: 'foto', i: 3 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 3 }, { mode: 'wordle', i: 3 }, { mode: 'porteria', i: 3 }, { mode: 'sudoku', i: 2 },
+  // Ciclo 5 (12–19 jul)
+  { mode: 'mm', theme: 'selecciones' }, { mode: 'nat', i: 4 }, { mode: 'foto', i: 4 }, { mode: 'punteria' },
+  { mode: 'pistas', i: 4 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 4 }, { mode: 'sudoku', i: 6 },
 ];
 
 (function () {
@@ -307,7 +343,10 @@ const MG_ROTATION = [
   const seedInt = () => parseInt(dayKey().replace(/-/g, ''), 10) || 1;
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   function dayOrdinal() { const p = dayKey().split('-'); return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
-  function currentEntry() { const i = ((dayOrdinal() % MG_ROTATION.length) + MG_ROTATION.length) % MG_ROTATION.length; return MG_ROTATION[i]; }
+  // El calendario va del 10-jun-2026 al 19-jul-2026 (40 retos, uno por día). Después: «fin».
+  const MG_START_ORD = (function () { const p = '2026-06-10'.split('-'); return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); })();
+  function scheduleIdx() { return dayOrdinal() - MG_START_ORD; }
+  function currentEntry() { let i = scheduleIdx(); if (i < 0) i = 0; if (i >= MG_ROTATION.length) return { mode: 'over' }; return MG_ROTATION[i]; }
   function themeByKey(k) { return MG_THEMES.find(t => t.key === k) || MG_THEMES[0]; }
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function flag(iso) { return `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">`; }
@@ -379,13 +418,22 @@ const MG_ROTATION = [
     const entry = currentEntry();
     gameOver = false; busy = false; started = true;
     const tb = el('mg-theme');
+    if (entry.mode === 'over') {
+      if (tb) tb.innerHTML = '🏁 <b>¡Se acabó el Mundial!</b>';
+      setTimerVisible(false); setHud(''); Game = null;
+      const wrap = el('mg-board'); if (wrap) wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🏆</div><h3>No hay más retos</h3><p>Los retos diarios fueron hasta el 19 de julio. ¡Gracias por jugar!</p></div>`;
+      renderDayPreview();
+      return;
+    }
     if (entry.mode === 'pistas') { if (tb) tb.innerHTML = '🕵️ Reto de hoy: <b>Adivina con pistas</b>'; Game = PistasMode; }
     else if (entry.mode === 'wordle') { if (tb) tb.innerHTML = '🔤 Reto de hoy: <b>Wordle de jugadores</b>'; Game = WordleMode; }
     else if (entry.mode === 'foto') { if (tb) tb.innerHTML = '📸 Reto de hoy: <b>¿Quién es este jugador?</b>'; Game = FotoMode; }
     else if (entry.mode === 'porteria') { if (tb) tb.innerHTML = '🥅 Reto de hoy: <b>Goles míticos: ¿por dónde entró?</b>'; Game = PorteriaMode; }
     else if (entry.mode === 'sudoku') { if (tb) tb.innerHTML = '🧩 Reto de hoy: <b>Sudoku de fútbol</b>'; Game = SudokuMode; }
+    else if (entry.mode === 'nat') { if (tb) tb.innerHTML = '🌍 Reto de hoy: <b>¿De qué selección es?</b>'; Game = NatMode; }
+    else if (entry.mode === 'punteria') { if (tb) tb.innerHTML = '🎯 Reto de hoy: <b>Puntería: marca goles</b>'; Game = PunteriaMode; }
     else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
-    setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto'); // solo estos llevan cuenta atrás
+    setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // estos llevan cuenta atrás
     Game.start();
     renderDayPreview();
   }
@@ -474,8 +522,8 @@ const MG_ROTATION = [
   const PistasMode = {
     secret: null, clues: [], shown: 1, attempts: 0, max: 6, solved: false,
     start() {
-      const rng = mulberry32(seedInt() ^ 0x9e3779b9); // semilla distinta de ¿Más o menos?
-      this.secret = MG_PISTAS_POOL[Math.floor(rng() * MG_PISTAS_POOL.length)];
+      const rng = mulberry32(seedInt() ^ 0x9e3779b9); // semilla para barajar las pistas
+      this.secret = MG_PISTAS_POOL[(currentEntry().i || 0) % MG_PISTAS_POOL.length];
       const p = this.secret;
       const clues = [
         { k: 'Posición', v: p.pos },
@@ -597,8 +645,7 @@ const MG_ROTATION = [
   const WordleMode = {
     sol: '', player: null, guesses: [], cur: '', max: 6, keyState: {}, msgTimer: null, _keyHandler: null,
     start() {
-      const rng = mulberry32(seedInt() ^ 0x57a3f17b); // semilla propia del Wordle
-      this.player = MG_WORDLE_POOL[Math.floor(rng() * MG_WORDLE_POOL.length)];
+      this.player = MG_WORDLE_POOL[(currentEntry().i || 0) % MG_WORDLE_POOL.length];
       this.sol = this.player.sol;
       this.guesses = []; this.cur = ''; this.keyState = {}; gameOver = false; busy = false;
       this.render();
@@ -730,8 +777,7 @@ const MG_ROTATION = [
     zooms: [6.5, 4.6, 3.3, 2.3, 1.5, 1.0],
     zlabels: ['🔍 Solo un detalle', '🔍 Muy de cerca', '🔍 De cerca', '👀 Se va viendo', '🙂 Casi entera', '🖼️ Foto completa'],
     start() {
-      const rng = mulberry32(seedInt() ^ 0x1f83d9ab); // semilla propia de la foto
-      this.secret = MG_FOTO_POOL[Math.floor(rng() * MG_FOTO_POOL.length)];
+      this.secret = MG_FOTO_POOL[(currentEntry().i || 0) % MG_FOTO_POOL.length];
       this.attempts = 0; this.level = 0; this._tries = []; gameOver = false; busy = false;
       this.render();
       startTimer(45000, () => this.timeUp());
@@ -859,8 +905,7 @@ const MG_ROTATION = [
   const PorteriaMode = {
     goal: null, guess: null, done: false,
     start() {
-      const rng = mulberry32(seedInt() ^ 0x2545f491); // semilla propia
-      this.goal = MG_PORTERIA_POOL[Math.floor(rng() * MG_PORTERIA_POOL.length)];
+      this.goal = MG_PORTERIA_POOL[(currentEntry().i || 0) % MG_PORTERIA_POOL.length];
       this.guess = null; this.done = false; gameOver = false; busy = false;
       this.render();
     },
@@ -919,8 +964,8 @@ const MG_ROTATION = [
   const SudokuMode = {
     cells: [], sel: -1, startT: 0, tId: null, solved: false, diff: '',
     start() {
-      const rng = mulberry32(seedInt() ^ 0x68e31da4);
-      const base = MG_SUDOKU[Math.floor(rng() * MG_SUDOKU.length)];
+      const rng = mulberry32(seedInt() ^ 0x68e31da4); // semilla para barajar (conserva la unicidad)
+      const base = MG_SUDOKU[(currentEntry().i || 0) % MG_SUDOKU.length];
       this.diff = base.d;
       const arr = base.p.split('').map(ch => { const n = +ch; return n === 0 ? -1 : n - 1; });
       const puzzle = this.shuffle(arr, rng); // baraja conservando la unicidad
@@ -1015,6 +1060,144 @@ const MG_ROTATION = [
     },
   };
 
+  // ===========================================================
+  //  MODO 7 — ¿De qué selección es? (nacionalidad por el nombre)
+  // ===========================================================
+  const NatMode = {
+    qs: [], qi: 0, score: 0,
+    start() {
+      const occ = currentEntry().i || 0;
+      let slice = MG_NAT_POOL.slice(occ * 5, occ * 5 + 5);
+      if (slice.length < 5) slice = MG_NAT_POOL.slice(0, 5);
+      this.qs = slice; this.qi = 0; this.score = 0; gameOver = false; busy = false;
+      this.render();
+    },
+    render() {
+      const wrap = el('mg-board'); if (!wrap) return;
+      const q = this.qs[this.qi];
+      if (!q) { this.end(); return; }
+      const opts = [q.iso].concat(q.d);
+      const rng = mulberry32(seedInt() ^ (0x4a1f + this.qi * 97)); // orden de opciones por día
+      for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = opts[i]; opts[i] = opts[j]; opts[j] = t; }
+      const btns = opts.map(iso => `<button class="mg-nat-opt" data-iso="${iso}">${flag(iso)}<span>${NAT_NAMES[iso] || iso}</span></button>`).join('');
+      wrap.innerHTML = `
+        <div class="mg-nat-q">¿De qué selección es?</div>
+        <div class="mg-nat-name">${q.n}</div>
+        <div class="mg-nat-opts">${btns}</div>`;
+      el('mg-board').querySelectorAll('.mg-nat-opt').forEach(b => b.addEventListener('click', () => this.answer(b.dataset.iso, b)));
+      setHud(`Pregunta ${this.qi + 1}/${this.qs.length} &nbsp;·&nbsp; Aciertos: <b>${this.score}</b>`);
+      startTimer(10000, () => this.answer(null, null));
+    },
+    answer(iso, btn) {
+      if (busy || gameOver) return;
+      busy = true; stopTimer();
+      const q = this.qs[this.qi];
+      const correct = iso === q.iso;
+      el('mg-board').querySelectorAll('.mg-nat-opt').forEach(b => { b.disabled = true; if (b.dataset.iso === q.iso) b.classList.add('ok'); else if (b === btn) b.classList.add('bad'); });
+      if (correct) this.score++;
+      setHud(`Pregunta ${this.qi + 1}/${this.qs.length} &nbsp;·&nbsp; Aciertos: <b>${this.score}</b>`);
+      setTimeout(() => { this.qi++; busy = false; if (this.qi >= this.qs.length) this.end(); else this.render(); }, 1100);
+    },
+    end() {
+      stopTimer(); resetTimerBar(); gameOver = true;
+      setBest(this.score);
+      const wrap = el('mg-board'); if (!wrap) return;
+      const n = this.qs.length;
+      const emoji = this.score === n ? '🏆' : this.score >= Math.ceil(n * 0.6) ? '👏' : '🙂';
+      wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${emoji}</div><h3>${this.score}/${n} aciertos</h3>
+        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
+        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+      el('mg-again').addEventListener('click', () => this.start());
+      setHud(`Aciertos: <b>${this.score}</b>/${n}`);
+      revealRanking();
+    },
+  };
+
+  // ===========================================================
+  //  MODO 8 — Puntería: marca goles (arcade, balón en movimiento)
+  // ===========================================================
+  const PunteriaMode = {
+    raf: null, last: 0, ballX: 0.5, ballDir: 1, ballSpd: 0.55, kX: 0.5, kDir: -1, kSpd: 0.34,
+    goals: 0, lives: 3, cool: 0, ballW: 0.12, kW: 0.24,
+    start() {
+      this.ballX = 0.08; this.ballDir = 1; this.ballSpd = 0.55;
+      this.kX = 0.5; this.kDir = -1; this.kSpd = 0.34;
+      this.goals = 0; this.lives = 3; this.cool = 0;
+      gameOver = false; busy = false;
+      this.render();
+      this.last = 0;
+      this.teardown();
+      this.raf = requestAnimationFrame(t => this.loop(t));
+    },
+    teardown() { if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; } },
+    render() {
+      const wrap = el('mg-board'); if (!wrap) return;
+      wrap.innerHTML = `
+        <div class="mg-pn-net" id="mg-pn-net">
+          <div class="mg-pn-keeper" id="mg-pn-keeper"></div>
+          <div class="mg-pn-ball" id="mg-pn-ball">⚽</div>
+          <div class="mg-pn-flash" id="mg-pn-flash"></div>
+        </div>
+        <button class="btn-primary mg-pn-shoot" id="mg-pn-shoot">¡Chuta!</button>
+        <div class="mg-pn-hint">Toca la portería (o ¡Chuta!) cuando el balón esté lejos del portero</div>`;
+      el('mg-pn-net').addEventListener('click', () => this.shoot());
+      el('mg-pn-shoot').addEventListener('click', () => this.shoot());
+      this.paint();
+      this.updHud();
+    },
+    updHud() { setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; ${'❤️'.repeat(this.lives)}${'🖤'.repeat(3 - this.lives)} &nbsp;·&nbsp; Mejor: <b>${getBest()}</b>`); },
+    paint() {
+      const k = el('mg-pn-keeper'), b = el('mg-pn-ball');
+      if (k) { k.style.left = (this.kX * 100) + '%'; k.style.width = (this.kW * 100) + '%'; }
+      if (b) b.style.left = (this.ballX * 100) + '%';
+    },
+    loop(t) {
+      this.raf = requestAnimationFrame(tt => this.loop(tt));
+      if (!this.last) this.last = t;
+      let dt = (t - this.last) / 1000; this.last = t;
+      if (!open || view !== 'play' || Game !== PunteriaMode || gameOver) return; // pausa si no visible
+      if (dt > 0.1) dt = 0.1;
+      if (this.cool > 0) this.cool -= dt;
+      // balón
+      this.ballX += this.ballDir * this.ballSpd * dt;
+      const bmin = this.ballW / 2, bmax = 1 - this.ballW / 2;
+      if (this.ballX <= bmin) { this.ballX = bmin; this.ballDir = 1; } else if (this.ballX >= bmax) { this.ballX = bmax; this.ballDir = -1; }
+      // portero
+      this.kX += this.kDir * this.kSpd * dt;
+      const kmin = this.kW / 2, kmax = 1 - this.kW / 2;
+      if (this.kX <= kmin) { this.kX = kmin; this.kDir = 1; } else if (this.kX >= kmax) { this.kX = kmax; this.kDir = -1; }
+      this.paint();
+    },
+    flash(txt, cls) { const f = el('mg-pn-flash'); if (!f) return; f.textContent = txt; f.className = 'mg-pn-flash show ' + cls; setTimeout(() => { const ff = el('mg-pn-flash'); if (ff) ff.className = 'mg-pn-flash'; }, 650); },
+    shoot() {
+      if (gameOver || this.cool > 0) return;
+      this.cool = 0.3;
+      const blocked = Math.abs(this.ballX - this.kX) < (this.kW / 2 + this.ballW / 2);
+      if (blocked) {
+        this.lives--; this.flash('¡Parada! 🧤', 'bad');
+        if (this.lives <= 0) { this.end(); return; }
+      } else {
+        this.goals++; this.ballSpd = Math.min(2.4, this.ballSpd * 1.12); this.kSpd = Math.min(1.4, this.kSpd * 1.04);
+        this.flash('¡GOL! ⚽', 'ok');
+      }
+      this.updHud();
+    },
+    end() {
+      gameOver = true; this.teardown();
+      setBest(this.goals);
+      const wrap = el('mg-board'); if (!wrap) return;
+      wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🥅</div><h3>${this.goals} ${this.goals === 1 ? 'gol' : 'goles'}</h3>
+        <p>¡Se te escapó el portero!</p>
+        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
+        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+      el('mg-again').addEventListener('click', () => this.start());
+      setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      revealRanking();
+    },
+  };
+
   function resetTimerBar() {
     const bar = el('mg-timer-bar'), num = el('mg-timer-num');
     if (bar) { bar.style.width = '100%'; bar.classList.remove('low'); }
@@ -1032,6 +1215,9 @@ const MG_ROTATION = [
                   : entry.mode === 'foto' ? '📸 ¿Quién es este jugador?'
                   : entry.mode === 'porteria' ? '🥅 Goles míticos'
                   : entry.mode === 'sudoku' ? '🧩 Sudoku de fútbol'
+                  : entry.mode === 'nat' ? '🌍 ¿De qué selección es?'
+                  : entry.mode === 'punteria' ? '🎯 Puntería: marca goles'
+                  : entry.mode === 'over' ? '🏁 Sin más retos'
                   : (themeByKey(entry.theme).emoji + ' ' + themeByKey(entry.theme).label);
     dp.innerHTML =
       '🔧 <b>Beta</b> · ver otro día: ' +
