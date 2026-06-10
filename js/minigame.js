@@ -318,19 +318,19 @@ const MG_NAT_POOL = [
 const MG_ROTATION = [
   // Ciclo 1 (10–17 jun)
   { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 9 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 26 }, { mode: 'wordle', i: 3 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
+  { mode: 'pistas', i: 5 }, { mode: 'wordle', i: 3 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
   // Ciclo 2 (18–25 jun)
   { mode: 'mm', theme: 'goles' }, { mode: 'nat', i: 1 }, { mode: 'foto', i: 16 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 28 }, { mode: 'wordle', i: 7 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
+  { mode: 'pistas', i: 2 }, { mode: 'wordle', i: 7 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
   // Ciclo 3 (26 jun – 3 jul)
   { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 19 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 18 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
+  { mode: 'pistas', i: 23 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
   // Ciclo 4 (4–11 jul)
   { mode: 'mm', theme: 'champions' }, { mode: 'nat', i: 3 }, { mode: 'foto', i: 18 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 20 }, { mode: 'wordle', i: 13 }, { mode: 'porteria', i: 3 }, { mode: 'sudoku', i: 2 },
+  { mode: 'pistas', i: 6 }, { mode: 'wordle', i: 17 }, { mode: 'porteria', i: 3 }, { mode: 'sudoku', i: 2 },
   // Ciclo 5 (12–19 jul)
   { mode: 'mm', theme: 'selecciones' }, { mode: 'nat', i: 4 }, { mode: 'foto', i: 14 }, { mode: 'punteria' },
-  { mode: 'pistas', i: 24 }, { mode: 'wordle', i: 18 }, { mode: 'porteria', i: 4 }, { mode: 'sudoku', i: 6 },
+  { mode: 'pistas', i: 3 }, { mode: 'wordle', i: 18 }, { mode: 'porteria', i: 4 }, { mode: 'sudoku', i: 6 },
 ];
 
 (function () {
