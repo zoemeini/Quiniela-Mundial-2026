@@ -806,6 +806,11 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .summary-arrow { font-size: 18px; }
 .summary-team { display: flex; align-items: center; gap: 7px; font-size: 13px; padding: 3px 0; color: var(--text); }
 .summary-team .team-flag-img { width: 20px; height: 15px; }
+.summary-legend { font-size: 11px; color: var(--muted); margin: 0 0 12px; line-height: 1.4; }
+/* Equipos que pasarían según tus pronósticos */
+.summary-team.qual { font-weight: 700; color: var(--green); background: var(--accent-soft); border-radius: 6px; padding: 3px 7px; }
+.summary-team.qual3 { color: var(--gold); background: rgba(245, 197, 66, .14); }
+.summary-team .qual-tag { margin-left: auto; font-size: 11px; font-weight: 700; }
 
 /* ── Locked / finished match states ────────────────────── */
 .lock-tag {

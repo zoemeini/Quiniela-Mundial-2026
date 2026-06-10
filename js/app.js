@@ -357,13 +357,31 @@ function maybeRefreshUpcoming() {
 function buildGroupSummary() {
   const el = document.getElementById('group-summary');
   if (!el) return;
-  let html = '<div class="summary-title">📋 Grupos <span class="summary-hint">(toca uno para ver tus pronósticos)</span></div><div class="summary-grid">';
+  // Clasificación según TUS pronósticos. Resalta los que pasarían:
+  //   · grupo completo → 1.º y 2.º (verde) · todos los grupos completos → mejores 3.º (dorado)
+  const cs = computeStandings(predictions);
+  const allComplete = cs.complete;
+  const qualThirds = allComplete ? new Set(bestEightThirds(cs.thirds)) : new Set();
+  let html = '<div class="summary-title">📋 Grupos <span class="summary-hint">(toca uno para ver tus pronósticos)</span></div>';
+  html += '<div class="summary-legend">🟢 1.º y 2.º de cada grupo' + (allComplete ? ' · 🟡 mejores 3.º' : '') + ' = los que pasarían según tus pronósticos' + (allComplete ? '' : ' (completa el grupo para verlo)') + '</div>';
+  html += '<div class="summary-grid">';
   GROUPS.forEach(g => {
     const c = groupColor(g);
-    const teams = [...new Set(getMatchesByGroup(g).flatMap(m => [m.home, m.away]))];
+    const gm = getMatchesByGroup(g);
+    const groupComplete = gm.every(m => predictions[m.id] !== undefined);
+    const ranking = cs.standings[g] || [];
+    const teams = groupComplete ? ranking : [...new Set(gm.flatMap(m => [m.home, m.away]))];
     html += `<button class="summary-group" style="border-left-color:${c}" onclick="renderGroupView('${g}')">
       <div class="summary-group-name" style="color:${c}">Grupo ${g} <span class="summary-arrow">›</span></div>`;
-    teams.forEach(t => { html += `<div class="summary-team">${teamFlag(t)} <span>${teamName(t)}</span></div>`; });
+    teams.forEach(t => {
+      let cls = 'summary-team', tag = '';
+      if (groupComplete) {
+        if (t === ranking[0])      { cls += ' qual';        tag = '1.º'; }
+        else if (t === ranking[1]) { cls += ' qual';        tag = '2.º'; }
+        else if (allComplete && t === ranking[2] && qualThirds.has(g)) { cls += ' qual qual3'; tag = '3.º'; }
+      }
+      html += `<div class="${cls}">${teamFlag(t)} <span>${teamName(t)}</span>${tag ? `<span class="qual-tag">(${tag})</span>` : ''}</div>`;
+    });
     html += '</button>';
   });
   html += '</div>';
@@ -581,6 +599,7 @@ function updateProgress() {
   if (p) p.textContent = `${pct}%`;
   const f = document.getElementById('progress-fill');
   if (f) f.style.width = `${pct}%`;
+  buildGroupSummary(); // refresca los resaltados de clasificados
 }
 function updateDayChecks() {
   const sel = document.getElementById('day-select');
