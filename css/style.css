@@ -1108,6 +1108,31 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   border-radius: 12px; border: 1px solid var(--border);
   background-size: cover; background-position: center 14%; background-repeat: no-repeat;
 }
+
+/* Modo «Goles míticos: ¿por dónde entró?» */
+.mg-net-desc { text-align: center; font-size: 13px; margin-bottom: 10px; }
+.mg-net-desc b { color: var(--green); font-family: 'Sora', sans-serif; }
+.mg-net {
+  position: relative; width: 100%; aspect-ratio: 3 / 1; margin: 0 auto;
+  border: 6px solid #f4f6fb; border-bottom-width: 3px; border-radius: 4px;
+  background-color: #16202c;
+  background-image:
+    repeating-linear-gradient(to right, rgba(255,255,255,.15) 0 1px, transparent 1px 13px),
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.15) 0 1px, transparent 1px 13px);
+  box-shadow: inset 0 0 26px rgba(0,0,0,.5);
+  cursor: crosshair; touch-action: manipulation;
+}
+.mg-net-ov { position: absolute; inset: 0; pointer-events: none; }
+.mg-net-mark { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; }
+.mg-net-mark.you { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--green); background: rgba(34,197,94,.25); box-shadow: 0 0 9px rgba(34,197,94,.75); }
+.mg-net-mark.real { font-size: 20px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.6)); }
+.mg-net-line { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mg-net-line line { stroke: var(--gold); stroke-width: 2; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; }
+.mg-net-hint { text-align: center; font-size: 13px; color: var(--muted); margin: 12px 0 10px; }
+.mg-net-hint b { color: var(--green); }
+.mg-net-actions { text-align: center; }
+.mg-net-actions .btn-primary { width: auto; padding: 9px 22px; }
+.mg-net-note { display: block; font-size: 11px; color: var(--gold); margin-top: 10px; }
 .mg-panel {
   position: fixed;
   left: 18px; bottom: 84px;

@@ -12,9 +12,11 @@
 //     6 intentos con pistas de color (verde/amarillo/gris). SIN crono.
 //   · ¿Quién es este jugador? → foto (de Wikipedia) muy ampliada que se va
 //     alejando con cada fallo hasta verse entera.
+//   · Goles míticos → marca en la portería por dónde crees que entró un gol
+//     mítico; puntúas según lo cerca que estés del punto real.
 //
-//  Casi todos llevan crono (15 s ¿Más o menos?, 45 s Pistas y Foto) para que
-//  no dé tiempo a buscar la respuesta; el Wordle no, porque es más difícil.
+//  Algunos llevan crono (15 s ¿Más o menos?, 45 s Pistas y Foto) para que no
+//  dé tiempo a buscar la respuesta; el Wordle y los Goles míticos no.
 //
 //  Depende de data.js (madridDayKey, formatKickoff).
 // ============================================================
@@ -228,24 +230,43 @@ const MG_FOTO_POOL = [
   { n: 'Manuel Neuer',       wiki: 'Manuel Neuer',       iso: 'de',     pais: 'Alemania',      pos: 'Portero',       fy: 13 },
 ];
 
+// ── Datos de «Goles míticos: ¿por dónde entró?» ──
+// x,y = punto de entrada en la PORTERÍA (fracción 0–1; x: izq→der, y: arriba→abajo),
+//       desde la vista del público/portero. Valores APROXIMADOS, fáciles de editar.
+const MG_PORTERIA_POOL = [
+  { desc: 'Roberto Carlos · falta vs Francia (1997)',        x: 0.90, y: 0.22 },
+  { desc: 'Zidane · volea en la final de Champions (2002)',  x: 0.16, y: 0.20 },
+  { desc: 'Messi · falta vs Liverpool (2019)',               x: 0.88, y: 0.12 },
+  { desc: 'Maradona · «el gol del siglo» vs Inglaterra (1986)', x: 0.40, y: 0.80 },
+  { desc: 'Ronaldinho · falta vs Inglaterra (2002)',         x: 0.20, y: 0.16 },
+  { desc: 'Van Basten · volea en la Eurocopa (1988)',        x: 0.86, y: 0.26 },
+  { desc: 'Beckham · desde su propio campo (1996)',          x: 0.58, y: 0.20 },
+  { desc: 'Ibrahimović · chilena vs Inglaterra (2012)',      x: 0.50, y: 0.18 },
+  { desc: 'Cristiano Ronaldo · chilena vs Juventus (2018)',  x: 0.68, y: 0.24 },
+  { desc: 'Iniesta · gol en la final del Mundial (2010)',    x: 0.80, y: 0.74 },
+];
+
 // ── Calendario diario: qué modo/tema toca cada día (rota, igual para todos) ──
 const MG_ROTATION = [
   { mode: 'mm', theme: 'valor' },
   { mode: 'wordle' },
   { mode: 'pistas' },
   { mode: 'foto' },
+  { mode: 'porteria' },
   { mode: 'mm', theme: 'goles' },
   { mode: 'mm', theme: 'altura' },
   { mode: 'wordle' },
   { mode: 'foto' },
   { mode: 'mm', theme: 'edad' },
   { mode: 'pistas' },
+  { mode: 'porteria' },
   { mode: 'mm', theme: 'instagram' },
   { mode: 'wordle' },
   { mode: 'foto' },
   { mode: 'mm', theme: 'champions' },
   { mode: 'mm', theme: 'caps' },
   { mode: 'pistas' },
+  { mode: 'porteria' },
   { mode: 'mm', theme: 'fichaje' },
   { mode: 'mm', theme: 'selecciones' },
 ];
@@ -356,8 +377,9 @@ const MG_ROTATION = [
     if (entry.mode === 'pistas') { if (tb) tb.innerHTML = '🕵️ Reto de hoy: <b>Adivina con pistas</b>'; Game = PistasMode; }
     else if (entry.mode === 'wordle') { if (tb) tb.innerHTML = '🔤 Reto de hoy: <b>Wordle de jugadores</b>'; Game = WordleMode; }
     else if (entry.mode === 'foto') { if (tb) tb.innerHTML = '📸 Reto de hoy: <b>¿Quién es este jugador?</b>'; Game = FotoMode; }
+    else if (entry.mode === 'porteria') { if (tb) tb.innerHTML = '🥅 Reto de hoy: <b>Goles míticos: ¿por dónde entró?</b>'; Game = PorteriaMode; }
     else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
-    setTimerVisible(entry.mode !== 'wordle'); // el Wordle no lleva crono
+    setTimerVisible(entry.mode !== 'wordle' && entry.mode !== 'porteria'); // estos dos no llevan crono
     Game.start();
     renderDayPreview();
   }
@@ -707,18 +729,23 @@ const MG_ROTATION = [
       fotoFetch(this.secret.wiki).then(url => {
         if (req !== this._req) return; // cambió de día/modo: descarta
         const im = el('mg-foto-img'); if (!im) return;
-        if (url && url !== 'FAIL') { im.textContent = ''; im.style.backgroundImage = `url("${url}")`; im.classList.remove('loading'); this.applyZoom(); }
+        if (url && url !== 'FAIL') { im.textContent = ''; im.style.backgroundImage = `url("${url}")`; im.classList.remove('loading'); this.applyZoom(true); }
         else { im.classList.remove('loading'); im.classList.add('failed'); im.innerHTML = `Sin foto 😕<br><span class="mg-foto-fallback">${flag(this.secret.iso)} ${this.secret.pais} · ${this.secret.pos}</span>`; }
       });
     },
     points() { return Math.max(1, 8 - (this.attempts + 1)); },
-    applyZoom() {
+    applyZoom(instant) {
       const im = el('mg-foto-img');
       if (im) {
         const fy = (this.secret && this.secret.fy != null) ? this.secret.fy : 22;
         im.style.backgroundPosition = '50% ' + fy + '%'; // recorta a la altura de la CARA
         im.style.transformOrigin = '50% ' + fy + '%';    // y hace zoom justo sobre ese punto
-        if (!im.classList.contains('loading') && !im.classList.contains('failed')) im.style.transform = 'scale(' + this.zooms[Math.min(this.level, this.zooms.length - 1)] + ')';
+        if (!im.classList.contains('loading') && !im.classList.contains('failed')) {
+          const sc = 'scale(' + this.zooms[Math.min(this.level, this.zooms.length - 1)] + ')';
+          if (instant) { // al aparecer, aplicar el zoom SIN animación (si no, se ve la foto entera ~1s y ayuda)
+            const prev = im.style.transition; im.style.transition = 'none'; im.style.transform = sc; void im.offsetWidth; im.style.transition = prev || '';
+          } else { im.style.transform = sc; }
+        }
       }
       const zl = el('mg-foto-zoomlbl'); if (zl) zl.textContent = this.zlabels[Math.min(this.level, this.zlabels.length - 1)];
     },
@@ -815,6 +842,64 @@ const MG_ROTATION = [
     },
   };
 
+  // ===========================================================
+  //  MODO 5 — Goles míticos: ¿por dónde entró? (puntería)
+  // ===========================================================
+  const PorteriaMode = {
+    goal: null, guess: null, done: false,
+    start() {
+      const rng = mulberry32(seedInt() ^ 0x2545f491); // semilla propia
+      this.goal = MG_PORTERIA_POOL[Math.floor(rng() * MG_PORTERIA_POOL.length)];
+      this.guess = null; this.done = false; gameOver = false; busy = false;
+      this.render();
+    },
+    render() {
+      const wrap = el('mg-board'); if (!wrap) return;
+      wrap.innerHTML = `
+        <div class="mg-net-desc">⚽ <b>${this.goal.desc}</b></div>
+        <div class="mg-net" id="mg-net"><div class="mg-net-ov" id="mg-net-ov"></div></div>
+        <div class="mg-net-hint" id="mg-net-hint">👆 Toca en la portería por dónde crees que entró el balón</div>
+        <div class="mg-net-actions" id="mg-net-actions"><button class="btn-primary" id="mg-net-confirm" disabled>Confirmar</button></div>`;
+      el('mg-net').addEventListener('click', e => this.place(e));
+      el('mg-net-confirm').addEventListener('click', () => this.confirm());
+      setHud(`Goles míticos · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+    },
+    place(e) {
+      if (this.done) return;
+      const net = el('mg-net'), r = net.getBoundingClientRect();
+      this.guess = {
+        x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+        y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
+      };
+      this.draw(false);
+      const c = el('mg-net-confirm'); if (c) c.disabled = false;
+      const h = el('mg-net-hint'); if (h) h.textContent = 'Mueve la marca si quieres y pulsa Confirmar';
+    },
+    draw(reveal) {
+      const ov = el('mg-net-ov'); if (!ov) return;
+      let html = '';
+      if (reveal && this.guess) html += `<svg class="mg-net-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="${(this.guess.x * 100).toFixed(1)}" y1="${(this.guess.y * 100).toFixed(1)}" x2="${(this.goal.x * 100).toFixed(1)}" y2="${(this.goal.y * 100).toFixed(1)}"/></svg>`;
+      if (this.guess) html += `<div class="mg-net-mark you" style="left:${(this.guess.x * 100).toFixed(1)}%;top:${(this.guess.y * 100).toFixed(1)}%"></div>`;
+      if (reveal) html += `<div class="mg-net-mark real" style="left:${(this.goal.x * 100).toFixed(1)}%;top:${(this.goal.y * 100).toFixed(1)}%">⚽</div>`;
+      ov.innerHTML = html;
+    },
+    confirm() {
+      if (this.done || !this.guess) return;
+      this.done = true; gameOver = true;
+      this.draw(true);
+      const dx = (this.guess.x - this.goal.x) * 7.32; // ancho real de la portería (m)
+      const dy = (this.guess.y - this.goal.y) * 2.44; // alto real (m)
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const score = Math.max(0, Math.round(100 - dist * 16));
+      setBest(score);
+      const emoji = score >= 90 ? '🎯' : score >= 70 ? '🔥' : score >= 40 ? '👏' : '😬';
+      const h = el('mg-net-hint'); if (h) h.innerHTML = `${emoji} A <b>${dist.toFixed(1)} m</b> del punto real · <b>${score}</b> pts`;
+      const a = el('mg-net-actions'); if (a) a.innerHTML = '<button class="btn-primary" id="mg-again">Jugar otra vez</button> <span class="mg-net-note">⚙️ Beta · 1 intento/día en la versión final</span>';
+      const ag = el('mg-again'); if (ag) ag.addEventListener('click', () => this.start());
+      setHud(`Goles míticos · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+    },
+  };
+
   function resetTimerBar() {
     const bar = el('mg-timer-bar'), num = el('mg-timer-num');
     if (bar) { bar.style.width = '100%'; bar.classList.remove('low'); }
@@ -830,6 +915,7 @@ const MG_ROTATION = [
     const modeLbl = entry.mode === 'pistas' ? '🕵️ Adivina con pistas'
                   : entry.mode === 'wordle' ? '🔤 Wordle de jugadores'
                   : entry.mode === 'foto' ? '📸 ¿Quién es este jugador?'
+                  : entry.mode === 'porteria' ? '🥅 Goles míticos'
                   : (themeByKey(entry.theme).emoji + ' ' + themeByKey(entry.theme).label);
     dp.innerHTML =
       '🔧 <b>Beta</b> · ver otro día: ' +
