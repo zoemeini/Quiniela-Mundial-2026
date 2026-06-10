@@ -362,6 +362,10 @@ const MG_ROTATION = [
   const bestKey = () => 'wc2026_mg_best_' + dayKey();
   const getBest = () => parseInt(localStorage.getItem(bestKey()) || '0', 10) || 0;
   function setBest(v) { if (v > getBest()) localStorage.setItem(bestKey(), String(v)); }
+  // 1 partida al día: al terminar (gane o pierda) se marca el día y queda bloqueado.
+  const doneKey = () => 'wc2026_mg_done_' + dayKey();
+  const isDone = () => localStorage.getItem(doneKey()) != null;
+  function setDone() { if (!isDone()) localStorage.setItem(doneKey(), String(getBest())); }
 
   // ── Burbuja flotante 🎮 + panel ──
   const fab = document.createElement('button');
@@ -384,7 +388,6 @@ const MG_ROTATION = [
       '</div>' +
       '<div class="mg-hud" id="mg-hud"></div>' +
       '<div id="mg-board"></div>' +
-      '<div class="mg-daypreview" id="mg-daypreview"></div>' +
     '</div>';
 
   document.body.appendChild(panel);
@@ -430,7 +433,6 @@ const MG_ROTATION = [
       if (tb) tb.innerHTML = '🏁 <b>¡Se acabó el Mundial!</b>';
       setTimerVisible(false); setHud(''); Game = null;
       const wrap = el('mg-board'); if (wrap) wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🏆</div><h3>No hay más retos</h3><p>Los retos diarios fueron hasta el 19 de julio. ¡Gracias por jugar!</p></div>`;
-      renderDayPreview();
       return;
     }
     if (entry.mode === 'pistas') { if (tb) tb.innerHTML = '🕵️ Reto de hoy: <b>Adivina con pistas</b>'; Game = PistasMode; }
@@ -441,9 +443,18 @@ const MG_ROTATION = [
     else if (entry.mode === 'nat') { if (tb) tb.innerHTML = '🌍 Reto de hoy: <b>¿De qué selección es?</b>'; Game = NatMode; }
     else if (entry.mode === 'punteria') { if (tb) tb.innerHTML = '🎯 Reto de hoy: <b>Puntería: marca goles</b>'; Game = PunteriaMode; }
     else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
+    if (isDone()) { // ya jugaste hoy → bloqueado hasta mañana (1 partida al día)
+      gameOver = true; setTimerVisible(false);
+      setHud(`✅ Completado · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      const wrap = el('mg-board');
+      if (wrap) wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🔒</div><h3>¡Ya jugaste el reto de hoy!</h3>
+        <p>Tu resultado: <b>${getBest()}</b> pts</p>
+        <p class="mg-note">Solo se juega una vez al día. Vuelve mañana para el próximo reto 🔥</p></div>`;
+      revealRanking();
+      return;
+    }
     setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // estos llevan cuenta atrás
     Game.start();
-    renderDayPreview();
   }
 
   // ===========================================================
@@ -1272,6 +1283,9 @@ const MG_ROTATION = [
   }
   function revealRanking() {
     const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
+    setDone(); // 1 partida al día: marca el reto de hoy como jugado
+    const again = el('mg-again'); // quita "Jugar otra vez": no se puede repetir
+    if (again) { const note = document.createElement('p'); note.className = 'mg-note'; note.innerHTML = '🔒 Solo se juega una vez al día · vuelve mañana 🔥'; again.replaceWith(note); }
     b.insertAdjacentHTML('beforeend', rankingBlockHTML());
   }
 })();
