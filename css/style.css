@@ -422,6 +422,7 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .lb-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-pts  { font-weight: 700; color: var(--green); text-align: center; }
 .lb-num  { text-align: center; color: var(--muted); font-size: 13px; }
+.lb-h-abbr { display: none; } /* cabeceras cortas solo en móvil */
 .lb-loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
 
 /* ── Admin ─────────────────────────────────────────────── */
@@ -911,11 +912,18 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   .header-right .btn-outline { padding: 5px 11px; }
 
   .lb-header, .lb-row {
-    grid-template-columns: 34px 1fr 48px 48px 48px 48px;
-    padding: 10px 10px;
+    grid-template-columns: 26px minmax(0, 1fr) 40px 34px 34px 32px;
+    padding: 9px 8px;
     font-size: 13px;
-    gap: 6px;
+    gap: 5px;
   }
+  .lb-header { font-size: 10px; letter-spacing: .02em; }
+  .lb-header > div { white-space: nowrap; }
+  .lb-h-full { display: none; }       /* en móvil: etiquetas cortas */
+  .lb-h-abbr { display: inline; }
+  /* el nombre se ve ENTERO (salta de línea si es largo), no se recorta */
+  .lb-name { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; line-height: 1.2; }
+  .lb-num { font-size: 12px; }
   .matches-grid { grid-template-columns: 1fr; }
   .ko-grid { grid-template-columns: 1fr; }
   .modal { padding: 28px 20px; }
