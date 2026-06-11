@@ -885,7 +885,7 @@ const MG_ROTATION = [
       this.secret = MG_FOTO_POOL[(currentEntry().i || 0) % MG_FOTO_POOL.length];
       this.attempts = 0; this.level = 0; this._tries = []; gameOver = false; busy = false;
       this.render();
-      startTimer(45000, () => this.timeUp());
+      startTimer(120000, () => this.timeUp()); // 2 minutos (la foto se va abriendo con cada fallo)
       const req = ++this._req;
       const setImg = url => {
         if (req !== this._req) return; // cambió de día/modo: descarta
@@ -918,6 +918,7 @@ const MG_ROTATION = [
       wrap.innerHTML = `
         <div class="mg-foto-frame"><div class="mg-foto-img loading" id="mg-foto-img">Cargando foto…</div></div>
         <div class="mg-foto-zoomlbl" id="mg-foto-zoomlbl">🔍 Muy de cerca</div>
+        <div class="mg-foto-help">Cada fallo <b>aleja la foto</b> y se ve mejor 👀, pero gana quien lo adivine en <b>menos intentos</b>. ¡Arriésgate cuanto antes! ⏱️ 2 min</div>
         <div class="mg-guess-row">
           <div class="mg-guess-field">
             <input class="mg-guess-input" id="mg-guess" placeholder="¿Quién es?" autocomplete="off" autocorrect="off" spellcheck="false">

@@ -1136,7 +1136,8 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mg-foto-img.failed { font-size: 13px; color: var(--text); }
 .mg-foto-img .team-flag-img { width: 20px; height: auto; border-radius: 2px; vertical-align: middle; }
 .mg-foto-fallback { display: inline-block; margin-top: 6px; color: var(--muted); }
-.mg-foto-zoomlbl { text-align: center; font-size: 12px; color: var(--gold); margin-bottom: 8px; }
+.mg-foto-zoomlbl { text-align: center; font-size: 12px; color: var(--gold); margin-bottom: 4px; }
+.mg-foto-help { text-align: center; font-size: 12px; line-height: 1.35; color: var(--muted); background: var(--accent-soft); border-radius: 10px; padding: 7px 10px; margin: 0 auto 10px; max-width: 340px; }
 .mg-foto-reveal {
   width: min(58%, 190px); aspect-ratio: 1; margin: 10px auto;
   border-radius: 12px; border: 1px solid var(--border);
