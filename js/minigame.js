@@ -361,8 +361,37 @@ const MG_ROTATION = [
   function flag(iso) { return `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">`; }
   function norm(s) { return (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').trim().replace(/\s+/g, ' '); }
   const bestKey = () => 'wc2026_mg_best_' + dayKey();
-  const getBest = () => parseInt(localStorage.getItem(bestKey()) || '0', 10) || 0;
-  function setBest(v) { if (v > getBest()) localStorage.setItem(bestKey(), String(v)); }
+  const hasBest = () => localStorage.getItem(bestKey()) != null;
+  const getBest = () => { const v = localStorage.getItem(bestKey()); return v == null ? 0 : parseFloat(v); };
+  // Cada modo puntúa distinto. lower:true → gana quien tenga MENOS (pistas,
+  // intentos, distancia o tiempo); lower:false → gana quien tenga MÁS (aciertos,
+  // goles). fmt(v) = cómo se ve el valor. DNF (no lo logró) = 999 y ordena el último.
+  const MG_DNF = 999;
+  const pad2 = n => String(n).padStart(2, '0');
+  const fmtMMSS = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + pad2(s % 60); };
+  const MODE_SCORING = {
+    mm:       { lower: false, fmt: v => v + (v === 1 ? ' acierto' : ' aciertos') },
+    nat:      { lower: false, fmt: v => v + '/5' },
+    punteria: { lower: false, fmt: v => v + (v === 1 ? ' gol' : ' goles') },
+    pistas:   { lower: true,  fmt: v => v >= MG_DNF ? '❌ no acertó' : v + (v === 1 ? ' pista' : ' pistas') },
+    wordle:   { lower: true,  fmt: v => v >= MG_DNF ? '❌ no acertó' : v + (v === 1 ? ' intento' : ' intentos') },
+    foto:     { lower: true,  fmt: v => v >= MG_DNF ? '❌ no acertó' : v + (v === 1 ? ' intento' : ' intentos') },
+    porteria: { lower: true,  fmt: v => v.toFixed(1) + ' m' },
+    sudoku:   { lower: true,  fmt: v => fmtMMSS(v) },
+  };
+  const scoringFor = m => MODE_SCORING[m] || { lower: false, fmt: v => String(v) };
+  const dayMode = () => (currentEntry() || {}).mode || 'mm';
+  const bestLabel = () => hasBest() ? scoringFor(dayMode()).fmt(getBest()) : '—';
+  // Usuarios que NO aparecen en el ranking (p. ej. la organizadora probando los
+  // retos). Pueden jugar y ver la clasificación, pero no salen en ella.
+  const MG_HIDDEN = ['zoesita'];
+  const isHidden = u => MG_HIDDEN.indexOf((u || '').toLowerCase()) >= 0;
+  function setBest(v) {
+    const cur = localStorage.getItem(bestKey());
+    if (cur == null) { localStorage.setItem(bestKey(), String(v)); return; }
+    const better = scoringFor(dayMode()).lower ? (v < parseFloat(cur)) : (v > parseFloat(cur));
+    if (better) localStorage.setItem(bestKey(), String(v));
+  }
   // 1 partida al día: al terminar (gane o pierda) se marca el día y queda bloqueado.
   const doneKey = () => 'wc2026_mg_done_' + dayKey();
   const isDone = () => localStorage.getItem(doneKey()) != null;
@@ -503,11 +532,11 @@ const MG_ROTATION = [
   }
   function showLocked() {
     gameOver = true; setTimerVisible(false);
-    const sc = myTodayScore();
+    const sc = scoringFor(dayMode()).fmt(myTodayScore());
     setHud(`✅ Completado · Tu resultado: <b>${sc}</b>`);
     const wrap = el('mg-board');
     if (wrap) wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🔒</div><h3>¡Ya jugaste el reto de hoy!</h3>
-      <p>Tu resultado: <b>${sc}</b> pts</p>
+      <p>Tu resultado: <b>${sc}</b></p>
       <p class="mg-note">Solo se juega una vez al día. Vuelve mañana para el próximo reto 🔥</p></div>`;
     revealRanking();
   }
@@ -546,7 +575,7 @@ const MG_ROTATION = [
         </div>`;
       el('mg-more').addEventListener('click', () => this.guess('mas'));
       el('mg-less').addEventListener('click', () => this.guess('menos'));
-      setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       startTimer(15000, () => this.timeUp());
     },
     guess(dir) {
@@ -573,11 +602,11 @@ const MG_ROTATION = [
       const wrap = el('mg-board'); if (!wrap) return;
       const h = reason === 'time' ? { e: '⏰', t: '¡Se acabó el tiempo!' } : { e: '😅', t: '¡Fallaste!' };
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${h.e}</div><h3>${h.t}</h3>
-        <p>Aciertos seguidos: <b>${this.score}</b></p><p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <p>Aciertos seguidos: <b>${this.score}</b></p><p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
-      setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
     win() {
@@ -631,11 +660,11 @@ const MG_ROTATION = [
           </div>
           <button class="mg-guess-btn" id="mg-guess-btn">Adivinar</button>
         </div>
-        <div class="mg-pts-hint">Vale ahora: <b>${this.points()}</b> pts · Intento ${this.attempts + 1}/${this.max}</div>
+        <div class="mg-pts-hint">Pistas usadas: <b>${this.shown}</b>/${this.clues.length} · cuantas menos, mejor</div>
         <div class="mg-tries" id="mg-tries"></div>`;
       el('mg-guess-btn').addEventListener('click', () => this.guess());
       this.setupAutocomplete();
-      setHud(`Adivina al jugador · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Adivina al jugador · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       this.renderTries();
     },
     // Autocompletado propio: solo sugiere al escribir (≥2 letras). Al hacer
@@ -697,18 +726,19 @@ const MG_ROTATION = [
     end(win, byTime) {
       stopTimer(); resetTimerBar();
       const wrap = el('mg-board'); if (!wrap) return;
-      const score = win ? Math.max(1, 7 - this.attempts) : 0;
-      if (win) setBest(score);
-      const head = win ? { e: '✅', t: `¡Acertaste! (${this.attempts}/${this.max})` }
+      const clues = this.shown;            // pistas que tenías visibles al acertar
+      const score = win ? clues : MG_DNF;  // gana quien use MENOS pistas
+      setBest(score);
+      const head = win ? { e: '✅', t: `¡Acertaste con ${clues} ${clues === 1 ? 'pista' : 'pistas'}!` }
                        : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡No era!' };
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
         <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pos} · ${this.secret.club} · #${this.secret.num}</span></div>
-        ${win ? `<p>Has ganado <b>${score}</b> pts.</p>` : ''}
-        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        ${win ? `<p>Lo adivinaste con <b>${clues}</b> ${clues === 1 ? 'pista' : 'pistas'}. ¡Cuantas menos, mejor!</p>` : ''}
+        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
-      setHud(`Adivina al jugador · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Adivina al jugador · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -775,7 +805,7 @@ const MG_ROTATION = [
         <div class="mg-wd-msg" id="mg-wd-msg"></div>
         <div class="mg-wd-keys" id="mg-wd-keys"></div>`;
       this.paintGrid(); this.renderKeys();
-      setHud(`Adivina el apellido · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Adivina el apellido · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
     },
     paintGrid() {
       const grid = el('mg-wd-grid'); if (!grid) return;
@@ -815,18 +845,18 @@ const MG_ROTATION = [
     end(win, byTime) {
       stopTimer(); resetTimerBar(); this.teardown();
       const wrap = el('mg-board'); if (!wrap) return;
-      const k = this.guesses.length, score = win ? Math.max(1, 8 - k) : 0;
-      if (win) setBest(score);
+      const k = this.guesses.length, score = win ? k : MG_DNF; // gana quien use MENOS intentos
+      setBest(score);
       const head = win ? { e: '🎉', t: `¡Correcto en ${k}/${this.max}!` }
                        : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡Sin intentos!' };
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
         <div class="mg-reveal">${flag(this.player.iso)} <b>${this.sol}</b><br><span class="mg-reveal-sub">${this.player.n} · ${this.player.pos}</span></div>
-        ${win ? `<p>Has ganado <b>${score}</b> pts.</p>` : ''}
-        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        ${win ? `<p>Resuelto en <b>${k}</b> ${k === 1 ? 'intento' : 'intentos'}. ¡Cuantos menos, mejor!</p>` : ''}
+        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
-      setHud(`Adivina el apellido · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Adivina el apellido · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -895,12 +925,12 @@ const MG_ROTATION = [
           </div>
           <button class="mg-guess-btn" id="mg-guess-btn">Adivinar</button>
         </div>
-        <div class="mg-pts-hint">Vale ahora: <b>${this.points()}</b> pts · Intento ${this.attempts + 1}/${this.max}</div>
+        <div class="mg-pts-hint">Intento <b>${this.attempts + 1}</b>/${this.max} · cuantos menos, mejor</div>
         <div class="mg-tries" id="mg-tries"></div>`;
       el('mg-guess-btn').addEventListener('click', () => this.guess());
       this.setupAutocomplete();
       this.renderTries();
-      setHud(`Mira la foto y adivina · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Mira la foto y adivina · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
     },
     renderTries() {
       const t = el('mg-tries'); if (!t) return;
@@ -920,7 +950,7 @@ const MG_ROTATION = [
       (this._tries = this._tries || []).push(val);
       if (this.attempts >= this.max) { gameOver = true; stopTimer(); this.end(false); return; }
       this.level = Math.min(this.level + 1, this.zooms.length - 1); this.applyZoom();
-      const hint = document.querySelector('.mg-pts-hint'); if (hint) hint.innerHTML = `Vale ahora: <b>${this.points()}</b> pts · Intento ${this.attempts + 1}/${this.max}`;
+      const hint = document.querySelector('.mg-pts-hint'); if (hint) hint.innerHTML = `Intento <b>${this.attempts + 1}</b>/${this.max} · cuantos menos, mejor`;
       this.renderTries();
       inp.value = ''; inp.focus();
     },
@@ -957,9 +987,10 @@ const MG_ROTATION = [
     end(win, byTime) {
       stopTimer(); resetTimerBar();
       const wrap = el('mg-board'); if (!wrap) return;
-      const score = win ? Math.max(1, 8 - this.attempts) : 0;
-      if (win) setBest(score);
-      const head = win ? { e: '🎉', t: `¡Acertaste! (${this.attempts}/${this.max})` }
+      const tries = this.attempts;         // intentos usados
+      const score = win ? tries : MG_DNF;  // gana quien acierte en MENOS intentos
+      setBest(score);
+      const head = win ? { e: '🎉', t: `¡Acertaste en ${tries} ${tries === 1 ? 'intento' : 'intentos'}!` }
                        : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡No era!' };
       const url = this.secret.src || MG_FOTO_CACHE[this.secret.wiki];
       const fy = this.secret.fy != null ? this.secret.fy : 22;
@@ -967,12 +998,12 @@ const MG_ROTATION = [
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
         ${photo}
         <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pais} · ${this.secret.pos}</span></div>
-        ${win ? `<p>Has ganado <b>${score}</b> pts.</p>` : ''}
-        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        ${win ? `<p>Acertado en <b>${tries}</b> ${tries === 1 ? 'intento' : 'intentos'}. ¡Cuantos menos, mejor!</p>` : ''}
+        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
-      setHud(`Mira la foto y adivina · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Mira la foto y adivina · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -996,7 +1027,7 @@ const MG_ROTATION = [
         <div class="mg-net-actions" id="mg-net-actions"><button class="btn-primary" id="mg-net-confirm" disabled>Confirmar</button></div>`;
       el('mg-net').addEventListener('click', e => this.place(e));
       el('mg-net-confirm').addEventListener('click', () => this.confirm());
-      setHud(`Goles míticos · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Goles míticos · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
     },
     place(e) {
       if (this.done) return;
@@ -1024,13 +1055,13 @@ const MG_ROTATION = [
       const dx = (this.guess.x - this.goal.x) * 7.32; // ancho real de la portería (m)
       const dy = (this.guess.y - this.goal.y) * 2.44; // alto real (m)
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const score = Math.max(0, Math.round(100 - dist * 16));
+      const score = Math.round(dist * 10) / 10; // distancia en metros · gana la MENOR
       setBest(score);
-      const emoji = score >= 90 ? '🎯' : score >= 70 ? '🔥' : score >= 40 ? '👏' : '😬';
-      const h = el('mg-net-hint'); if (h) h.innerHTML = `${emoji} A <b>${dist.toFixed(1)} m</b> del punto real · <b>${score}</b> pts`;
+      const emoji = dist <= 0.3 ? '🎯' : dist <= 0.9 ? '🔥' : dist <= 2 ? '👏' : '😬';
+      const h = el('mg-net-hint'); if (h) h.innerHTML = `${emoji} A <b>${dist.toFixed(1)} m</b> del punto real · ¡cuanto más cerca, mejor!`;
       const a = el('mg-net-actions'); if (a) a.innerHTML = '<button class="btn-primary" id="mg-again">Jugar otra vez</button> <span class="mg-net-note">⚙️ Beta · 1 intento/día en la versión final</span>';
       const ag = el('mg-again'); if (ag) ag.addEventListener('click', () => this.start());
-      setHud(`Goles míticos · Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`Goles míticos · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -1056,7 +1087,7 @@ const MG_ROTATION = [
     teardown() { if (this.tId) { clearInterval(this.tId); this.tId = null; } },
     startClock() { this.teardown(); this.tId = setInterval(() => { if (open && view === 'play' && Game === SudokuMode && !this.solved) this.updHud(); }, 1000); },
     elapsed() { return Math.floor((Date.now() - this.startT) / 1000); },
-    updHud() { setHud(`⏱ ${this.elapsed()}s &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`); },
+    updHud() { setHud(`⏱ ${this.elapsed()}s &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`); },
     // Transforma un puzzle (con sus huecos) conservando la solución ÚNICA:
     // renombra los símbolos y baraja bandas/filas y pilas/columnas (cajas 2×3).
     shuffle(arr, rng) {
@@ -1124,16 +1155,16 @@ const MG_ROTATION = [
       if (this.cells.some(c => c.v == null) || this.conflicts().size > 0) return;
       this.solved = true; gameOver = true; this.teardown();
       const t = this.elapsed();
-      const score = Math.min(100, Math.max(20, Math.round(120 - t / 2)));
+      const score = t; // tiempo en segundos · gana quien lo resuelva ANTES
       setBest(score);
       const wrap = el('mg-board'); if (!wrap) return;
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🧩</div><h3>¡Sudoku resuelto!</h3>
-        <p>Tiempo: <b>${t}s</b></p><p>Has ganado <b>${score}</b> pts.</p>
-        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <p>Lo resolviste en <b>${fmtMMSS(t)}</b>. ¡Cuanto antes, mejor!</p>
+        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
-      setHud(`⏱ ${t}s &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`⏱ ${fmtMMSS(t)} &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -1186,7 +1217,7 @@ const MG_ROTATION = [
       const n = this.qs.length;
       const emoji = this.score === n ? '🏆' : this.score >= Math.ceil(n * 0.6) ? '👏' : '🙂';
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${emoji}</div><h3>${this.score}/${n} aciertos</h3>
-        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
@@ -1270,11 +1301,11 @@ const MG_ROTATION = [
       const wrap = el('mg-board'); if (!wrap) return;
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🥅</div><h3>${this.goals} ${this.goals === 1 ? 'gol' : 'goles'}</h3>
         <p>¡Se te escapó el portero!</p>
-        <p class="mg-end-best">Mejor de hoy: <b>${getBest()}</b> 🔥</p>
+        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
-      setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${getBest()}</b> 🔥`);
+      setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -1315,21 +1346,31 @@ const MG_ROTATION = [
   // ── Clasificación REAL del día (puntuaciones de tus amigos) ──
   function rankingBlockHTML() {
     const d = dayKey(), me = mgUser();
-    const all = mgDedup().filter(r => r.user !== '__dedup_test__'); // una entrada por usuario/día
+    // Una entrada por usuario/día; fuera las filas de prueba y los usuarios ocultos (testers).
+    const all = mgDedup().filter(r => r.user !== '__dedup_test__' && !isHidden(r.user));
     const medals = ['🥇', '🥈', '🥉'];
     const daysOf = u => { const set = {}; all.forEach(r => { if (r.user === u) set[r.day] = 1; }); return set; };
     const streak = u => { const set = daysOf(u); let n = 0, ord = dayOrdinal(); while (set[ordToKey(ord)]) { n++; ord--; } return n; };
     const row = (i, user, val) => `<div class="mg-rank-row${user === me ? ' me' : ''}"><span class="mg-rank-pos">${i < 3 ? medals[i] : (i + 1)}</span>` +
       `<span class="mg-rank-name">${esc(user)}${user === me ? ' (tú)' : ''}</span>` +
       `<span class="mg-rank-streak">🔥 ${streak(user)}</span><span class="mg-rank-score">${val}</span></div>`;
-    // Clasificación del DÍA: todos los que han jugado el reto de hoy.
-    const today = all.filter(r => r.day === d).slice().sort((a, b) => b.score - a.score || streak(b.user) - streak(a.user));
+    // Clasificación del DÍA: todos los que han jugado el reto de hoy, ordenados
+    // según la métrica de ESE juego (a veces gana el más alto, a veces el más bajo).
+    const todayRows = all.filter(r => r.day === d);
+    const mode = (todayRows[0] && todayRows[0].mode) || dayMode();
+    const sc = scoringFor(mode);
+    const cmp = (a, b) => {
+      const diff = sc.lower ? (a.score - b.score) : (b.score - a.score);
+      return diff !== 0 ? diff : (streak(b.user) - streak(a.user));
+    };
+    const today = todayRows.slice().sort(cmp);
     const hoy = today.length
-      ? today.map((r, i) => row(i, r.user, r.score)).join('')
+      ? today.map((r, i) => row(i, r.user, sc.fmt(r.score))).join('')
       : '<div class="mg-rank-sub" style="text-align:center;padding:6px 0">Aún nadie ha jugado el reto de hoy. ¡Avisa a tus amigos! 🎉</div>';
+    const rule = sc.lower ? 'gana quien menos use ⬇️' : 'gana quien más sume ⬆️';
     return '<div id="mg-rankblock" class="mg-rankblock">' +
       '<div class="mg-rank-head">🏆 Clasificación de hoy</div>' +
-      '<div class="mg-rank-sub">Puntos del reto de hoy · 🔥 = días seguidos jugando</div>' +
+      `<div class="mg-rank-sub">Reto de hoy · ${rule} · 🔥 = días seguidos jugando</div>` +
       '<div class="mg-rank-list">' + hoy + '</div>' +
       '</div>';
   }
