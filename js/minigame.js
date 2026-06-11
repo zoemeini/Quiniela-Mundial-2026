@@ -289,7 +289,7 @@ const MG_NAT_POOL = [
   { n: 'Yunus Musah',         iso: 'us', d: ['gh', 'gb-eng', 'it'] },
   { n: 'Alphonso Davies',     iso: 'ca', d: ['gh', 'lr', 'gb-eng'] },
   { n: 'Hakim Ziyech',        iso: 'ma', d: ['nl', 'dz', 'be'] },
-  { n: 'Xherdan Shaqiri',     iso: 'ch', d: ['xk', 'al', 'mk'] },
+  { n: 'Dan Ndoye',           iso: 'ch', d: ['sn', 'fr', 'cm'] },
   { n: 'Eduardo Camavinga',   iso: 'fr', d: ['ao', 'cd', 'pt'] },
   // Quiz 2
   { n: 'Folarin Balogun',     iso: 'us', d: ['ng', 'gb-eng', 'fr'] },
