@@ -989,6 +989,21 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 /* Reto ya completado hoy: deja de moverse y se ve más calmado */
 .mg-fab.mg-done { animation: none; background: #1e4d36; color: #cdeede; box-shadow: 0 6px 16px rgba(34,197,94,.25); }
 .mg-fab.mg-done:hover { transform: translateY(-1px); }
+
+/* Tarjeta de partido ya empezado: clicable para ver qué puso cada uno */
+.mc-clickable { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+.mc-clickable:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.28); }
+.mc-seepreds { margin-top: 8px; text-align: center; font-size: 12px; font-weight: 700; color: var(--accent); opacity: .9; }
+/* Modal: lista de pronósticos de todos para un partido */
+.mpred-sub { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.mpred-list { display: flex; flex-direction: column; gap: 6px; }
+.mpred-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; column-gap: 12px; padding: 9px 12px; border-radius: 10px; background: rgba(255,255,255,.05); }
+.mpred-row.me { background: var(--accent-soft); outline: 1px solid var(--green); }
+.mpred-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpred-pred { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 16px; min-width: 46px; text-align: center; }
+.mpred-none { font-weight: 500; color: var(--muted); font-size: 12px; }
+.mpred-pts { min-width: 58px; text-align: right; }
+.mpred-vs { color: var(--muted); font-weight: 600; }
 .mg-fab-emoji { font-size: 22px; line-height: 1; }
 .mg-fab-label { white-space: nowrap; }
 @keyframes mgPulse {

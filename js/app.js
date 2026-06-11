@@ -462,6 +462,77 @@ document.getElementById('group-modal').addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && groupModalOpen) closeGroupModal(); });
 
+// ── Modal: qué puso cada uno en un partido ya empezado ───────────
+// Solo para partidos ya cerrados (han empezado), así que enseñar lo de los demás
+// es correcto. Carga TODAS las predicciones (api.getAll), con caché de 60 s.
+let matchPredsOpen = false, allPreds = null, allPredsAt = 0, allPredsPromise = null;
+function ensureAllPreds() {
+  if (allPreds && Date.now() - allPredsAt < 60000) return Promise.resolve(allPreds);
+  if (allPredsPromise) return allPredsPromise;
+  allPredsPromise = api.getAll()
+    .then(d => { allPreds = d || {}; allPredsAt = Date.now(); allPredsPromise = null; return allPreds; })
+    .catch(e => { allPredsPromise = null; throw e; });
+  return allPredsPromise;
+}
+function teamsForMatch(m) {
+  if (m.id[0] === 'M') { const r = realBr.resolved[m.id] || {}; return { home: r.home, away: r.away }; }
+  return { home: m.home, away: m.away };
+}
+function escMP(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function makeCardClickable(card, id) {
+  card.classList.add('mc-clickable');
+  card.insertAdjacentHTML('beforeend', '<div class="mc-seepreds">👁️ Ver qué puso cada uno ›</div>');
+  card.addEventListener('click', () => openMatchPredictions(id));
+}
+function openMatchPredictions(matchId) {
+  const m = getAnyMatch(matchId); if (!m) return;
+  const t = teamsForMatch(m); if (!t.home || !t.away) return;
+  const result = resultFor(matchId);
+  const title = document.getElementById('match-preds-title');
+  const body = document.getElementById('match-preds-body');
+  const scoreStr = result ? `<b>${result.home}–${result.away}</b>` : '<span class="mpred-vs">vs</span>';
+  title.innerHTML = `${teamFlag(t.home)} ${teamName(t.home)} ${scoreStr} ${teamName(t.away)} ${teamFlag(t.away)}`;
+  body.innerHTML = '<div class="lb-loading">Cargando pronósticos…</div>';
+  matchPredsOpen = true;
+  document.getElementById('match-preds-modal').classList.remove('hidden');
+  ensureAllPreds()
+    .then(data => { if (matchPredsOpen) renderMatchPreds(matchId, result, data, body); })
+    .catch(() => { body.innerHTML = '<div class="lb-loading">No se pudieron cargar los pronósticos. Revisa tu conexión.</div>'; });
+}
+function renderMatchPreds(matchId, result, data, body) {
+  const byUser = {};
+  (data.predictions || []).forEach(p => { (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
+  const rows = Object.keys(byUser).map(u => {
+    const pred = byUser[u][matchId] || null;
+    const pts = result ? calculatePoints(pred || { home: 0, away: 0 }, result) : null;
+    return { user: u, pred, pts };
+  });
+  if (!rows.length) { body.innerHTML = '<div class="lb-loading">Todavía nadie ha hecho pronósticos.</div>'; return; }
+  if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
+  else rows.sort((a, b) => a.user.localeCompare(b.user));
+  const badge = pts => pts === 5 ? '<span class="badge badge-green">⭐ +5</span>'
+                     : pts === 3 ? '<span class="badge badge-gold">✓ +3</span>'
+                     : '<span class="badge badge-red">+0</span>';
+  const sub = result ? 'Lo que puso cada uno · más puntos primero'
+                     : 'Aún sin resultado · se ordenará por puntos cuando se introduzca';
+  body.innerHTML = `<div class="mpred-sub">${sub}</div><div class="mpred-list">` + rows.map(r => {
+    const isMe = r.user === currentUser;
+    const score = r.pred ? `${r.pred.home}–${r.pred.away}` : '<span class="mpred-none">sin pronóstico</span>';
+    return `<div class="mpred-row${isMe ? ' me' : ''}">
+      <span class="mpred-name">${escMP(r.user)}${isMe ? ' (tú)' : ''}</span>
+      <span class="mpred-pred">${score}</span>
+      <span class="mpred-pts">${result ? badge(r.pts) : ''}</span>
+    </div>`;
+  }).join('') + '</div>';
+}
+function closeMatchPredsModal() {
+  matchPredsOpen = false;
+  document.getElementById('match-preds-modal').classList.add('hidden');
+}
+document.getElementById('match-preds-close').addEventListener('click', closeMatchPredsModal);
+document.getElementById('match-preds-modal').addEventListener('click', e => { if (e.target.id === 'match-preds-modal') closeMatchPredsModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && matchPredsOpen) closeMatchPredsModal(); });
+
 function buildMatchCard(match) {
   const locked = lockedM(match);
   const result = resultFor(match.id);
@@ -483,6 +554,7 @@ function buildMatchCard(match) {
       <div id="result-badge-${match.id}">${resultBadgeHtml(match.id)}</div>
     </div>`;
   if (!locked) wireCardInputs(card, match.id);
+  else makeCardClickable(card, match.id); // ya empezó → toca para ver qué puso cada uno
   return card;
 }
 
@@ -741,6 +813,7 @@ function buildKoCard(m) {
       <div id="result-badge-${m.id}">${resultBadgeHtml(m.id)}</div>
     </div>`;
   if (!locked) wireCardInputs(card, m.id);
+  else makeCardClickable(card, m.id); // ya empezó → toca para ver qué puso cada uno
   return card;
 }
 function updateKoTabChecks() {
