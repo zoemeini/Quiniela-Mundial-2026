@@ -471,7 +471,14 @@ function ensureAllPreds() {
   if (allPredsPromise) return allPredsPromise;
   allPredsPromise = api.getAll()
     .then(d => { allPreds = d || {}; allPredsAt = Date.now(); allPredsPromise = null; return allPreds; })
-    .catch(e => { allPredsPromise = null; throw e; });
+    .catch(e => {
+      allPredsPromise = null;
+      // Si la llamada falla puntualmente, usa lo último guardado en caché (si lo hay)
+      // en vez de dejar el modal con error. No fijamos allPredsAt → reintenta en vivo luego.
+      const cached = (typeof CacheStore !== 'undefined') && CacheStore.get('getAll');
+      if (cached) { allPreds = cached; return allPreds; }
+      throw e;
+    });
   return allPredsPromise;
 }
 function teamsForMatch(m) {

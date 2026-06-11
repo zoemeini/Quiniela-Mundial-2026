@@ -1001,6 +1001,8 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 /* Tarjeta de partido ya empezado: clicable para ver qué puso cada uno */
 .mc-clickable { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
 .mc-clickable:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.28); }
+/* Las tarjetas bloqueadas no reciben clics por defecto; las "ver qué puso cada uno" SÍ. */
+.match-card.locked.mc-clickable, .ko-card.locked.mc-clickable { pointer-events: auto; cursor: pointer; opacity: .92; }
 .mc-seepreds { margin-top: 8px; text-align: center; font-size: 12px; font-weight: 700; color: var(--accent); opacity: .9; }
 /* Modal: lista de pronósticos de todos para un partido */
 .mpred-sub { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
