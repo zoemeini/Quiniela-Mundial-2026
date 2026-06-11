@@ -25,20 +25,21 @@
 // ── Datos de «¿Más o menos?» (valores APROXIMADOS, fáciles de editar) ──
 const MG_THEMES = [
   { key: 'valor', emoji: '💰', label: 'Valor de mercado', sub: 'valor de mercado', unit: 'M€', verb: 'vale', metric: '', players: [
-    { n: 'Vinícius Júnior', iso: 'br', v: 200 }, { n: 'Kylian Mbappé', iso: 'fr', v: 180 },
-    { n: 'Erling Haaland', iso: 'no', v: 180 }, { n: 'Jude Bellingham', iso: 'gb-eng', v: 180 },
-    { n: 'Lamine Yamal', iso: 'es', v: 180 }, { n: 'Florian Wirtz', iso: 'de', v: 140 },
-    { n: 'Jamal Musiala', iso: 'de', v: 140 }, { n: 'Bukayo Saka', iso: 'gb-eng', v: 140 },
-    { n: 'Rodri', iso: 'es', v: 130 }, { n: 'Phil Foden', iso: 'gb-eng', v: 130 },
-    { n: 'Cole Palmer', iso: 'gb-eng', v: 130 }, { n: 'Federico Valverde', iso: 'uy', v: 130 },
-    { n: 'Lautaro Martínez', iso: 'ar', v: 110 }, { n: 'Harry Kane', iso: 'gb-eng', v: 100 },
-    { n: 'Pedri', iso: 'es', v: 100 }, { n: 'Victor Osimhen', iso: 'ng', v: 100 },
-    { n: 'Julián Álvarez', iso: 'ar', v: 90 }, { n: 'Rafael Leão', iso: 'pt', v: 75 },
-    { n: 'Achraf Hakimi', iso: 'ma', v: 60 }, { n: 'Mohamed Salah', iso: 'eg', v: 50 },
-    { n: 'Son Heung-min', iso: 'kr', v: 40 }, { n: 'Kevin De Bruyne', iso: 'be', v: 30 },
-    { n: 'Lionel Messi', iso: 'ar', v: 30 }, { n: 'Antoine Griezmann', iso: 'fr', v: 25 },
-    { n: 'Neymar Jr', iso: 'br', v: 20 }, { n: 'Cristiano Ronaldo', iso: 'pt', v: 15 },
-    { n: 'Luka Modrić', iso: 'hr', v: 10 },
+    // Valores Transfermarkt aprox. junio 2026 (orden descendente).
+    { n: 'Kylian Mbappé', iso: 'fr', v: 200 }, { n: 'Lamine Yamal', iso: 'es', v: 200 },
+    { n: 'Erling Haaland', iso: 'no', v: 200 }, { n: 'Jude Bellingham', iso: 'gb-eng', v: 160 },
+    { n: 'Vinícius Júnior', iso: 'br', v: 150 }, { n: 'Pedri', iso: 'es', v: 140 },
+    { n: 'Florian Wirtz', iso: 'de', v: 140 }, { n: 'Jamal Musiala', iso: 'de', v: 140 },
+    { n: 'Bukayo Saka', iso: 'gb-eng', v: 120 }, { n: 'Cole Palmer', iso: 'gb-eng', v: 110 },
+    { n: 'Lautaro Martínez', iso: 'ar', v: 100 }, { n: 'Federico Valverde', iso: 'uy', v: 90 },
+    { n: 'Julián Álvarez', iso: 'ar', v: 90 }, { n: 'Harry Kane', iso: 'gb-eng', v: 90 },
+    { n: 'Phil Foden', iso: 'gb-eng', v: 85 }, { n: 'Achraf Hakimi', iso: 'ma', v: 80 },
+    { n: 'Victor Osimhen', iso: 'ng', v: 75 }, { n: 'Rafael Leão', iso: 'pt', v: 70 },
+    { n: 'Rodri', iso: 'es', v: 50 }, { n: 'Mohamed Salah', iso: 'eg', v: 35 },
+    { n: 'Son Heung-min', iso: 'kr', v: 25 }, { n: 'Lionel Messi', iso: 'ar', v: 25 },
+    { n: 'Antoine Griezmann', iso: 'fr', v: 20 }, { n: 'Kevin De Bruyne', iso: 'be', v: 18 },
+    { n: 'Neymar Jr', iso: 'br', v: 18 }, { n: 'Cristiano Ronaldo', iso: 'pt', v: 12 },
+    { n: 'Luka Modrić', iso: 'hr', v: 8 },
   ] },
   { key: 'goles', emoji: '⚽', label: 'Goles en Mundiales', sub: 'goles en Mundiales (histórico)', unit: 'goles', verb: 'tiene', metric: 'goles en Mundiales', players: [
     { n: 'Miroslav Klose', iso: 'de', v: 16 }, { n: 'Ronaldo Nazário', iso: 'br', v: 15 },
@@ -173,7 +174,7 @@ const MG_PISTAS_POOL = [
   { n: 'Thibaut Courtois', iso: 'be', pais: 'Bélgica', pos: 'Portero', club: 'Real Madrid', age: 33, num: 1 },
   { n: 'Gianluigi Donnarumma', iso: 'it', pais: 'Italia', pos: 'Portero', club: 'Manchester City', age: 27, num: 1 },
   { n: 'Alisson Becker', iso: 'br', pais: 'Brasil', pos: 'Portero', club: 'Liverpool', age: 33, num: 1 },
-  { n: 'Son Heung-min', iso: 'kr', pais: 'Corea del Sur', pos: 'Delantero', club: 'Tottenham', age: 33, num: 7 },
+  { n: 'Son Heung-min', iso: 'kr', pais: 'Corea del Sur', pos: 'Delantero', club: 'LAFC', age: 33, num: 7 },
 ];
 
 // ── Datos de «Wordle de jugadores» ──
