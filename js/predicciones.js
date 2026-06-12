@@ -86,10 +86,34 @@ function matchLine(matchId, homeTeam, awayTeam, preds) {
   </div>`;
 }
 
+// Estadísticas del jugador HASTA EL MOMENTO (solo partidos con resultado real).
+function playerStats(user) {
+  const preds = allPreds[user] || {};
+  let played = 0, outcome = 0, exact = 0;
+  allMatches().forEach(m => {
+    const real = resultFor(m.id); if (!real) return;
+    played++;
+    const pred = preds[m.id] || { home: 0, away: 0 }; // sin enviar = 0–0
+    const pts = calculatePoints(pred, { home: real.home, away: real.away, status: 'finished' });
+    if (pts >= 3) outcome++; // acertó el vencedor/empate (incluye marcadores exactos)
+    if (pts === 5) exact++;  // marcador exacto = estrella
+  });
+  return { played, outcome, exact };
+}
+function statsBannerHTML(user) {
+  const s = playerStats(user);
+  if (!s.played) return ''; // todavía no hay partidos jugados
+  const pct = Math.round((s.outcome / s.played) * 100);
+  return `<div class="pred-stats">
+    <div class="pred-stat"><span class="pred-stat-num">${pct}%</span><span class="pred-stat-lbl">🎯 acierto de vencedor</span></div>
+    <div class="pred-stat"><span class="pred-stat-num">${s.exact}/${s.played}</span><span class="pred-stat-lbl">⭐ marcadores exactos</span></div>
+  </div>`;
+}
+
 function renderPlayer(user) {
   const preds = allPreds[user] || {};
   const view = document.getElementById('pred-view');
-  let html = '<h3 class="pred-section-title">⚽ Fase de grupos</h3>';
+  let html = statsBannerHTML(user) + '<h3 class="pred-section-title">⚽ Fase de grupos</h3>';
   GROUPS.forEach(g => {
     html += `<div class="pred-group"><div class="admin-group-title">Grupo ${g}</div>`;
     getMatchesByGroup(g).forEach(m => { html += matchLine(m.id, m.home, m.away, preds); });

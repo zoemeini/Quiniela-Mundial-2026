@@ -25,7 +25,7 @@ function applyLeaderboard(data) {
     if (players.length === 0) { renderEmpty(); lbRendered = true; return; }
 
     const rows = players.map(user => {
-      let g = 0, ko = 0, exact = 0, outcome = 0;
+      let g = 0, ko = 0, exact = 0;
       allMatches().forEach(m => {
         const res = realResults[m.id];
         if (!res) return;
@@ -34,9 +34,8 @@ function applyLeaderboard(data) {
         const pts = calculatePoints(pred, result);
         if (m.id[0] === 'M') ko += pts; else g += pts;
         if (pts === 5) exact++;
-        if (pts >= 3) outcome++; // acertó el resultado (vencedor/empate); incluye los exactos
       });
-      return { user, group: g, ko, total: g + ko, exact, outcome };
+      return { user, group: g, ko, total: g + ko, exact };
     });
 
     rows.sort((a, b) => b.total - a.total || b.exact - a.exact || a.user.localeCompare(b.user));
@@ -69,7 +68,6 @@ function renderLeaderboard(rows, playedGroup, playedKo) {
       + (playedKo > 0 ? ` · ${playedKo} de ${KO_MATCHES.length} de eliminatorias` : '') + ' jugados';
   }
 
-  const played = playedGroup + playedKo; // partidos con resultado = estrellas posibles
   const rankIcons = ['🥇', '🥈', '🥉'];
   const body = document.getElementById('lb-body');
   body.innerHTML = '';
@@ -87,13 +85,9 @@ function renderLeaderboard(rows, playedGroup, playedKo) {
     });
     const rankClass = rank <= 3 ? `top-${rank}` : '';
     const rankLabel = rank <= 3 ? rankIcons[rank - 1] : rank;
-    const pct = played > 0 ? Math.round((row.outcome / played) * 100) : 0;
-    const stats = played > 0
-      ? `<span class="lb-stats">🎯 ${pct}% al vencedor · ⭐ ${row.exact}/${played}</span>`
-      : '';
     div.innerHTML = `
       <div class="lb-rank ${rankClass}">${rankLabel}</div>
-      <div class="lb-name"><span class="lb-name-main">${escHtml(row.user)}${isMe ? ' <span style="font-size:11px;color:var(--muted)">(tú)</span>' : ''}</span>${stats}</div>
+      <div class="lb-name">${escHtml(row.user)}${isMe ? ' <span style="font-size:11px;color:var(--muted)">(tú)</span>' : ''}</div>
       <div class="lb-pts">${row.total}</div>
       <div class="lb-num">${row.group}</div>
       <div class="lb-num">${row.ko}</div>
