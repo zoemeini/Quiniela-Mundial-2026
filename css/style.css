@@ -877,7 +877,9 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .res-card {
   background: var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px;
+  cursor: pointer; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
+.res-card:hover { transform: translateY(-2px); border-color: var(--green); box-shadow: 0 10px 24px rgba(0,0,0,.28); }
 .res-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
 .res-tag { font-size: 10px; font-weight: 800; padding: 1px 8px; border-radius: 999px; border: 1px solid; text-transform: uppercase; letter-spacing: .04em; }
 .res-date { font-size: 11px; color: var(--muted); }

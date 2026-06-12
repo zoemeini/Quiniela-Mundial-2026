@@ -75,7 +75,7 @@ function render(finished, players) {
                        : ('Grupo ' + m.group);
     const labelColor = isKo ? 'var(--gold)' : groupColor(m.group);
     body.insertAdjacentHTML('beforeend', `
-      <div class="res-card">
+      <div class="res-card" data-mid="${m.id}">
         <div class="res-head">
           <span class="res-tag" style="color:${labelColor};border-color:${labelColor};background:${isKo ? 'var(--gold-dim)' : groupColor(m.group) + '22'}">${label}</span>
           <span class="res-date">${k.date} · ${k.time}</span>
@@ -90,11 +90,49 @@ function render(finished, players) {
           ${outcome.length ? `<div class="res-line"><span class="badge badge-gold">✓ +3</span> ${nameList(outcome)}</div>` : ''}
           ${(!exact.length && !outcome.length) ? `<div class="res-line res-none">Nadie acertó 😬</div>` : ''}
         </div>
+        <div class="mc-seepreds">👁️ Ver qué puso cada uno ›</div>
       </div>`);
   });
 }
 
 function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── Modal: qué puso cada uno en un partido (datos ya cargados en byUser) ──
+function mpMatch(id) { return (typeof getMatchById === 'function' && getMatchById(id)) || (typeof getKoMatch === 'function' && getKoMatch(id)) || null; }
+function openMatchPredictions(matchId) {
+  const m = mpMatch(matchId); if (!m) return;
+  const t = teamsFor(m); if (!t.home || !t.away) return;
+  const result = resultFor(matchId);
+  const scoreStr = result ? `<b>${result.home}–${result.away}</b>` : '<span class="mpred-vs">vs</span>';
+  document.getElementById('match-preds-title').innerHTML =
+    `${teamFlag(t.home)} ${teamName(t.home)} ${scoreStr} ${teamName(t.away)} ${teamFlag(t.away)}`;
+  const rows = Object.keys(byUser).map(u => {
+    const pred = byUser[u][matchId] || null;
+    const pts = result ? calculatePoints(pred || { home: 0, away: 0 }, { home: result.home, away: result.away, status: 'finished' }) : null;
+    return { user: u, pred, pts };
+  });
+  if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
+  else rows.sort((a, b) => a.user.localeCompare(b.user));
+  const badge = pts => pts === 5 ? '<span class="badge badge-green">⭐ +5</span>'
+                     : pts === 3 ? '<span class="badge badge-gold">✓ +3</span>'
+                     : '<span class="badge badge-red">+0</span>';
+  const sub = result ? 'Lo que puso cada uno · más puntos primero' : 'Aún sin resultado';
+  const list = rows.length ? rows.map(r => {
+    const isMe = r.user === me;
+    const score = r.pred ? `${r.pred.home}–${r.pred.away}` : '<span class="mpred-none">sin pronóstico</span>';
+    return `<div class="mpred-row${isMe ? ' me' : ''}"><span class="mpred-name">${escHtml(r.user)}${isMe ? ' (tú)' : ''}</span><span class="mpred-pred">${score}</span><span class="mpred-pts">${result ? badge(r.pts) : ''}</span></div>`;
+  }).join('') : '<div class="mpred-sub" style="text-align:center">Nadie ha hecho pronósticos.</div>';
+  document.getElementById('match-preds-body').innerHTML = `<div class="mpred-sub">${sub}</div><div class="mpred-list">${list}</div>`;
+  document.getElementById('match-preds-modal').classList.remove('hidden');
+}
+function closeMatchPredsModal() { document.getElementById('match-preds-modal').classList.add('hidden'); }
+document.getElementById('res-body').addEventListener('click', e => {
+  const card = e.target.closest('.res-card[data-mid]');
+  if (card) openMatchPredictions(card.dataset.mid);
+});
+document.getElementById('match-preds-close').addEventListener('click', closeMatchPredsModal);
+document.getElementById('match-preds-modal').addEventListener('click', e => { if (e.target.id === 'match-preds-modal') closeMatchPredsModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMatchPredsModal(); });
 
 // Pinta al instante lo último guardado (si hay) y luego refresca de verdad.
 const resCached = CacheStore.get('getAll');
