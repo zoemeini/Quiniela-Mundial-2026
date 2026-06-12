@@ -1021,6 +1021,29 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mpred-none { font-weight: 500; color: var(--muted); font-size: 12px; }
 .mpred-pts { min-width: 58px; text-align: right; }
 .mpred-vs { color: var(--muted); font-weight: 600; }
+
+/* Apuesta especial: la Final */
+.final-bet-card { background: linear-gradient(180deg, var(--accent-soft), var(--bg2)); border: 1px solid var(--green); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px; }
+.fb-head { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fb-deadline { font-size: 11px; font-weight: 600; color: var(--gold); background: var(--gold-dim); border-radius: 999px; padding: 2px 9px; }
+.fb-closed { font-size: 11px; font-weight: 700; color: var(--muted); }
+.fb-sub { font-size: 12px; color: var(--muted); margin: 6px 0 12px; line-height: 1.4; }
+.fb-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+.fb-sel { min-width: 0; }
+.fb-scorebox { display: flex; align-items: center; gap: 6px; }
+.fb-scorebox .score-input { width: 44px; text-align: center; }
+.fb-dash { color: var(--muted); font-weight: 700; }
+.fb-status { font-size: 12px; margin-top: 8px; min-height: 16px; color: var(--muted); }
+.fb-status.saved { color: var(--green); }
+.fb-status.error { color: var(--red); }
+.fb-locked-pick { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0 4px; font-weight: 700; flex-wrap: wrap; }
+.fb-locked-pick .fb-score { font-family: 'Sora', sans-serif; font-size: 18px; }
+.fb-champ { text-align: center; font-size: 13px; color: var(--muted); }
+.fb-none { text-align: center; color: var(--muted); font-size: 13px; padding: 6px 0; }
+@media (max-width: 600px) {
+  .fb-row { grid-template-columns: 1fr; gap: 8px; }
+  .fb-scorebox { justify-content: center; }
+}
 .mg-fab-emoji { font-size: 22px; line-height: 1; }
 .mg-fab-label { white-space: nowrap; }
 @keyframes mgPulse {

@@ -110,10 +110,34 @@ function statsBannerHTML(user) {
   </div>`;
 }
 
+// Apuesta de la final: oculta (🔒) hasta el cierre del lunes; luego se revela.
+function finalBetBlockHTML(user) {
+  const revealed = matchLocked(SP_FINAL_DEADLINE);
+  const fin = (allPreds[user] || {})['SP_FINALISTS'];
+  const sc = (allPreds[user] || {})['SP_FINAL'];
+  let body;
+  if (!revealed) {
+    body = `<div class="fb-none">🔒 Se revela cuando se cierre (lun 15 jun · 23:59)</div>`;
+  } else if (fin) {
+    const tA = teamByIndex(fin.home), tB = teamByIndex(fin.away);
+    if (tA && tB) {
+      const champ = sc ? (sc.home > sc.away ? tA : (sc.away > sc.home ? tB : null)) : null;
+      body = `<div class="fb-locked-pick">
+          <span class="fb-team">${teamFlag(tA)} ${teamName(tA)}</span>
+          <span class="fb-score">${sc ? sc.home + ' – ' + sc.away : '–'}</span>
+          <span class="fb-team">${teamName(tB)} ${teamFlag(tB)}</span>
+        </div>${champ ? `<div class="fb-champ">🏆 Campeón: <b>${teamName(champ)}</b></div>` : ''}`;
+    } else body = `<div class="fb-none">Apuesta no válida</div>`;
+  } else {
+    body = `<div class="fb-none">No hizo su apuesta de la final 😕</div>`;
+  }
+  return `<div class="final-bet-card"><div class="fb-head">🏆 Apuesta de la final</div>${body}</div>`;
+}
+
 function renderPlayer(user) {
   const preds = allPreds[user] || {};
   const view = document.getElementById('pred-view');
-  let html = statsBannerHTML(user) + '<h3 class="pred-section-title">⚽ Fase de grupos</h3>';
+  let html = statsBannerHTML(user) + finalBetBlockHTML(user) + '<h3 class="pred-section-title">⚽ Fase de grupos</h3>';
   GROUPS.forEach(g => {
     html += `<div class="pred-group"><div class="admin-group-title">Grupo ${g}</div>`;
     getMatchesByGroup(g).forEach(m => { html += matchLine(m.id, m.home, m.away, preds); });

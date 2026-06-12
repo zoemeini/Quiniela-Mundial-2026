@@ -161,6 +161,20 @@ function getMatchesByGroup(g)  { return MATCHES.filter(m => m.group === g); }
 // Spanish team name
 function teamName(name) { return ES_NAMES[name] || name; }
 
+// Lista ESTABLE de las 48 selecciones (orden fijo alfabético por nombre interno).
+// Se usa para la apuesta de la final: guardamos el ÍNDICE del equipo en esta lista
+// (así no hace falta tocar el backend; las predicciones guardan números).
+function allTeams() {
+  if (allTeams._cache) return allTeams._cache;
+  const set = {};
+  MATCHES.forEach(m => { set[m.home] = 1; set[m.away] = 1; });
+  return (allTeams._cache = Object.keys(set).sort());
+}
+function teamByIndex(i) { const t = allTeams(); i = parseInt(i, 10); return (i >= 0 && i < t.length) ? t[i] : null; }
+function teamIndex(name) { return allTeams().indexOf(name); }
+// Apuesta especial de la final: se cierra el lunes 15 jun a las 23:59 (Madrid, CEST = UTC+2).
+const SP_FINAL_DEADLINE = '2026-06-15T21:59:00Z';
+
 // Real flag image (renders everywhere, unlike emoji flags on Windows)
 function teamFlag(name) {
   const code = TEAM_CODES[name];

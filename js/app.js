@@ -348,6 +348,7 @@ function buildUI() {
   document.getElementById('nav-next').addEventListener('click', () => stepDay(1));
   renderGroupTab(currentGroupTab);
   buildGroupSummary();
+  renderFinalBet();
 }
 
 // Las flechas recorren los días con vuelta (‹ en el primero → último, › en el último → primero).
@@ -540,6 +541,84 @@ document.getElementById('match-preds-close').addEventListener('click', closeMatc
 document.getElementById('match-preds-modal').addEventListener('click', e => { if (e.target.id === 'match-preds-modal') closeMatchPredsModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && matchPredsOpen) closeMatchPredsModal(); });
 
+// ── Apuesta especial: la FINAL (2 finalistas + marcador) ─────────
+// Se guarda como predicciones "SP_FINALISTS" (índices de equipo) y "SP_FINAL"
+// (marcador) reutilizando el almacenamiento normal. Se cierra el lunes.
+function finalBetLocked() { return matchLocked(SP_FINAL_DEADLINE); }
+function fbSavePart(matchId, home, away) {
+  predictions[matchId] = { home, away };
+  dirty[matchId] = { home, away };
+  const st = document.getElementById('fb-status'); if (st) { st.textContent = '…'; st.className = 'fb-status saving'; }
+  api.savePrediction({ user: currentUser, matchId, home, away })
+    .then(() => { delete dirty[matchId]; const s = document.getElementById('fb-status'); if (s) { s.textContent = '✓ Guardado'; s.className = 'fb-status saved'; } })
+    .catch(() => { const s = document.getElementById('fb-status'); if (s) { s.textContent = '✗ Sin guardar — reintenta'; s.className = 'fb-status error'; } });
+}
+function saveFinalists() {
+  if (finalBetLocked()) return;
+  const a = parseInt(document.getElementById('fb-teamA').value, 10);
+  const b = parseInt(document.getElementById('fb-teamB').value, 10);
+  const st = document.getElementById('fb-status');
+  if (isNaN(a) || a < 0 || isNaN(b) || b < 0) { if (st) { st.textContent = 'Elige los dos finalistas'; st.className = 'fb-status'; } return; }
+  if (a === b) { if (st) { st.textContent = '⚠️ Elige dos equipos distintos'; st.className = 'fb-status error'; } return; }
+  fbSavePart('SP_FINALISTS', a, b);
+}
+function saveFinalScore() {
+  if (finalBetLocked()) return;
+  const hv = document.getElementById('fb-golesA').value, av = document.getElementById('fb-golesB').value;
+  const st = document.getElementById('fb-status');
+  if (hv === '' || av === '') { if (st) { st.textContent = 'Pon el marcador de la final'; st.className = 'fb-status'; } return; }
+  const home = parseInt(hv, 10), away = parseInt(av, 10);
+  if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return;
+  fbSavePart('SP_FINAL', home, away);
+}
+function renderFinalBet() {
+  const host = document.getElementById('final-bet'); if (!host) return;
+  if (!currentUser) { host.innerHTML = ''; host.dataset.ready = ''; return; }
+  // No repintar si estás eligiendo justo ahora (no perder lo que tecleas/seleccionas)
+  if (host.dataset.ready && document.activeElement && host.contains(document.activeElement)) return;
+  const locked = finalBetLocked();
+  const fin = predictions['SP_FINALISTS'], sc = predictions['SP_FINAL'];
+  const tA = fin ? teamByIndex(fin.home) : null, tB = fin ? teamByIndex(fin.away) : null;
+  if (locked) {
+    let inner;
+    if (tA && tB) {
+      const champ = sc ? (sc.home > sc.away ? tA : (sc.away > sc.home ? tB : null)) : null;
+      inner = `<div class="fb-locked-pick">
+          <span class="fb-team">${teamFlag(tA)} ${teamName(tA)}</span>
+          <span class="fb-score">${sc ? sc.home + ' – ' + sc.away : '– – –'}</span>
+          <span class="fb-team">${teamName(tB)} ${teamFlag(tB)}</span>
+        </div>${champ ? `<div class="fb-champ">🏆 Tu campeón: <b>${teamName(champ)}</b></div>` : ''}`;
+    } else {
+      inner = `<div class="fb-none">No llegaste a hacer tu apuesta de la final 😕</div>`;
+    }
+    host.innerHTML = `<div class="final-bet-card locked">
+      <div class="fb-head">🏆 Tu apuesta de la final <span class="fb-closed">🔒 Cerrada</span></div>${inner}</div>`;
+    host.dataset.ready = '1';
+    return;
+  }
+  const sorted = allTeams().slice().sort((x, y) => teamName(x).localeCompare(teamName(y)));
+  const opts = selIdx => sorted.map(code => { const i = teamIndex(code); return `<option value="${i}"${selIdx === i ? ' selected' : ''}>${teamName(code)}</option>`; }).join('');
+  host.innerHTML = `<div class="final-bet-card">
+    <div class="fb-head">🏆 Apuesta especial: la Final <span class="fb-deadline">cierra lun 15 jun · 23:59</span></div>
+    <div class="fb-sub">Elige los <b>2 finalistas</b> y el <b>marcador</b>. <b>+10</b> por finalista · <b>+10</b> campeón · <b>+20</b> marcador exacto.</div>
+    <div class="fb-row">
+      <select class="admin-select fb-sel" id="fb-teamA"><option value="-1">Finalista 1…</option>${opts(fin ? fin.home : -1)}</select>
+      <div class="fb-scorebox">
+        <input class="score-input" id="fb-golesA" type="number" inputmode="numeric" min="0" max="20" placeholder="–" value="${sc ? sc.home : ''}">
+        <span class="fb-dash">–</span>
+        <input class="score-input" id="fb-golesB" type="number" inputmode="numeric" min="0" max="20" placeholder="–" value="${sc ? sc.away : ''}">
+      </div>
+      <select class="admin-select fb-sel" id="fb-teamB"><option value="-1">Finalista 2…</option>${opts(fin ? fin.away : -1)}</select>
+    </div>
+    <div class="fb-status" id="fb-status"></div>
+  </div>`;
+  host.dataset.ready = '1';
+  document.getElementById('fb-teamA').addEventListener('change', saveFinalists);
+  document.getElementById('fb-teamB').addEventListener('change', saveFinalists);
+  document.getElementById('fb-golesA').addEventListener('input', saveFinalScore);
+  document.getElementById('fb-golesB').addEventListener('input', saveFinalScore);
+}
+
 function buildMatchCard(match) {
   const locked = lockedM(match);
   const result = resultFor(match.id);
@@ -683,6 +762,7 @@ function applyData(data) {
     syncGroupCards();
     maybeRefreshUpcoming(); // mantiene «Próximos» al día (3 días) en tiempo real
     updateNudge();
+    renderFinalBet(); // apuesta especial de la final
     // Eliminatorias: re-render solo si no estás escribiendo una casilla KO ahora mismo.
     const editingKo = document.activeElement && /^sc-M/.test(document.activeElement.id || '');
     if (currentPhase === 'ko' && !editingKo) renderKnockout();

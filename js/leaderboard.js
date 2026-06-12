@@ -16,6 +16,37 @@ function applyLeaderboard(data) {
     const playedGroup = MATCHES.filter(m => realResults[m.id]).length;
     const playedKo    = KO_MATCHES.filter(m => realResults[m.id]).length;
 
+    // Apuesta de la final: equipos reales del cuadro + marcador real de la final.
+    const koReal = {};
+    (data.knockoutReal || []).forEach(k => { koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga }; });
+    const grp = {}; MATCHES.forEach(m => { if (realResults[m.id]) grp[m.id] = realResults[m.id]; });
+    const realBr = (typeof realKnockout === 'function') ? realKnockout(grp, koReal) : { resolved: {} };
+    const realFinal = realBr.resolved['M104'] || {};        // finalistas reales (cuando se sepan)
+    const realFinalScore = realResults['M104'] || null;      // marcador real de la final
+    const realChampion = (realFinal.home && realFinal.away && realFinalScore)
+      ? (realFinalScore.home > realFinalScore.away ? realFinal.home
+        : (realFinalScore.away > realFinalScore.home ? realFinal.away : null)) : null;
+    // Puntos de la apuesta: +10 por finalista · +10 campeón · +20 marcador exacto (máx 50).
+    function finalPoints(sp) {
+      const fin = sp['SP_FINALISTS']; if (!fin || !realFinal.home || !realFinal.away) return 0;
+      const tA = teamByIndex(fin.home), tB = teamByIndex(fin.away);
+      const real = [realFinal.home, realFinal.away];
+      let pts = 0, fc = 0;
+      if (tA && real.indexOf(tA) >= 0) fc++;
+      if (tB && tB !== tA && real.indexOf(tB) >= 0) fc++;
+      pts += fc * 10;
+      const scp = sp['SP_FINAL'];
+      if (realFinalScore && realChampion) {
+        const myChamp = scp ? (scp.home > scp.away ? tA : (scp.away > scp.home ? tB : null)) : null;
+        if (myChamp && myChamp === realChampion) pts += 10;
+      }
+      if (realFinalScore && scp && fc === 2) {
+        const goals = {}; goals[tA] = scp.home; goals[tB] = scp.away;
+        if (goals[realFinal.home] === realFinalScore.home && goals[realFinal.away] === realFinalScore.away) pts += 20;
+      }
+      return pts;
+    }
+
     // Pronósticos por jugador.
     const byUser = {};
     (data.predictions || []).forEach(p => {
@@ -35,7 +66,8 @@ function applyLeaderboard(data) {
         if (m.id[0] === 'M') ko += pts; else g += pts;
         if (pts === 5) exact++;
       });
-      return { user, group: g, ko, total: g + ko, exact };
+      const spPts = finalPoints(byUser[user]); // apuesta de la final (0 hasta que se juegue)
+      return { user, group: g, ko, total: g + ko + spPts, exact };
     });
 
     rows.sort((a, b) => b.total - a.total || b.exact - a.exact || a.user.localeCompare(b.user));
