@@ -71,8 +71,11 @@ function renderLeaderboard(rows, playedGroup, playedKo) {
   const rankIcons = ['🥇', '🥈', '🥉'];
   const body = document.getElementById('lb-body');
   body.innerHTML = '';
-  rows.forEach((row, idx) => {
-    const rank = idx + 1;
+  // Empates: misma posición para el mismo TOTAL; la siguiente es correlativa
+  // (sin saltos) → 1, 2, 2, 2, 2, 3, 3, 3, 3, 4…
+  let rank = 0, prevTotal = null;
+  rows.forEach((row) => {
+    if (prevTotal === null || row.total !== prevTotal) { rank++; prevTotal = row.total; }
     const isMe = row.user === me;
     const div = document.createElement('div');
     div.className = 'lb-row clickable' + (isMe ? ' me' : '');
