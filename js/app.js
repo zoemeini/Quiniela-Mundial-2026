@@ -542,8 +542,9 @@ document.getElementById('match-preds-modal').addEventListener('click', e => { if
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && matchPredsOpen) closeMatchPredsModal(); });
 
 // ── Apuesta especial: la FINAL (2 finalistas + marcador) ─────────
-// Se guarda como predicciones "SP_FINALISTS" (índices de equipo) y "SP_FINAL"
-// (marcador) reutilizando el almacenamiento normal. Se cierra el lunes.
+// Se guarda como predicciones "SP_FINALISTS" (índices de equipo), "SP_FINAL"
+// (marcador) y "SP_FINAL_PENS" (índice del finalista que gana en penaltis si
+// el marcador es empate), reutilizando el almacenamiento normal. Cierra el lunes.
 function finalBetLocked() { return matchLocked(SP_FINAL_DEADLINE); }
 function fbSavePart(matchId, home, away) {
   predictions[matchId] = { home, away };
@@ -571,6 +572,38 @@ function saveFinalScore() {
   if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return;
   fbSavePart('SP_FINAL', home, away);
 }
+// Empate en el marcador → hay que indicar quién gana en penaltis (= tu campeón).
+function savePens(idx) {
+  if (finalBetLocked()) return;
+  const fin = predictions['SP_FINALISTS'];
+  if (!fin || (idx !== fin.home && idx !== fin.away)) return;
+  fbSavePart('SP_FINAL_PENS', idx, 0);
+  updatePensRow();
+}
+// Muestra/oculta la fila de penaltis según si el marcador escrito es empate.
+function updatePensRow() {
+  const box = document.getElementById('fb-pens'); if (!box) return;
+  const ha = document.getElementById('fb-golesA'), aa = document.getElementById('fb-golesB');
+  if (!ha || !aa) return;
+  const hv = ha.value, av = aa.value;
+  const draw = hv !== '' && av !== '' && parseInt(hv, 10) === parseInt(av, 10);
+  if (!draw) { box.innerHTML = ''; box.classList.remove('show'); return; }
+  box.classList.add('show');
+  const fin = predictions['SP_FINALISTS'];
+  if (!fin) {
+    box.innerHTML = `<div class="fb-pens-hint">🥅 Empate — elige primero los dos finalistas para indicar quién gana en los penaltis.</div>`;
+    return;
+  }
+  const pens = predictions['SP_FINAL_PENS'];
+  const winIdx = pens ? pens.home : null;
+  const btn = idx => {
+    const code = teamByIndex(idx);
+    return `<button type="button" class="fb-pens-btn${winIdx === idx ? ' on' : ''}" data-pens="${idx}">${teamFlag(code)} ${teamName(code)}</button>`;
+  };
+  box.innerHTML = `<div class="fb-pens-q">🥅 Empate — ¿quién gana en los penaltis? <span class="fb-pens-note">(será tu campeón)</span></div>
+    <div class="fb-pens-opts">${btn(fin.home)}${btn(fin.away)}</div>`;
+  box.querySelectorAll('.fb-pens-btn').forEach(b => b.addEventListener('click', () => savePens(parseInt(b.dataset.pens, 10))));
+}
 function renderFinalBet() {
   const host = document.getElementById('final-bet'); if (!host) return;
   if (!currentUser) { host.innerHTML = ''; host.dataset.ready = ''; return; }
@@ -582,12 +615,18 @@ function renderFinalBet() {
   if (locked) {
     let inner;
     if (tA && tB) {
-      const champ = sc ? (sc.home > sc.away ? tA : (sc.away > sc.home ? tB : null)) : null;
+      const pens = predictions['SP_FINAL_PENS'];
+      let champ = null, viaPens = false;
+      if (sc) {
+        if (sc.home > sc.away) champ = tA;
+        else if (sc.away > sc.home) champ = tB;
+        else if (pens) { champ = teamByIndex(pens.home); viaPens = true; }
+      }
       inner = `<div class="fb-locked-pick">
           <span class="fb-team">${teamFlag(tA)} ${teamName(tA)}</span>
           <span class="fb-score">${sc ? sc.home + ' – ' + sc.away : '– – –'}</span>
           <span class="fb-team">${teamName(tB)} ${teamFlag(tB)}</span>
-        </div>${champ ? `<div class="fb-champ">🏆 Tu campeón: <b>${teamName(champ)}</b></div>` : ''}`;
+        </div>${champ ? `<div class="fb-champ">🏆 Tu campeón: <b>${teamName(champ)}</b>${viaPens ? ' <span class="fb-pen-tag">🥅 en penaltis</span>' : ''}</div>` : ''}`;
     } else {
       inner = `<div class="fb-none">No llegaste a hacer tu apuesta de la final 😕</div>`;
     }
@@ -610,13 +649,19 @@ function renderFinalBet() {
       </div>
       <select class="admin-select fb-sel" id="fb-teamB"><option value="-1">Finalista 2…</option>${opts(fin ? fin.away : -1)}</select>
     </div>
+    <div class="fb-pens" id="fb-pens"></div>
     <div class="fb-status" id="fb-status"></div>
   </div>`;
   host.dataset.ready = '1';
   document.getElementById('fb-teamA').addEventListener('change', saveFinalists);
   document.getElementById('fb-teamB').addEventListener('change', saveFinalists);
+  document.getElementById('fb-teamA').addEventListener('change', updatePensRow);
+  document.getElementById('fb-teamB').addEventListener('change', updatePensRow);
   document.getElementById('fb-golesA').addEventListener('input', saveFinalScore);
   document.getElementById('fb-golesB').addEventListener('input', saveFinalScore);
+  document.getElementById('fb-golesA').addEventListener('input', updatePensRow);
+  document.getElementById('fb-golesB').addEventListener('input', updatePensRow);
+  updatePensRow();
 }
 
 function buildMatchCard(match) {

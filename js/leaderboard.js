@@ -23,9 +23,12 @@ function applyLeaderboard(data) {
     const realBr = (typeof realKnockout === 'function') ? realKnockout(grp, koReal) : { resolved: {} };
     const realFinal = realBr.resolved['M104'] || {};        // finalistas reales (cuando se sepan)
     const realFinalScore = realResults['M104'] || null;      // marcador real de la final
-    const realChampion = (realFinal.home && realFinal.away && realFinalScore)
-      ? (realFinalScore.home > realFinalScore.away ? realFinal.home
-        : (realFinalScore.away > realFinalScore.home ? realFinal.away : null)) : null;
+    // Campeón real: el ganador que registra el admin (incluye penaltis); si no,
+    // se deduce del marcador. Así un empate resuelto en penaltis tiene campeón.
+    const realChampion = (realFinal.home && realFinal.away)
+      ? (realFinal.winner
+        || (realFinalScore ? (realFinalScore.home > realFinalScore.away ? realFinal.home
+          : (realFinalScore.away > realFinalScore.home ? realFinal.away : null)) : null)) : null;
     // Puntos de la apuesta: +10 por finalista · +10 campeón · +20 marcador exacto (máx 50).
     function finalPoints(sp) {
       const fin = sp['SP_FINALISTS']; if (!fin || !realFinal.home || !realFinal.away) return 0;
@@ -37,7 +40,11 @@ function applyLeaderboard(data) {
       pts += fc * 10;
       const scp = sp['SP_FINAL'];
       if (realFinalScore && realChampion) {
-        const myChamp = scp ? (scp.home > scp.away ? tA : (scp.away > scp.home ? tB : null)) : null;
+        // Empate en el marcador → campeón = finalista elegido en penaltis (SP_FINAL_PENS).
+        const pens = sp['SP_FINAL_PENS'];
+        const myChamp = scp ? (scp.home > scp.away ? tA
+          : (scp.away > scp.home ? tB
+            : (pens ? teamByIndex(pens.home) : null))) : null;
         if (myChamp && myChamp === realChampion) pts += 10;
       }
       if (realFinalScore && scp && fc === 2) {

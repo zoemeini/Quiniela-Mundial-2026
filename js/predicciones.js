@@ -121,12 +121,18 @@ function finalBetBlockHTML(user) {
   } else if (fin) {
     const tA = teamByIndex(fin.home), tB = teamByIndex(fin.away);
     if (tA && tB) {
-      const champ = sc ? (sc.home > sc.away ? tA : (sc.away > sc.home ? tB : null)) : null;
+      const pens = (allPreds[user] || {})['SP_FINAL_PENS'];
+      let champ = null, viaPens = false;
+      if (sc) {
+        if (sc.home > sc.away) champ = tA;
+        else if (sc.away > sc.home) champ = tB;
+        else if (pens) { champ = teamByIndex(pens.home); viaPens = true; }
+      }
       body = `<div class="fb-locked-pick">
           <span class="fb-team">${teamFlag(tA)} ${teamName(tA)}</span>
           <span class="fb-score">${sc ? sc.home + ' – ' + sc.away : '–'}</span>
           <span class="fb-team">${teamName(tB)} ${teamFlag(tB)}</span>
-        </div>${champ ? `<div class="fb-champ">🏆 Campeón: <b>${teamName(champ)}</b></div>` : ''}`;
+        </div>${champ ? `<div class="fb-champ">🏆 Campeón: <b>${teamName(champ)}</b>${viaPens ? ' <span class="fb-pen-tag">🥅 en penaltis</span>' : ''}</div>` : ''}`;
     } else body = `<div class="fb-none">Apuesta no válida</div>`;
   } else {
     body = `<div class="fb-none">No hizo su apuesta de la final 😕</div>`;

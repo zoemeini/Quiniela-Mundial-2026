@@ -1040,12 +1040,24 @@ select.fb-sel { width: 100%; }            /* el desplegable rellena su hueco (si
 .fb-locked-pick { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0 4px; font-weight: 700; flex-wrap: wrap; }
 .fb-locked-pick .fb-score { font-family: 'Sora', sans-serif; font-size: 18px; }
 .fb-champ { text-align: center; font-size: 13px; color: var(--muted); }
+.fb-pen-tag { font-size: 11px; font-weight: 700; color: var(--gold); background: var(--gold-dim); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
 .fb-none { text-align: center; color: var(--muted); font-size: 13px; padding: 6px 0; }
+/* Desempate en penaltis (solo si el marcador escrito es empate) */
+.fb-pens { margin-top: 12px; }
+.fb-pens:empty { margin-top: 0; }
+.fb-pens-q { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 7px; }
+.fb-pens-note { font-weight: 500; color: var(--muted); }
+.fb-pens-hint { font-size: 12px; color: var(--muted); }
+.fb-pens-opts { display: flex; gap: 8px; }
+.fb-pens-btn { flex: 1 1 0; min-width: 0; padding: 9px 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); font-weight: 600; font-size: 13px; line-height: 1.2; transition: background .15s, border-color .15s, color .15s; }
+.fb-pens-btn:hover { border-color: var(--green); }
+.fb-pens-btn.on { background: var(--green); border-color: var(--green); color: #06231a; }
 @media (max-width: 600px) {
   .fb-row { gap: 6px; }
   .fb-sel { font-size: 13px; }
   .fb-scorebox { gap: 4px; }
   .fb-scorebox .score-input { width: 32px; }
+  .fb-pens-btn { font-size: 12px; padding: 8px 6px; }
 }
 .mg-fab-emoji { font-size: 22px; line-height: 1; }
 .mg-fab-label { white-space: nowrap; }
