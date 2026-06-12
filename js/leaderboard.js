@@ -71,11 +71,12 @@ function renderLeaderboard(rows, playedGroup, playedKo) {
   const rankIcons = ['🥇', '🥈', '🥉'];
   const body = document.getElementById('lb-body');
   body.innerHTML = '';
-  // Empates: misma posición para el mismo TOTAL; la siguiente es correlativa
-  // (sin saltos) → 1, 2, 2, 2, 2, 3, 3, 3, 3, 4…
-  let rank = 0, prevTotal = null;
+  // Empates: misma posición solo si coinciden PUNTOS y ESTRELLAS (las estrellas
+  // desempatan los puntos). Numeración correlativa, sin saltos.
+  let rank = 0, prevKey = null;
   rows.forEach((row) => {
-    if (prevTotal === null || row.total !== prevTotal) { rank++; prevTotal = row.total; }
+    const key = row.total + '|' + row.exact;
+    if (prevKey === null || key !== prevKey) { rank++; prevKey = key; }
     const isMe = row.user === me;
     const div = document.createElement('div');
     div.className = 'lb-row clickable' + (isMe ? ' me' : '');
