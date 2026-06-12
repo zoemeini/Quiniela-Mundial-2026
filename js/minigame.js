@@ -1352,7 +1352,7 @@ const MG_ROTATION = [
     const medals = ['🥇', '🥈', '🥉'];
     const daysOf = u => { const set = {}; all.forEach(r => { if (r.user === u) set[r.day] = 1; }); return set; };
     const streak = u => { const set = daysOf(u); let n = 0, ord = dayOrdinal(); while (set[ordToKey(ord)]) { n++; ord--; } return n; };
-    const row = (i, user, val) => `<div class="mg-rank-row${user === me ? ' me' : ''}"><span class="mg-rank-pos">${i < 3 ? medals[i] : (i + 1)}</span>` +
+    const row = (rank, user, val) => `<div class="mg-rank-row${user === me ? ' me' : ''}"><span class="mg-rank-pos">${rank <= 3 ? medals[rank - 1] : rank}</span>` +
       `<span class="mg-rank-name">${esc(user)}${user === me ? ' (tú)' : ''}</span>` +
       `<span class="mg-rank-streak">🔥 ${streak(user)}</span><span class="mg-rank-score">${val}</span></div>`;
     // Clasificación del DÍA: todos los que han jugado el reto de hoy, ordenados
@@ -1365,8 +1365,10 @@ const MG_ROTATION = [
       return diff !== 0 ? diff : (streak(b.user) - streak(a.user));
     };
     const today = todayRows.slice().sort(cmp);
+    // Empates: mismo puesto si tienen la MISMA puntuación; numeración correlativa (sin saltos).
+    let rnk = 0, prevScore = null;
     const hoy = today.length
-      ? today.map((r, i) => row(i, r.user, sc.fmt(r.score))).join('')
+      ? today.map(r => { if (prevScore === null || r.score !== prevScore) { rnk++; prevScore = r.score; } return row(rnk, r.user, sc.fmt(r.score)); }).join('')
       : '<div class="mg-rank-sub" style="text-align:center;padding:6px 0">Aún nadie ha jugado el reto de hoy. ¡Avisa a tus amigos! 🎉</div>';
     const rule = sc.lower ? 'gana quien menos use ⬇️' : 'gana quien más sume ⬆️';
     return '<div id="mg-rankblock" class="mg-rankblock">' +
