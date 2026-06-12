@@ -1028,10 +1028,11 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .fb-deadline { font-size: 11px; font-weight: 600; color: var(--gold); background: var(--gold-dim); border-radius: 999px; padding: 2px 9px; }
 .fb-closed { font-size: 11px; font-weight: 700; color: var(--muted); }
 .fb-sub { font-size: 12px; color: var(--muted); margin: 6px 0 12px; line-height: 1.4; }
-.fb-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
-.fb-sel { min-width: 0; }
-.fb-scorebox { display: flex; align-items: center; gap: 6px; }
-.fb-scorebox .score-input { width: 44px; text-align: center; }
+.fb-row { display: flex; align-items: center; gap: 8px; }
+.fb-sel { flex: 1 1 0; min-width: 0; }
+select.fb-sel { width: 100%; }            /* el desplegable rellena su hueco (sin espacios raros) */
+.fb-scorebox { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; }
+.fb-scorebox .score-input { width: 40px; text-align: center; padding-left: 4px; padding-right: 4px; }
 .fb-dash { color: var(--muted); font-weight: 700; }
 .fb-status { font-size: 12px; margin-top: 8px; min-height: 16px; color: var(--muted); }
 .fb-status.saved { color: var(--green); }
@@ -1041,8 +1042,10 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .fb-champ { text-align: center; font-size: 13px; color: var(--muted); }
 .fb-none { text-align: center; color: var(--muted); font-size: 13px; padding: 6px 0; }
 @media (max-width: 600px) {
-  .fb-row { grid-template-columns: 1fr; gap: 8px; }
-  .fb-scorebox { justify-content: center; }
+  .fb-row { gap: 6px; }
+  .fb-sel { font-size: 13px; }
+  .fb-scorebox { gap: 4px; }
+  .fb-scorebox .score-input { width: 32px; }
 }
 .mg-fab-emoji { font-size: 22px; line-height: 1; }
 .mg-fab-label { white-space: nowrap; }
