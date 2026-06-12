@@ -419,7 +419,9 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .lb-rank.top-1 { color: #ffd700; font-size: 18px; }
 .lb-rank.top-2 { color: #c0c0c0; font-size: 16px; }
 .lb-rank.top-3 { color: #cd7f32; font-size: 15px; }
-.lb-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-name { font-weight: 600; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.lb-name-main { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-stats { font-size: 11px; font-weight: 500; color: var(--muted); line-height: 1.25; }
 .lb-pts  { font-weight: 700; color: var(--green); text-align: center; }
 .lb-num  { text-align: center; color: var(--muted); font-size: 13px; }
 .lb-h-abbr { display: none; } /* cabeceras cortas solo en móvil */
@@ -922,7 +924,8 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   .lb-h-full { display: none; }       /* en móvil: etiquetas cortas */
   .lb-h-abbr { display: inline; }
   /* el nombre se ve ENTERO (salta de línea si es largo), no se recorta */
-  .lb-name { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; line-height: 1.2; }
+  .lb-name-main { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; line-height: 1.2; }
+  .lb-stats { font-size: 10px; }
   .lb-num { font-size: 12px; }
   .matches-grid { grid-template-columns: 1fr; }
   .ko-grid { grid-template-columns: 1fr; }
