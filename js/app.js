@@ -313,19 +313,22 @@ function dayLabel(key) {
   const d = new Date(key + 'T12:00:00Z');
   return new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
 }
-// Partidos de los PRÓXIMOS 3 DÍAS de juego (días naturales con partidos sin jugar).
-// Se recalcula en cada render → se actualiza solo cada día. Las eliminatorias
-// aparecen solo cuando ya se conocen los equipos reales.
+// Partidos de los PRÓXIMOS 3 DÍAS de juego (hoy incluido). Los partidos que YA
+// han empezado hoy se quedan (no desaparecen), para poder consultar fácilmente
+// qué puso cada uno sin buscarlos en el calendario. Se recalcula en cada render
+// → se actualiza solo cada día. Las eliminatorias aparecen solo cuando ya se
+// conocen los equipos reales.
 function upcomingMatches() {
-  const unlocked = allMatches().filter(m => {
-    if (matchLocked(m.kickoff)) return false;
+  const todayKey = madridDayKey(new Date());
+  const cand = allMatches().filter(m => {
+    if (madridDayKey(m.kickoff) < todayKey) return false; // días pasados → pestañas por día / Resultados
     if (m.id[0] === 'M') { const r = realBr.resolved[m.id]; if (!r || !r.home || !r.away) return false; }
     return true;
   }).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
   const days = [];
-  unlocked.forEach(m => { const k = madridDayKey(m.kickoff); if (!days.includes(k)) days.push(k); });
-  const keep = days.slice(0, 3); // los 3 próximos días con partidos
-  return unlocked.filter(m => keep.includes(madridDayKey(m.kickoff)));
+  cand.forEach(m => { const k = madridDayKey(m.kickoff); if (!days.includes(k)) days.push(k); });
+  const keep = days.slice(0, 3); // los 3 próximos días con partidos (incl. hoy)
+  return cand.filter(m => keep.includes(madridDayKey(m.kickoff)));
 }
 
 function buildUI() {
@@ -373,7 +376,7 @@ function renderGroupTab(tabKey) {
   let matches, header;
   if (tabKey === 'upcoming') {
     matches = upcomingMatches();
-    lastUpcomingKey = matches.map(m => m.id).join(',');
+    lastUpcomingKey = matches.map(m => m.id + (matchLocked(m.kickoff) ? '!' : '')).join(',');
     header = '⏳ Próximos 3 días — rellena estos primero';
   } else {
     matches = MATCHES.filter(m => madridDayKey(m.kickoff) === tabKey)
@@ -395,7 +398,7 @@ function maybeRefreshUpcoming() {
   if (currentGroupTab !== 'upcoming') return;
   const focused = document.activeElement && /^sc-/.test(document.activeElement.id || '');
   if (focused) return;
-  if (upcomingMatches().map(m => m.id).join(',') !== lastUpcomingKey) renderGroupTab('upcoming');
+  if (upcomingMatches().map(m => m.id + (matchLocked(m.kickoff) ? '!' : '')).join(',') !== lastUpcomingKey) renderGroupTab('upcoming');
 }
 
 function buildGroupSummary() {
@@ -523,14 +526,14 @@ function renderMatchPreds(matchId, result, data, body) {
                      : '<span class="badge badge-red">+0</span>';
   const sub = result ? 'Lo que puso cada uno · más puntos primero'
                      : 'Aún sin resultado · se ordenará por puntos cuando se introduzca';
-  body.innerHTML = `<div class="mpred-sub">${sub}</div><div class="mpred-list">` + rows.map(r => {
+  body.innerHTML = `<div class="mpred-sub">${sub} · toca un nombre para ver todas sus predicciones</div><div class="mpred-list">` + rows.map(r => {
     const isMe = r.user === currentUser;
     const score = r.pred ? `${r.pred.home}–${r.pred.away}` : '<span class="mpred-none">sin pronóstico</span>';
-    return `<div class="mpred-row${isMe ? ' me' : ''}">
+    return `<a class="mpred-row${isMe ? ' me' : ''}" href="predicciones.html?u=${encodeURIComponent(r.user)}" title="Ver todas las predicciones de ${escMP(r.user)}">
       <span class="mpred-name">${escMP(r.user)}${isMe ? ' (tú)' : ''}</span>
       <span class="mpred-pred">${score}</span>
       <span class="mpred-pts">${result ? badge(r.pts) : ''}</span>
-    </div>`;
+    </a>`;
   }).join('') + '</div>';
 }
 function closeMatchPredsModal() {

@@ -481,12 +481,17 @@ const MG_ROTATION = [
   // Al cargar: si ya jugaste hoy (en este equipo, o en otro según el servidor),
   // el icono nace quieto. Si no, sigue llamando la atención con su pulso.
   (function initFabState() {
-    if (!mgUser() || typeof api === 'undefined' || !api.mgGet) { if (isDone()) setFabDone(true); return; }
+    // Inmediato: si en ESTE equipo ya jugaste hoy, el icono nace "completado"
+    // sin esperar al servidor (el backend puede tardar unos segundos en responder).
+    if (isDone()) setFabDone(true);
+    if (!mgUser() || typeof api === 'undefined' || !api.mgGet) return;
+    // Luego, cuando llega el servidor, ajustamos al estado real (por si jugaste en
+    // otro equipo, o por si te borraron la partida y hay que volver a habilitarla).
     ensureMgData().then(() => {
       reconcileDone(); // partida borrada del servidor → quita el candado local
       reconcileBest(); // alinea "tu mejor de hoy" con el ranking
-      if (isDone() || playedTodayServer()) setFabDone(true);
-    }).catch(() => { if (isDone()) setFabDone(true); });
+      setFabDone(isDone() || playedTodayServer());
+    }).catch(() => {});
   })();
 
   // ── Temporizador genérico ──
@@ -622,8 +627,7 @@ const MG_ROTATION = [
       const h = reason === 'time' ? { e: '⏰', t: '¡Se acabó el tiempo!' } : { e: '😅', t: '¡Fallaste!' };
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${h.e}</div><h3>${h.t}</h3>
         <p>Aciertos seguidos: <b>${this.score}</b></p><p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
-        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
-        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => this.start());
       setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
@@ -754,8 +758,7 @@ const MG_ROTATION = [
         <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pos} · ${this.secret.club} · #${this.secret.num}</span></div>
         ${win ? `<p>Lo adivinaste con <b>${clues}</b> ${clues === 1 ? 'pista' : 'pistas'}. ¡Cuantas menos, mejor!</p>` : ''}
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
-        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
-        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
       setHud(`Adivina al jugador · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
@@ -872,8 +875,7 @@ const MG_ROTATION = [
         <div class="mg-reveal">${flag(this.player.iso)} <b>${this.sol}</b><br><span class="mg-reveal-sub">${this.player.n} · ${this.player.pos}</span></div>
         ${win ? `<p>Resuelto en <b>${k}</b> ${k === 1 ? 'intento' : 'intentos'}. ¡Cuantos menos, mejor!</p>` : ''}
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
-        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
-        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => this.start());
       setHud(`Adivina el apellido · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
@@ -1020,8 +1022,7 @@ const MG_ROTATION = [
         <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pais} · ${this.secret.pos}</span></div>
         ${win ? `<p>Acertado en <b>${tries}</b> ${tries === 1 ? 'intento' : 'intentos'}. ¡Cuantos menos, mejor!</p>` : ''}
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
-        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
-        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
       setHud(`Mira la foto y adivina · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
@@ -1079,7 +1080,7 @@ const MG_ROTATION = [
       setBest(score);
       const emoji = dist <= 0.3 ? '🎯' : dist <= 0.9 ? '🔥' : dist <= 2 ? '👏' : '😬';
       const h = el('mg-net-hint'); if (h) h.innerHTML = `${emoji} A <b>${dist.toFixed(1)} m</b> del punto real · ¡cuanto más cerca, mejor!`;
-      const a = el('mg-net-actions'); if (a) a.innerHTML = '<button class="btn-primary" id="mg-again">Jugar otra vez</button> <span class="mg-net-note">⚙️ Beta · 1 intento/día en la versión final</span>';
+      const a = el('mg-net-actions'); if (a) a.innerHTML = '<button class="btn-primary" id="mg-again">Jugar otra vez</button>';
       const ag = el('mg-again'); if (ag) ag.addEventListener('click', () => this.start());
       setHud(`Goles míticos · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
@@ -1181,8 +1182,7 @@ const MG_ROTATION = [
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🧩</div><h3>¡Sudoku resuelto!</h3>
         <p>Lo resolviste en <b>${fmtMMSS(t)}</b>. ¡Cuanto antes, mejor!</p>
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
-        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
-        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => this.start());
       setHud(`⏱ ${fmtMMSS(t)} &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
@@ -1238,8 +1238,7 @@ const MG_ROTATION = [
       const emoji = this.score === n ? '🏆' : this.score >= Math.ceil(n * 0.6) ? '👏' : '🙂';
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${emoji}</div><h3>${this.score}/${n} aciertos</h3>
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
-        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
-        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => this.start());
       setHud(`Aciertos: <b>${this.score}</b>/${n}`);
       revealRanking();
@@ -1332,8 +1331,7 @@ const MG_ROTATION = [
         : `<div class="mg-end-emoji">🥅</div><h3>${this.goals} ${this.goals === 1 ? 'gol' : 'goles'}</h3><p>¡Se te escapó el portero!</p>`;
       wrap.innerHTML = `<div class="mg-end">${head}
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
-        <button class="btn-primary" id="mg-again">Jugar otra vez</button>
-        <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
+        <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => this.start());
       setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();

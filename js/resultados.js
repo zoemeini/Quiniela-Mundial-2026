@@ -120,9 +120,9 @@ function openMatchPredictions(matchId) {
   const list = rows.length ? rows.map(r => {
     const isMe = r.user === me;
     const score = r.pred ? `${r.pred.home}–${r.pred.away}` : '<span class="mpred-none">sin pronóstico</span>';
-    return `<div class="mpred-row${isMe ? ' me' : ''}"><span class="mpred-name">${escHtml(r.user)}${isMe ? ' (tú)' : ''}</span><span class="mpred-pred">${score}</span><span class="mpred-pts">${result ? badge(r.pts) : ''}</span></div>`;
+    return `<a class="mpred-row${isMe ? ' me' : ''}" href="predicciones.html?u=${encodeURIComponent(r.user)}" title="Ver todas las predicciones de ${escHtml(r.user)}"><span class="mpred-name">${escHtml(r.user)}${isMe ? ' (tú)' : ''}</span><span class="mpred-pred">${score}</span><span class="mpred-pts">${result ? badge(r.pts) : ''}</span></a>`;
   }).join('') : '<div class="mpred-sub" style="text-align:center">Nadie ha hecho pronósticos.</div>';
-  document.getElementById('match-preds-body').innerHTML = `<div class="mpred-sub">${sub}</div><div class="mpred-list">${list}</div>`;
+  document.getElementById('match-preds-body').innerHTML = `<div class="mpred-sub">${sub} · toca un nombre para ver todas sus predicciones</div><div class="mpred-list">${list}</div>`;
   document.getElementById('match-preds-modal').classList.remove('hidden');
 }
 function closeMatchPredsModal() { document.getElementById('match-preds-modal').classList.add('hidden'); }

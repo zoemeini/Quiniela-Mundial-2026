@@ -1016,6 +1016,10 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .mpred-list { display: flex; flex-direction: column; gap: 6px; }
 .mpred-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; column-gap: 12px; padding: 9px 12px; border-radius: 10px; background: rgba(255,255,255,.05); }
 .mpred-row.me { background: var(--accent-soft); outline: 1px solid var(--green); }
+a.mpred-row { cursor: pointer; transition: background .12s; }
+a.mpred-row:hover, a.mpred-row:focus-visible { background: rgba(255,255,255,.11); outline: 1px solid var(--border); }
+a.mpred-row.me:hover, a.mpred-row.me:focus-visible { background: var(--accent-soft); outline-color: var(--green); }
+a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weight: 800; }
 .mpred-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mpred-pred { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 16px; min-width: 46px; text-align: center; }
 .mpred-none { font-weight: 500; color: var(--muted); font-size: 12px; }
