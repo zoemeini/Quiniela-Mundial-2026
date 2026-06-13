@@ -1295,20 +1295,26 @@ const MG_ROTATION = [
         if (this.lives <= 0) { this.end(); return; }
       } else {
         this.goals++; this.ballSpd = Math.min(2.4, this.ballSpd * 1.12); this.kSpd = Math.min(2.0, this.kSpd * 1.05);
-        // El portero se ensancha en escalones (sube la dificultad): a 20, a 30 y a 40 goles.
-        if (this.goals === 20) this.kW = 0.28;
-        else if (this.goals === 30) this.kW = 0.33;
+        // El portero se ensancha en escalones (sube la dificultad): 10, 20, 30, 40, 50 y 60 goles.
+        if (this.goals === 10) this.kW = 0.28;
+        else if (this.goals === 20) this.kW = 0.31;
+        else if (this.goals === 30) this.kW = 0.34;
         else if (this.goals === 40) this.kW = 0.37;
+        else if (this.goals === 50) this.kW = 0.40;
+        else if (this.goals === 60) this.kW = 0.43;
         this.flash('¡GOL! ⚽', 'ok');
+        if (this.goals >= 70) { this.end(true); return; } // 70 goles → reto completado, se para
       }
       this.updHud();
     },
-    end() {
+    end(won) {
       gameOver = true; this.teardown();
       setBest(this.goals);
       const wrap = el('mg-board'); if (!wrap) return;
-      wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🥅</div><h3>${this.goals} ${this.goals === 1 ? 'gol' : 'goles'}</h3>
-        <p>¡Se te escapó el portero!</p>
+      const head = won
+        ? `<div class="mg-end-emoji">🏆</div><h3>¡Imparable! ${this.goals} goles</h3><p>Has completado el reto: ¡70 goles! 🔥</p>`
+        : `<div class="mg-end-emoji">🥅</div><h3>${this.goals} ${this.goals === 1 ? 'gol' : 'goles'}</h3><p>¡Se te escapó el portero!</p>`;
+      wrap.innerHTML = `<div class="mg-end">${head}
         <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
