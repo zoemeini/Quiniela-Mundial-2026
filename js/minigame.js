@@ -386,6 +386,9 @@ const MG_ROTATION = [
   // retos). Pueden jugar y ver la clasificación, pero no salen en ella.
   const MG_HIDDEN = ['zoesita'];
   const isHidden = u => MG_HIDDEN.indexOf((u || '').toLowerCase()) >= 0;
+  // Los testers ocultos pueden rejugar el reto cuantas veces quieran (no se les
+  // aplica el candado de "1 partida al día"); el resto, solo una vez.
+  const canReplay = () => isHidden(mgUser());
   function setBest(v) {
     const cur = localStorage.getItem(bestKey());
     if (cur == null) { localStorage.setItem(bestKey(), String(v)); return; }
@@ -525,7 +528,7 @@ const MG_ROTATION = [
     const token = ++startToken;
     ensureMgData().then(() => {
       if (token !== startToken) return; // se reabrió/cambió de día mientras cargaba
-      if (isDone() || playedTodayServer()) { showLocked(); return; }
+      if (!canReplay() && (isDone() || playedTodayServer())) { showLocked(); return; }
       setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // llevan cuenta atrás
       Game.start();
     });
@@ -1384,8 +1387,18 @@ const MG_ROTATION = [
     const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
     setDone();       // 1 partida al día (caché local)
     saveMyScore();   // guarda mi puntuación en el servidor (1/día) + en mgRows
-    const again = el('mg-again'); // quita "Jugar otra vez": no se puede repetir
-    if (again) { const note = document.createElement('p'); note.className = 'mg-note'; note.innerHTML = '🔒 Solo se juega una vez al día · vuelve mañana 🔥'; again.replaceWith(note); }
+    const again = el('mg-again');
+    if (again) {
+      if (canReplay()) {
+        // Tester oculto: mantenemos "Jugar otra vez" para poder repetir en los tests.
+        const tag = document.createElement('span'); tag.className = 'mg-net-note';
+        tag.innerHTML = ' 🔁 modo test: puedes repetir';
+        if (!again.nextElementSibling || again.nextElementSibling.className !== 'mg-net-note') again.after(tag);
+      } else {
+        // El resto: se quita "Jugar otra vez" — no se puede repetir.
+        const note = document.createElement('p'); note.className = 'mg-note'; note.innerHTML = '🔒 Solo se juega una vez al día · vuelve mañana 🔥'; again.replaceWith(note);
+      }
+    }
     b.insertAdjacentHTML('beforeend', rankingBlockHTML());
   }
 })();
