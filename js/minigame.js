@@ -382,13 +382,16 @@ const MG_ROTATION = [
   const scoringFor = m => MODE_SCORING[m] || { lower: false, fmt: v => String(v) };
   const dayMode = () => (currentEntry() || {}).mode || 'mm';
   const bestLabel = () => hasBest() ? scoringFor(dayMode()).fmt(getBest()) : '—';
-  // Usuarios que NO aparecen en el ranking (p. ej. la organizadora probando los
-  // retos). Pueden jugar y ver la clasificación, pero no salen en ella.
+  // Usuarios que normalmente NO aparecen en el ranking (la organizadora probando
+  // los retos): en los juegos de CONOCIMIENTO, conocer las preguntas da ventaja.
   const MG_HIDDEN = ['zoesita'];
   const isHidden = u => MG_HIDDEN.indexOf((u || '').toLowerCase()) >= 0;
-  // Los testers ocultos pueden rejugar el reto cuantas veces quieran (no se les
-  // aplica el candado de "1 partida al día"); el resto, solo una vez.
-  const canReplay = () => isHidden(mgUser());
+  // ...pero en los juegos de HABILIDAD pura (reflejos), conocer el reto NO da
+  // ventaja, así que ahí los testers sí salen en el ranking.
+  const MG_SKILL_MODES = ['punteria'];
+  const isSkillMode = m => MG_SKILL_MODES.indexOf(m) >= 0;
+  // Una fila se oculta del ranking solo si es un tester Y el modo es de conocimiento.
+  const hideRow = r => isHidden(r.user) && !isSkillMode(r.mode);
   function setBest(v) {
     const cur = localStorage.getItem(bestKey());
     if (cur == null) { localStorage.setItem(bestKey(), String(v)); return; }
@@ -415,6 +418,10 @@ const MG_ROTATION = [
   // hoy, se borra el candado local viejo. Así, si la organizadora elimina una fila
   // del Google Sheet, ese jugador puede volver a jugar sin tocar nada en su móvil.
   function reconcileDone() { if (mgRows && !playedTodayServer() && isDone()) localStorage.removeItem(doneKey()); }
+  // El ranking manda también para "tu mejor de hoy": si la hoja tiene tu puntuación
+  // de hoy, el mejor local se iguala a ella (así un mejor local antiguo de pruebas
+  // no descuadra con lo que se ve en el ranking).
+  function reconcileBest() { const u = mgUser(), d = dayKey(); const r = (mgRows || []).find(x => x.user === u && x.day === d); if (r) localStorage.setItem(bestKey(), String(r.score)); }
   // Si el servidor antiguo guardó duplicados, nos quedamos con la PRIMERA fila de
   // cada (usuario, día) — la que cuenta — para que todos vean lo mismo.
   function mgDedup() { const seen = {}, out = []; (mgRows || []).forEach(r => { const k = r.day + '|' + r.user; if (!seen[k]) { seen[k] = 1; out.push(r); } }); return out; }
@@ -477,6 +484,7 @@ const MG_ROTATION = [
     if (!mgUser() || typeof api === 'undefined' || !api.mgGet) { if (isDone()) setFabDone(true); return; }
     ensureMgData().then(() => {
       reconcileDone(); // partida borrada del servidor → quita el candado local
+      reconcileBest(); // alinea "tu mejor de hoy" con el ranking
       if (isDone() || playedTodayServer()) setFabDone(true);
     }).catch(() => { if (isDone()) setFabDone(true); });
   })();
@@ -535,7 +543,8 @@ const MG_ROTATION = [
     ensureMgData().then(() => {
       if (token !== startToken) return; // se reabrió/cambió de día mientras cargaba
       reconcileDone(); // si su partida se borró del servidor, limpia el candado local
-      if (!canReplay() && (isDone() || playedTodayServer())) { showLocked(); return; }
+      reconcileBest(); // "tu mejor de hoy" = tu puntuación registrada en el ranking
+      if (isDone() || playedTodayServer()) { showLocked(); return; }
       setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // llevan cuenta atrás
       Game.start();
     });
@@ -585,7 +594,7 @@ const MG_ROTATION = [
         </div>`;
       el('mg-more').addEventListener('click', () => this.guess('mas'));
       el('mg-less').addEventListener('click', () => this.guess('menos'));
-      setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       startTimer(15000, () => this.timeUp());
     },
     guess(dir) {
@@ -612,11 +621,11 @@ const MG_ROTATION = [
       const wrap = el('mg-board'); if (!wrap) return;
       const h = reason === 'time' ? { e: '⏰', t: '¡Se acabó el tiempo!' } : { e: '😅', t: '¡Fallaste!' };
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${h.e}</div><h3>${h.t}</h3>
-        <p>Aciertos seguidos: <b>${this.score}</b></p><p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
+        <p>Aciertos seguidos: <b>${this.score}</b></p><p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
-      setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Aciertos: <b>${this.score}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
     win() {
@@ -674,7 +683,7 @@ const MG_ROTATION = [
         <div class="mg-tries" id="mg-tries"></div>`;
       el('mg-guess-btn').addEventListener('click', () => this.guess());
       this.setupAutocomplete();
-      setHud(`Adivina al jugador · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Adivina al jugador · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       this.renderTries();
     },
     // Autocompletado propio: solo sugiere al escribir (≥2 letras). Al hacer
@@ -744,11 +753,11 @@ const MG_ROTATION = [
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
         <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pos} · ${this.secret.club} · #${this.secret.num}</span></div>
         ${win ? `<p>Lo adivinaste con <b>${clues}</b> ${clues === 1 ? 'pista' : 'pistas'}. ¡Cuantas menos, mejor!</p>` : ''}
-        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
+        <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
-      setHud(`Adivina al jugador · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Adivina al jugador · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -815,7 +824,7 @@ const MG_ROTATION = [
         <div class="mg-wd-msg" id="mg-wd-msg"></div>
         <div class="mg-wd-keys" id="mg-wd-keys"></div>`;
       this.paintGrid(); this.renderKeys();
-      setHud(`Adivina el apellido · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Adivina el apellido · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
     },
     paintGrid() {
       const grid = el('mg-wd-grid'); if (!grid) return;
@@ -862,11 +871,11 @@ const MG_ROTATION = [
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
         <div class="mg-reveal">${flag(this.player.iso)} <b>${this.sol}</b><br><span class="mg-reveal-sub">${this.player.n} · ${this.player.pos}</span></div>
         ${win ? `<p>Resuelto en <b>${k}</b> ${k === 1 ? 'intento' : 'intentos'}. ¡Cuantos menos, mejor!</p>` : ''}
-        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
+        <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
-      setHud(`Adivina el apellido · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Adivina el apellido · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -941,7 +950,7 @@ const MG_ROTATION = [
       el('mg-guess-btn').addEventListener('click', () => this.guess());
       this.setupAutocomplete();
       this.renderTries();
-      setHud(`Mira la foto y adivina · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Mira la foto y adivina · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
     },
     renderTries() {
       const t = el('mg-tries'); if (!t) return;
@@ -1010,11 +1019,11 @@ const MG_ROTATION = [
         ${photo}
         <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pais} · ${this.secret.pos}</span></div>
         ${win ? `<p>Acertado en <b>${tries}</b> ${tries === 1 ? 'intento' : 'intentos'}. ¡Cuantos menos, mejor!</p>` : ''}
-        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
+        <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => { this._tries = []; this.start(); });
-      setHud(`Mira la foto y adivina · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Mira la foto y adivina · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -1038,7 +1047,7 @@ const MG_ROTATION = [
         <div class="mg-net-actions" id="mg-net-actions"><button class="btn-primary" id="mg-net-confirm" disabled>Confirmar</button></div>`;
       el('mg-net').addEventListener('click', e => this.place(e));
       el('mg-net-confirm').addEventListener('click', () => this.confirm());
-      setHud(`Goles míticos · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Goles míticos · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
     },
     place(e) {
       if (this.done) return;
@@ -1072,7 +1081,7 @@ const MG_ROTATION = [
       const h = el('mg-net-hint'); if (h) h.innerHTML = `${emoji} A <b>${dist.toFixed(1)} m</b> del punto real · ¡cuanto más cerca, mejor!`;
       const a = el('mg-net-actions'); if (a) a.innerHTML = '<button class="btn-primary" id="mg-again">Jugar otra vez</button> <span class="mg-net-note">⚙️ Beta · 1 intento/día en la versión final</span>';
       const ag = el('mg-again'); if (ag) ag.addEventListener('click', () => this.start());
-      setHud(`Goles míticos · Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`Goles míticos · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -1098,7 +1107,7 @@ const MG_ROTATION = [
     teardown() { if (this.tId) { clearInterval(this.tId); this.tId = null; } },
     startClock() { this.teardown(); this.tId = setInterval(() => { if (open && view === 'play' && Game === SudokuMode && !this.solved) this.updHud(); }, 1000); },
     elapsed() { return Math.floor((Date.now() - this.startT) / 1000); },
-    updHud() { setHud(`⏱ ${this.elapsed()}s &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`); },
+    updHud() { setHud(`⏱ ${this.elapsed()}s &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`); },
     // Transforma un puzzle (con sus huecos) conservando la solución ÚNICA:
     // renombra los símbolos y baraja bandas/filas y pilas/columnas (cajas 2×3).
     shuffle(arr, rng) {
@@ -1171,11 +1180,11 @@ const MG_ROTATION = [
       const wrap = el('mg-board'); if (!wrap) return;
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🧩</div><h3>¡Sudoku resuelto!</h3>
         <p>Lo resolviste en <b>${fmtMMSS(t)}</b>. ¡Cuanto antes, mejor!</p>
-        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
+        <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
-      setHud(`⏱ ${fmtMMSS(t)} &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`⏱ ${fmtMMSS(t)} &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -1228,7 +1237,7 @@ const MG_ROTATION = [
       const n = this.qs.length;
       const emoji = this.score === n ? '🏆' : this.score >= Math.ceil(n * 0.6) ? '👏' : '🙂';
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${emoji}</div><h3>${this.score}/${n} aciertos</h3>
-        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
+        <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
@@ -1269,7 +1278,7 @@ const MG_ROTATION = [
       this.paint();
       this.updHud();
     },
-    updHud() { setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; ${'❤️'.repeat(this.lives)}${'🖤'.repeat(3 - this.lives)} &nbsp;·&nbsp; Mejor: <b>${getBest()}</b>`); },
+    updHud() { setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; ${'❤️'.repeat(this.lives)}${'🖤'.repeat(3 - this.lives)} &nbsp;·&nbsp; Tu mejor: <b>${getBest()}</b>`); },
     paint() {
       const k = el('mg-pn-keeper'), b = el('mg-pn-ball');
       if (k) { k.style.left = (this.kX * 100) + '%'; k.style.width = (this.kW * 100) + '%'; }
@@ -1322,11 +1331,11 @@ const MG_ROTATION = [
         ? `<div class="mg-end-emoji">🏆</div><h3>¡Imparable! ${this.goals} goles</h3><p>Has completado el reto: ¡70 goles! 🔥</p>`
         : `<div class="mg-end-emoji">🥅</div><h3>${this.goals} ${this.goals === 1 ? 'gol' : 'goles'}</h3><p>¡Se te escapó el portero!</p>`;
       wrap.innerHTML = `<div class="mg-end">${head}
-        <p class="mg-end-best">Mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
+        <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button>
         <p class="mg-note">⚙️ Beta. En la versión final: 1 partida al día + ranking entre amigos.</p></div>`;
       el('mg-again').addEventListener('click', () => this.start());
-      setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
   };
@@ -1367,8 +1376,9 @@ const MG_ROTATION = [
   // ── Clasificación REAL del día (puntuaciones de tus amigos) ──
   function rankingBlockHTML() {
     const d = dayKey(), me = mgUser();
-    // Una entrada por usuario/día; fuera las filas de prueba y los usuarios ocultos (testers).
-    const all = mgDedup().filter(r => r.user !== '__dedup_test__' && !isHidden(r.user));
+    // Una entrada por usuario/día; fuera las filas de prueba y los testers ocultos
+    // (salvo en juegos de habilidad, donde los testers sí salen).
+    const all = mgDedup().filter(r => r.user !== '__dedup_test__' && !hideRow(r));
     const medals = ['🥇', '🥈', '🥉'];
     const daysOf = u => { const set = {}; all.forEach(r => { if (r.user === u) set[r.day] = 1; }); return set; };
     const streak = u => { const set = daysOf(u); let n = 0, ord = dayOrdinal(); while (set[ordToKey(ord)]) { n++; ord--; } return n; };
@@ -1402,18 +1412,8 @@ const MG_ROTATION = [
     const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
     setDone();       // 1 partida al día (caché local)
     saveMyScore();   // guarda mi puntuación en el servidor (1/día) + en mgRows
-    const again = el('mg-again');
-    if (again) {
-      if (canReplay()) {
-        // Tester oculto: mantenemos "Jugar otra vez" para poder repetir en los tests.
-        const tag = document.createElement('span'); tag.className = 'mg-net-note';
-        tag.innerHTML = ' 🔁 modo test: puedes repetir';
-        if (!again.nextElementSibling || again.nextElementSibling.className !== 'mg-net-note') again.after(tag);
-      } else {
-        // El resto: se quita "Jugar otra vez" — no se puede repetir.
-        const note = document.createElement('p'); note.className = 'mg-note'; note.innerHTML = '🔒 Solo se juega una vez al día · vuelve mañana 🔥'; again.replaceWith(note);
-      }
-    }
+    const again = el('mg-again'); // quita "Jugar otra vez": no se puede repetir
+    if (again) { const note = document.createElement('p'); note.className = 'mg-note'; note.innerHTML = '🔒 Solo se juega una vez al día · vuelve mañana 🔥'; again.replaceWith(note); }
     b.insertAdjacentHTML('beforeend', rankingBlockHTML());
   }
 })();
