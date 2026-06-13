@@ -1231,11 +1231,11 @@ const MG_ROTATION = [
   //  MODO 8 — Puntería: marca goles (arcade, balón en movimiento)
   // ===========================================================
   const PunteriaMode = {
-    raf: null, last: 0, ballX: 0.5, ballDir: 1, ballSpd: 0.55, kX: 0.5, kDir: -1, kSpd: 0.34,
+    raf: null, last: 0, ballX: 0.5, ballDir: 1, ballSpd: 0.55, kX: 0.5, kDir: -1, kSpd: 0.48,
     goals: 0, lives: 3, cool: 0, ballW: 0.12, kW: 0.24,
     start() {
       this.ballX = 0.08; this.ballDir = 1; this.ballSpd = 0.55;
-      this.kX = 0.5; this.kDir = -1; this.kSpd = 0.34;
+      this.kX = 0.5; this.kDir = -1; this.kSpd = 0.48; this.kW = 0.24;
       this.goals = 0; this.lives = 3; this.cool = 0;
       gameOver = false; busy = false;
       this.render();
@@ -1291,7 +1291,9 @@ const MG_ROTATION = [
         this.lives--; this.flash('¡Parada! 🧤', 'bad');
         if (this.lives <= 0) { this.end(); return; }
       } else {
-        this.goals++; this.ballSpd = Math.min(2.4, this.ballSpd * 1.12); this.kSpd = Math.min(1.4, this.kSpd * 1.04);
+        this.goals++; this.ballSpd = Math.min(2.4, this.ballSpd * 1.12); this.kSpd = Math.min(1.7, this.kSpd * 1.05);
+        // A partir de 25 goles, el portero se hace un pelín más grande (sube la dificultad).
+        if (this.goals === 25) this.kW = 0.30;
         this.flash('¡GOL! ⚽', 'ok');
       }
       this.updHud();
