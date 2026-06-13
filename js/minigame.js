@@ -411,6 +411,10 @@ const MG_ROTATION = [
       .catch(() => mgRows || []);
   }
   function playedTodayServer() { const u = mgUser(), d = dayKey(); return !!(mgRows || []).some(r => r.user === u && r.day === d); }
+  // El servidor manda: si los datos cargaron bien y la hoja NO tiene tu partida de
+  // hoy, se borra el candado local viejo. Así, si la organizadora elimina una fila
+  // del Google Sheet, ese jugador puede volver a jugar sin tocar nada en su móvil.
+  function reconcileDone() { if (mgRows && !playedTodayServer() && isDone()) localStorage.removeItem(doneKey()); }
   // Si el servidor antiguo guardó duplicados, nos quedamos con la PRIMERA fila de
   // cada (usuario, día) — la que cuenta — para que todos vean lo mismo.
   function mgDedup() { const seen = {}, out = []; (mgRows || []).forEach(r => { const k = r.day + '|' + r.user; if (!seen[k]) { seen[k] = 1; out.push(r); } }); return out; }
@@ -470,9 +474,11 @@ const MG_ROTATION = [
   // Al cargar: si ya jugaste hoy (en este equipo, o en otro según el servidor),
   // el icono nace quieto. Si no, sigue llamando la atención con su pulso.
   (function initFabState() {
-    if (isDone()) { setFabDone(true); return; }
-    if (!mgUser() || typeof api === 'undefined' || !api.mgGet) return;
-    ensureMgData().then(() => { if (playedTodayServer()) setFabDone(true); }).catch(() => {});
+    if (!mgUser() || typeof api === 'undefined' || !api.mgGet) { if (isDone()) setFabDone(true); return; }
+    ensureMgData().then(() => {
+      reconcileDone(); // partida borrada del servidor → quita el candado local
+      if (isDone() || playedTodayServer()) setFabDone(true);
+    }).catch(() => { if (isDone()) setFabDone(true); });
   })();
 
   // ── Temporizador genérico ──
@@ -528,6 +534,7 @@ const MG_ROTATION = [
     const token = ++startToken;
     ensureMgData().then(() => {
       if (token !== startToken) return; // se reabrió/cambió de día mientras cargaba
+      reconcileDone(); // si su partida se borró del servidor, limpia el candado local
       if (!canReplay() && (isDone() || playedTodayServer())) { showLocked(); return; }
       setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // llevan cuenta atrás
       Game.start();
