@@ -313,6 +313,11 @@ function dayLabel(key) {
   const d = new Date(key + 'T12:00:00Z');
   return new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
 }
+// Pestaña inicial del calendario: la fecha de HOY si hay partidos ese día; si no, «Próximos».
+function defaultGroupTab() {
+  const todayKey = madridDayKey(new Date());
+  return dayKeysSorted().includes(todayKey) ? todayKey : 'upcoming';
+}
 // Partidos de los PRÓXIMOS 3 DÍAS de juego (hoy incluido). Los partidos que YA
 // han empezado hoy se quedan (no desaparecen), para poder consultar fácilmente
 // qué puso cada uno sin buscarlos en el calendario. Se recalcula en cada render
@@ -349,7 +354,7 @@ function buildUI() {
   document.getElementById('day-select').addEventListener('change', e => { if (e.target.value) renderGroupTab(e.target.value); });
   document.getElementById('nav-prev').addEventListener('click', () => stepDay(-1));
   document.getElementById('nav-next').addEventListener('click', () => stepDay(1));
-  renderGroupTab(currentGroupTab);
+  renderGroupTab(defaultGroupTab()); // por defecto, la fecha de hoy (o «Próximos» si hoy no hay partidos)
   buildGroupSummary();
   renderFinalBet();
 }
