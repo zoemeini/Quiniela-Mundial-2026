@@ -1295,9 +1295,10 @@ const MG_ROTATION = [
         if (this.lives <= 0) { this.end(); return; }
       } else {
         this.goals++; this.ballSpd = Math.min(2.4, this.ballSpd * 1.12); this.kSpd = Math.min(2.0, this.kSpd * 1.05);
-        // El portero se ensancha en dos escalones (sube la dificultad): a 20 y otra vez a 30 goles.
+        // El portero se ensancha en escalones (sube la dificultad): a 20, a 30 y a 40 goles.
         if (this.goals === 20) this.kW = 0.28;
         else if (this.goals === 30) this.kW = 0.33;
+        else if (this.goals === 40) this.kW = 0.37;
         this.flash('¡GOL! ⚽', 'ok');
       }
       this.updHud();
