@@ -9,13 +9,31 @@
   function flag(iso) { return iso ? `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">` : ''; }
   function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').trim().replace(/\s+/g, ' '); }
-  // Acierto tolerante: nombre completo, cualquier palabra larga (apellido/nombre) o sin espacios.
+  // Distancia de edición (para aceptar erratas/faltas).
+  function lev(a, b) {
+    const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+    let prev = Array.from({ length: n + 1 }, (_, i) => i), cur = new Array(n + 1);
+    for (let i = 1; i <= m; i++) {
+      cur[0] = i;
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      }
+      const t = prev; prev = cur; cur = t;
+    }
+    return prev[n];
+  }
+  // Acierto tolerante: nombre completo, sin espacios, o cualquier palabra larga
+  // (nombre/apellido), admitiendo erratas/faltas según la longitud.
   function nameMatch(input, full) {
     const a = norm(input); if (a.length < 3) return false;
     const f = norm(full);
-    if (a === f) return true;
-    if (f.replace(/ /g, '') === a.replace(/ /g, '')) return true;
-    return f.split(' ').filter(w => w.length >= 3).indexOf(a) >= 0;
+    const targets = [f, f.replace(/ /g, '')].concat(f.split(' ').filter(w => w.length >= 3));
+    for (const t of targets) {
+      const allow = t.length <= 4 ? 1 : (t.length <= 7 ? 2 : 3); // tolerancia por longitud
+      if (lev(a, t) <= allow) return true;
+    }
+    return false;
   }
   function intro(emoji, rulesHTML, btn) {
     return `<div class="ng-intro"><div class="ng-intro-emoji">${emoji}</div>${rulesHTML}
@@ -26,22 +44,22 @@
   // 1) MEMORY — alineaciones MEZCLADAS (jugadores de distintos países). 4-3-3.
   const LINEUPS = [
     { label: 'Mezcla 1', players: [
-      { n: 'Courtois', iso: 'be', x: 50, y: 90 },
-      { n: 'Theo Hernández', iso: 'fr', x: 16, y: 68 }, { n: 'Van Dijk', iso: 'nl', x: 39, y: 73 }, { n: 'Rúben Dias', iso: 'pt', x: 61, y: 73 }, { n: 'Hakimi', iso: 'ma', x: 84, y: 68 },
-      { n: 'Bellingham', iso: 'gb-eng', x: 28, y: 48 }, { n: 'Rodri', iso: 'es', x: 50, y: 53 }, { n: 'Modrić', iso: 'hr', x: 72, y: 48 },
-      { n: 'Vinícius', iso: 'br', x: 18, y: 26 }, { n: 'Haaland', iso: 'no', x: 50, y: 19 }, { n: 'Messi', iso: 'ar', x: 82, y: 26 },
+      { n: 'Courtois', iso: 'be', x: 50, y: 91 },
+      { n: 'Theo Hernández', iso: 'fr', x: 12, y: 67 }, { n: 'Van Dijk', iso: 'nl', x: 37, y: 72 }, { n: 'Rúben Dias', iso: 'pt', x: 63, y: 72 }, { n: 'Hakimi', iso: 'ma', x: 88, y: 67 },
+      { n: 'Bellingham', iso: 'gb-eng', x: 22, y: 47 }, { n: 'Rodri', iso: 'es', x: 50, y: 52 }, { n: 'Modrić', iso: 'hr', x: 78, y: 47 },
+      { n: 'Vinícius', iso: 'br', x: 16, y: 24 }, { n: 'Haaland', iso: 'no', x: 50, y: 18 }, { n: 'Messi', iso: 'ar', x: 84, y: 24 },
     ] },
     { label: 'Mezcla 2', players: [
-      { n: 'E. Martínez', iso: 'ar', x: 50, y: 90 },
-      { n: 'Grimaldo', iso: 'es', x: 16, y: 68 }, { n: 'Saliba', iso: 'fr', x: 39, y: 73 }, { n: 'Romero', iso: 'ar', x: 61, y: 73 }, { n: 'Koundé', iso: 'fr', x: 84, y: 68 },
-      { n: 'Pedri', iso: 'es', x: 28, y: 48 }, { n: 'De Bruyne', iso: 'be', x: 50, y: 53 }, { n: 'Bruno Fernandes', iso: 'pt', x: 72, y: 48 },
-      { n: 'Mbappé', iso: 'fr', x: 18, y: 26 }, { n: 'Kane', iso: 'gb-eng', x: 50, y: 19 }, { n: 'Son', iso: 'kr', x: 82, y: 26 },
+      { n: 'E. Martínez', iso: 'ar', x: 50, y: 91 },
+      { n: 'Grimaldo', iso: 'es', x: 12, y: 67 }, { n: 'Saliba', iso: 'fr', x: 37, y: 72 }, { n: 'Romero', iso: 'ar', x: 63, y: 72 }, { n: 'Koundé', iso: 'fr', x: 88, y: 67 },
+      { n: 'Pedri', iso: 'es', x: 22, y: 47 }, { n: 'De Bruyne', iso: 'be', x: 50, y: 52 }, { n: 'Bruno Fernandes', iso: 'pt', x: 78, y: 47 },
+      { n: 'Mbappé', iso: 'fr', x: 16, y: 24 }, { n: 'Kane', iso: 'gb-eng', x: 50, y: 18 }, { n: 'Son', iso: 'kr', x: 84, y: 24 },
     ] },
     { label: 'Mezcla 3', players: [
-      { n: 'Maignan', iso: 'fr', x: 50, y: 90 },
-      { n: 'Davies', iso: 'ca', x: 16, y: 68 }, { n: 'Marquinhos', iso: 'br', x: 39, y: 73 }, { n: 'Bastoni', iso: 'it', x: 61, y: 73 }, { n: 'Carvajal', iso: 'es', x: 84, y: 68 },
-      { n: 'Gavi', iso: 'es', x: 28, y: 48 }, { n: 'Kimmich', iso: 'de', x: 50, y: 53 }, { n: 'Valverde', iso: 'uy', x: 72, y: 48 },
-      { n: 'Lautaro', iso: 'ar', x: 18, y: 26 }, { n: 'Lewandowski', iso: 'pl', x: 50, y: 19 }, { n: 'Lamine Yamal', iso: 'es', x: 82, y: 26 },
+      { n: 'Maignan', iso: 'fr', x: 50, y: 91 },
+      { n: 'Davies', iso: 'ca', x: 12, y: 67 }, { n: 'Marquinhos', iso: 'br', x: 37, y: 72 }, { n: 'Bastoni', iso: 'it', x: 63, y: 72 }, { n: 'Carvajal', iso: 'es', x: 88, y: 67 },
+      { n: 'Gavi', iso: 'es', x: 22, y: 47 }, { n: 'Kimmich', iso: 'de', x: 50, y: 52 }, { n: 'Valverde', iso: 'uy', x: 78, y: 47 },
+      { n: 'Lautaro', iso: 'ar', x: 16, y: 24 }, { n: 'Lewandowski', iso: 'pl', x: 50, y: 18 }, { n: 'Lamine Yamal', iso: 'es', x: 84, y: 24 },
     ] },
   ];
 
@@ -104,7 +122,7 @@
   // ── 1) MEMORY ─────────────────────────────────────────────────────────
   function mountMemory(root, content) {
     const players = content.players;
-    let phase = 'intro', secs = 15, typed = {}, cd = null;
+    let phase = 'intro', secs = 20, typed = {}, cd = null;
     function pitch(inner) { return `<div class="ng-pitch ng-phase-${phase}">${inner}</div>`; }
     function chipsMemo() { return players.map(p => `<div class="ng-chip show" style="left:${p.x}%;top:${p.y}%">${flag(p.iso)} ${esc(p.n)}</div>`).join(''); }
     function chipsInputs() { return players.map((p, i) => `<input class="ng-chip ng-input" data-chip="${i}" style="left:${p.x}%;top:${p.y}%" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="?">`).join(''); }
@@ -117,7 +135,7 @@
     }
     function paint() {
       if (phase === 'intro') {
-        root.innerHTML = intro('🧠', `<p class="ng-intro-rules"><b>Memoriza la alineación.</b> Verás 11 jugadores de <b>distintos países</b> colocados en el campo durante <b>15 segundos</b>. Luego desaparecen y tienes que <b>escribir el nombre</b> de cada uno en su posición.</p><p class="ng-intro-note">Vale con el apellido (p. ej. «yamal»). Gana quien recuerde más.</p>`, '👀 Empezar a memorizar');
+        root.innerHTML = intro('🧠', `<p class="ng-intro-rules"><b>Memoriza la alineación.</b> Verás 11 jugadores de <b>distintos países</b> colocados en el campo durante <b>20 segundos</b>. Luego desaparecen y tienes que <b>escribir el nombre</b> de cada uno en su posición.</p><p class="ng-intro-note">Vale con el apellido (p. ej. «yamal») y aunque tenga alguna errata. Gana quien recuerde más.</p>`, '👀 Empezar a memorizar');
         return;
       }
       if (phase === 'memo') { root.innerHTML = pitch(chipsMemo()) + `<div class="ng-controls"><div class="ng-memo-count">Memoriza… <b>${secs}</b> s</div></div>`; return; }
@@ -129,7 +147,7 @@
     }
     root.addEventListener('click', e => {
       const act = e.target.closest('[data-act]'); if (!act) return;
-      if (act.dataset.act === 'start') { phase = 'memo'; secs = 15; typed = {}; paint(); clearInterval(cd); cd = setInterval(() => { secs--; if (secs <= 0) { clearInterval(cd); phase = 'recall'; paint(); } else paint(); }, 1000); }
+      if (act.dataset.act === 'start') { phase = 'memo'; secs = 20; typed = {}; paint(); clearInterval(cd); cd = setInterval(() => { secs--; if (secs <= 0) { clearInterval(cd); phase = 'recall'; paint(); } else paint(); }, 1000); }
       else if (act.dataset.act === 'check') { root.querySelectorAll('.ng-input').forEach(inp => { typed[+inp.dataset.chip] = inp.value; }); phase = 'done'; paint(); }
       else if (act.dataset.act === 'reset') { phase = 'intro'; paint(); }
     });
@@ -252,11 +270,12 @@
       idx = 0; score = 0;
     }
     function clearT() { clearInterval(timer); timer = null; }
+    function roundMs() { return idx < 5 ? 8000 : 4000; } // 8 s las 5 primeras, 4 s las 5 últimas
     function startTimer() {
-      clearT(); deadline = performance.now() + 10000;
+      clearT(); const total = roundMs(); deadline = performance.now() + total;
       timer = setInterval(() => {
         const rem = Math.max(0, deadline - performance.now());
-        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / 10000 * 100) + '%'; bar.classList.toggle('low', rem <= 3000); }
+        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / total * 100) + '%'; bar.classList.toggle('low', rem <= total * 0.35); }
         if (rem <= 0) { clearT(); answer(null); }
       }, 80);
     }
@@ -264,6 +283,7 @@
       const r = rounds[idx];
       root.innerHTML = `<div class="ng-card-game">
         <div class="ng-card-meta">Jugador <b>${idx + 1}/10</b> · Aciertos: <b>${score}</b></div>
+        ${idx >= 5 ? '<div class="ng-card-fast">⚡ ¡Más rápido! · 4 s</div>' : ''}
         <div class="ng-card-bar"><div class="ng-card-bar-fill" data-bar style="width:100%"></div></div>
         <div class="ng-card-player">
           <div class="ng-card-name">${esc(r.p.n)}</div>
@@ -297,7 +317,7 @@
           <li>🟥 <b>Roja</b> — si los <b>dos están mal</b>.</li>
         </ul>
         <div class="ng-intro-example"><b>Ejemplo:</b> «Messi · Argentina · Delantero» → ⚽ &nbsp;·&nbsp; «Messi · Brasil · Delantero» → 🟨 &nbsp;·&nbsp; «Messi · Brasil · Portero» → 🟥</div>
-        <p class="ng-intro-note">10 segundos por jugador · 10 jugadores · gana quien acierte más.</p>`, '▶️ Empezar');
+        <p class="ng-intro-note">10 jugadores · <b>8 s</b> los 5 primeros y <b>4 s</b> los 5 últimos (¡más rápido!) · gana quien acierte más.</p>`, '▶️ Empezar');
     }
     root.addEventListener('click', e => {
       const act = e.target.closest('[data-act]'), ans = e.target.closest('[data-ans]');
@@ -322,7 +342,7 @@
     const host = document.getElementById('newgames-test'); if (!host || host.dataset.ready) return;
     host.dataset.ready = '1';
 
-    const s1 = section('🧠', 'Memory: memoriza la alineación (mezcla)', '11 jugadores de distintos países, 15 s para memorizar, luego escribe quién va en cada posición.');
+    const s1 = section('🧠', 'Memory: memoriza la alineación (mezcla)', '11 jugadores de distintos países, 20 s para memorizar, luego escribe quién va en cada posición.');
     LINEUPS.forEach(lu => { const c = card(lu.label, '4-3-3'); s1.appendChild(c); mountMemory(c.querySelector('.ng-game-body'), lu); });
 
     const s2 = section('🔢', 'Relaciona jugador y dorsal', 'Empareja 10 jugadores con su dorsal de selección.');

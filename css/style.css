@@ -1060,15 +1060,18 @@ a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weig
   background:
     linear-gradient(0deg, rgba(255,255,255,.06) 0 1px, transparent 1px) center/100% 50% no-repeat,
     repeating-linear-gradient(0deg, #15602f 0 24px, #137a39 24px 48px); }
-.ng-chip { position: absolute; transform: translate(-50%, -50%); font-size: 11px; font-weight: 700; line-height: 1.1;
-  padding: 4px 7px; border-radius: 8px; max-width: 86px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  background: rgba(8,14,26,.85); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+.ng-chip { position: absolute; transform: translate(-50%, -50%); font-size: 10px; font-weight: 700; line-height: 1.1;
+  padding: 3px 5px; border-radius: 8px; max-width: 86px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: rgba(8,14,26,.88); color: #fff; border: 1px solid rgba(255,255,255,.3); }
 .ng-chip.empty { width: 26px; height: 26px; padding: 0; border-radius: 50%; border-style: dashed; color: rgba(255,255,255,.5); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .ng-chip.filled { background: var(--blue); color: #06231a; border-color: #fff; cursor: pointer; }
 .ng-chip.show { background: var(--gold-dim); border-color: var(--gold); color: #fff; }
 .ng-chip.correct { background: var(--green); color: #06231a; border-color: #fff; }
 .ng-chip.wrong { background: var(--red); color: #2a0b0b; border-color: #fff; }
 .ng-chip-fix { display: block; font-size: 9px; font-weight: 600; opacity: .85; }
+/* Los chips con nombre se ven ENTEROS (envuelven a 2 líneas si hace falta, no se recortan). */
+.ng-chip.show, .ng-chip.correct, .ng-chip.wrong, .ng-chip.filled { max-width: 74px; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; word-break: normal; line-height: 1.12; }
+.ng-chip .team-flag-img { width: 14px; vertical-align: middle; margin-right: 1px; }
 .ng-memo-count { font-size: 15px; font-weight: 700; color: var(--gold); }
 .ng-bank { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .ng-bank-name { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 12px; font-weight: 600; }
@@ -1116,6 +1119,8 @@ a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weig
 /* Gol o tarjeta */
 .ng-card-game { text-align: center; }
 .ng-card-meta { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.ng-card-fast { color: var(--gold); font-weight: 800; font-size: 14px; margin: -2px 0 8px; animation: ngFastPulse 1s ease-in-out infinite; }
+@keyframes ngFastPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 .ng-card-bar { height: 7px; background: var(--bg3); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
 .ng-card-bar-fill { height: 100%; width: 100%; background: var(--green); border-radius: 999px; transition: width .1s linear; }
 .ng-card-bar-fill.low { background: var(--red); }
