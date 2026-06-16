@@ -541,6 +541,48 @@ function renderMatchPreds(matchId, result, data, body) {
     </a>`;
   }).join('') + '</div>';
 }
+// Apuesta de la final: ver lo que apostó cada uno (reutiliza el modal de partidos).
+// Solo tras el cierre (mismo criterio de juego limpio que los partidos al empezar).
+function openFinalBetPredictions() {
+  if (!finalBetLocked()) return;
+  const title = document.getElementById('match-preds-title');
+  const body = document.getElementById('match-preds-body');
+  title.innerHTML = '🏆 Apuesta de la final';
+  body.innerHTML = '<div class="lb-loading">Cargando apuestas…</div>';
+  matchPredsOpen = true;
+  document.getElementById('match-preds-modal').classList.remove('hidden');
+  ensureAllPreds()
+    .then(data => { if (matchPredsOpen) renderFinalBetPreds(data, body); })
+    .catch(() => { body.innerHTML = '<div class="lb-loading">No se pudieron cargar las apuestas. Revisa tu conexión.</div>'; });
+}
+function renderFinalBetPreds(data, body) {
+  const byUser = {};
+  (data.predictions || []).forEach(p => { (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
+  const rows = Object.keys(byUser).map(u => ({
+    user: u, fin: byUser[u]['SP_FINALISTS'], sc: byUser[u]['SP_FINAL'], pens: byUser[u]['SP_FINAL_PENS']
+  })).filter(r => r.fin); // solo quienes hicieron su apuesta
+  if (!rows.length) { body.innerHTML = '<div class="lb-loading">Nadie hizo su apuesta de la final.</div>'; return; }
+  rows.sort((a, b) => (a.user === currentUser ? -1 : b.user === currentUser ? 1 : a.user.localeCompare(b.user)));
+  const list = rows.map(r => {
+    const isMe = r.user === currentUser;
+    const tA = teamByIndex(r.fin.home), tB = teamByIndex(r.fin.away);
+    let champ = null, viaPens = false;
+    if (tA && tB && r.sc) {
+      if (r.sc.home > r.sc.away) champ = tA;
+      else if (r.sc.away > r.sc.home) champ = tB;
+      else if (r.pens) { champ = teamByIndex(r.pens.home); viaPens = true; }
+    }
+    const pick = (tA && tB)
+      ? `${teamFlag(tA)} ${teamName(tA)} <b class="fbpred-score">${r.sc ? r.sc.home + '–' + r.sc.away : '–'}</b> ${teamName(tB)} ${teamFlag(tB)}`
+      : '<span class="mpred-none">apuesta no válida</span>';
+    const champStr = champ ? `<div class="fbpred-champ">🏆 ${teamName(champ)}${viaPens ? ' <span class="fb-pen-tag">🥅 en penaltis</span>' : ''}</div>` : '';
+    return `<a class="fbpred-row${isMe ? ' me' : ''}" href="predicciones.html?u=${encodeURIComponent(r.user)}" title="Ver todas las predicciones de ${escMP(r.user)}">
+      <div class="fbpred-top"><span class="fbpred-user">${escMP(r.user)}${isMe ? ' (tú)' : ''}</span><span class="fbpred-go">›</span></div>
+      <div class="fbpred-pick">${pick}</div>${champStr}
+    </a>`;
+  }).join('');
+  body.innerHTML = `<div class="mpred-sub">Lo que apostó cada uno para la final · toca un nombre para ver todas sus predicciones</div><div class="fbpred-list">${list}</div>`;
+}
 function closeMatchPredsModal() {
   matchPredsOpen = false;
   document.getElementById('match-preds-modal').classList.add('hidden');
@@ -638,9 +680,12 @@ function renderFinalBet() {
     } else {
       inner = `<div class="fb-none">No llegaste a hacer tu apuesta de la final 😕</div>`;
     }
-    host.innerHTML = `<div class="final-bet-card locked">
-      <div class="fb-head">🏆 Tu apuesta de la final <span class="fb-closed">🔒 Cerrada</span></div>${inner}</div>`;
+    host.innerHTML = `<div class="final-bet-card locked fb-clickable" id="fb-card">
+      <div class="fb-head">🏆 Tu apuesta de la final <span class="fb-closed">🔒 Cerrada</span></div>${inner}
+      <div class="mc-seepreds">👁️ Ver las apuestas de todos ›</div></div>`;
     host.dataset.ready = '1';
+    const card = document.getElementById('fb-card');
+    if (card) card.addEventListener('click', openFinalBetPredictions);
     return;
   }
   const sorted = allTeams().slice().sort((x, y) => teamName(x).localeCompare(teamName(y)));

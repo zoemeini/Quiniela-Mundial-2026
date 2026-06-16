@@ -1024,6 +1024,19 @@ a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weig
 .mpred-pred { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 16px; min-width: 46px; text-align: center; }
 .mpred-none { font-weight: 500; color: var(--muted); font-size: 12px; }
 .mpred-pts { min-width: 58px; text-align: right; }
+/* Apuesta de la final: ver lo que apostó cada uno */
+.final-bet-card.fb-clickable { cursor: pointer; }
+.final-bet-card.fb-clickable:hover { border-color: var(--green-2); }
+.fbpred-list { display: flex; flex-direction: column; gap: 8px; }
+.fbpred-row { display: block; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.05); cursor: pointer; transition: background .12s; }
+.fbpred-row:hover, .fbpred-row:focus-visible { background: rgba(255,255,255,.11); outline: 1px solid var(--border); }
+.fbpred-row.me { background: var(--accent-soft); outline: 1px solid var(--green); }
+.fbpred-top { display: flex; align-items: center; justify-content: space-between; }
+.fbpred-user { font-weight: 700; }
+.fbpred-go { color: var(--muted); font-weight: 800; }
+.fbpred-pick { margin-top: 4px; font-weight: 600; font-size: 14px; }
+.fbpred-pick .fbpred-score { font-family: 'Sora', sans-serif; margin: 0 6px; }
+.fbpred-champ { margin-top: 3px; font-size: 12px; color: var(--muted); }
 .mpred-vs { color: var(--muted); font-weight: 600; }
 
 /* Apuesta especial: la Final */
