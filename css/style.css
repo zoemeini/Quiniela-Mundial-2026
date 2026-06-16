@@ -1098,6 +1098,43 @@ a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weig
 .ng-keepie-hud { position: absolute; top: 8px; left: 10px; font-size: 13px; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.6); z-index: 2; }
 .ng-keepie-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 18px; color: rgba(255,255,255,.9); font-size: 14px; }
 .ng-ball { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; font-size: 40px; line-height: 1; cursor: pointer; will-change: left, top; }
+
+/* Intro de cada minijuego */
+.ng-intro { text-align: center; padding: 8px 4px 4px; }
+.ng-intro-emoji { font-size: 34px; margin-bottom: 6px; }
+.ng-intro-rules { font-size: 14px; line-height: 1.45; margin: 0 auto 8px; max-width: 460px; }
+.ng-intro-note { font-size: 12px; color: var(--muted); margin: 6px auto 12px; max-width: 460px; }
+.ng-intro-list { list-style: none; text-align: left; max-width: 360px; margin: 8px auto; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.ng-intro-list li { background: var(--bg3); border-radius: 9px; padding: 7px 11px; }
+.ng-intro-example { font-size: 12px; color: var(--text); background: var(--gold-dim); border: 1px solid var(--gold); border-radius: 10px; padding: 8px 11px; max-width: 460px; margin: 0 auto 12px; line-height: 1.5; }
+
+/* Memory: input en cada posición (fase de escribir) */
+.ng-chip.ng-input { width: 72px; padding: 4px 4px; border-radius: 7px; border: 1px solid var(--green); background: rgba(8,14,26,.92); color: #fff; font-size: 11px; font-weight: 600; text-align: center; }
+.ng-chip.ng-input::placeholder { color: rgba(255,255,255,.4); }
+.ng-chip.ng-input:focus { outline: 2px solid var(--green); }
+
+/* Gol o tarjeta */
+.ng-card-game { text-align: center; }
+.ng-card-meta { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.ng-card-bar { height: 7px; background: var(--bg3); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+.ng-card-bar-fill { height: 100%; width: 100%; background: var(--green); border-radius: 999px; transition: width .1s linear; }
+.ng-card-bar-fill.low { background: var(--red); }
+.ng-card-player { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 16px 12px; margin-bottom: 14px; }
+.ng-card-name { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; margin-bottom: 10px; }
+.ng-card-attrs { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.ng-card-attr { display: inline-flex; align-items: center; gap: 6px; background: var(--bg2); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 15px; }
+.ng-card-attr .team-flag-img { width: 24px; }
+.ng-card-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ng-card-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 4px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg2); color: var(--text); font-size: 26px; cursor: pointer; }
+.ng-card-btn span { font-size: 11px; font-weight: 700; }
+.ng-card-btn:hover { border-color: var(--blue); }
+.ng-card-btn.right { border-color: var(--green); background: var(--green-dim); }
+.ng-card-btn.chosen-wrong { border-color: var(--red); background: rgba(248,113,113,.15); }
+.ng-card-fb { min-height: 40px; margin-top: 10px; }
+.ng-fb-ok { color: var(--green); font-weight: 800; }
+.ng-fb-bad { color: var(--red); font-weight: 800; }
+.ng-fb-why { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; justify-content: center; margin-top: 2px; }
+.ng-fb-why .team-flag-img { width: 18px; vertical-align: middle; }
 .mpred-vs { color: var(--muted); font-weight: 600; }
 
 /* Apuesta especial: la Final */

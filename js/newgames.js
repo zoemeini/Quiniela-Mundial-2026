@@ -1,51 +1,64 @@
 // ============================================================
-//  newgames.js — 3 minijuegos NUEVOS en pruebas (aún NO están en la
-//  rotación). Se renderizan en la página admin para testearlos.
-//  Autónomo: no toca minigame.js ni el backend. Cada instancia tiene
-//  su propio estado (hay 3 de cada juego en pantalla a la vez).
+//  newgames.js — minijuegos NUEVOS en pruebas (aún NO en la rotación).
+//  Se renderizan en la página admin para testearlos. Autónomo: no toca
+//  minigame.js ni el backend. Cada instancia tiene su propio estado.
 // ============================================================
 (function () {
   'use strict';
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function flag(iso) { return iso ? `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">` : ''; }
   function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').trim().replace(/\s+/g, ' '); }
+  // Acierto tolerante: nombre completo, cualquier palabra larga (apellido/nombre) o sin espacios.
+  function nameMatch(input, full) {
+    const a = norm(input); if (a.length < 3) return false;
+    const f = norm(full);
+    if (a === f) return true;
+    if (f.replace(/ /g, '') === a.replace(/ /g, '')) return true;
+    return f.split(' ').filter(w => w.length >= 3).indexOf(a) >= 0;
+  }
+  function intro(emoji, rulesHTML, btn) {
+    return `<div class="ng-intro"><div class="ng-intro-emoji">${emoji}</div>${rulesHTML}
+      <button type="button" class="btn-primary ng-btn" data-act="start">${btn || '▶️ Empezar'}</button></div>`;
+  }
 
-  // ── CONTENIDOS (placeholders para revisar) ───────────────────────────
-  // 1) MEMORY — alineaciones 4-3-3. x,y en % del campo (y=90 portero abajo, y=20 delantero arriba).
+  // ── CONTENIDOS (provisionales, para revisar) ─────────────────────────
+  // 1) MEMORY — alineaciones MEZCLADAS (jugadores de distintos países). 4-3-3.
   const LINEUPS = [
-    { team: 'España', iso: 'es', players: [
-      { n: 'Unai Simón', x: 50, y: 90 },
-      { n: 'Grimaldo', x: 16, y: 68 }, { n: 'Le Normand', x: 39, y: 73 }, { n: 'Laporte', x: 61, y: 73 }, { n: 'Carvajal', x: 84, y: 68 },
-      { n: 'Pedri', x: 28, y: 48 }, { n: 'Rodri', x: 50, y: 53 }, { n: 'Fabián', x: 72, y: 48 },
-      { n: 'Nico Williams', x: 18, y: 26 }, { n: 'Morata', x: 50, y: 19 }, { n: 'Lamine Yamal', x: 82, y: 26 },
+    { label: 'Mezcla 1', players: [
+      { n: 'Courtois', iso: 'be', x: 50, y: 90 },
+      { n: 'Theo Hernández', iso: 'fr', x: 16, y: 68 }, { n: 'Van Dijk', iso: 'nl', x: 39, y: 73 }, { n: 'Rúben Dias', iso: 'pt', x: 61, y: 73 }, { n: 'Hakimi', iso: 'ma', x: 84, y: 68 },
+      { n: 'Bellingham', iso: 'gb-eng', x: 28, y: 48 }, { n: 'Rodri', iso: 'es', x: 50, y: 53 }, { n: 'Modrić', iso: 'hr', x: 72, y: 48 },
+      { n: 'Vinícius', iso: 'br', x: 18, y: 26 }, { n: 'Haaland', iso: 'no', x: 50, y: 19 }, { n: 'Messi', iso: 'ar', x: 82, y: 26 },
     ] },
-    { team: 'Francia', iso: 'fr', players: [
-      { n: 'Maignan', x: 50, y: 90 },
-      { n: 'T. Hernández', x: 16, y: 68 }, { n: 'Saliba', x: 39, y: 73 }, { n: 'Upamecano', x: 61, y: 73 }, { n: 'Koundé', x: 84, y: 68 },
-      { n: 'Camavinga', x: 28, y: 48 }, { n: 'Tchouaméni', x: 50, y: 53 }, { n: 'Griezmann', x: 72, y: 48 },
-      { n: 'Mbappé', x: 18, y: 26 }, { n: 'Kolo Muani', x: 50, y: 19 }, { n: 'Dembélé', x: 82, y: 26 },
+    { label: 'Mezcla 2', players: [
+      { n: 'E. Martínez', iso: 'ar', x: 50, y: 90 },
+      { n: 'Grimaldo', iso: 'es', x: 16, y: 68 }, { n: 'Saliba', iso: 'fr', x: 39, y: 73 }, { n: 'Romero', iso: 'ar', x: 61, y: 73 }, { n: 'Koundé', iso: 'fr', x: 84, y: 68 },
+      { n: 'Pedri', iso: 'es', x: 28, y: 48 }, { n: 'De Bruyne', iso: 'be', x: 50, y: 53 }, { n: 'Bruno Fernandes', iso: 'pt', x: 72, y: 48 },
+      { n: 'Mbappé', iso: 'fr', x: 18, y: 26 }, { n: 'Kane', iso: 'gb-eng', x: 50, y: 19 }, { n: 'Son', iso: 'kr', x: 82, y: 26 },
     ] },
-    { team: 'Argentina', iso: 'ar', players: [
-      { n: 'E. Martínez', x: 50, y: 90 },
-      { n: 'Tagliafico', x: 16, y: 68 }, { n: 'Romero', x: 39, y: 73 }, { n: 'Otamendi', x: 61, y: 73 }, { n: 'Molina', x: 84, y: 68 },
-      { n: 'De Paul', x: 28, y: 48 }, { n: 'Enzo Fernández', x: 50, y: 53 }, { n: 'Mac Allister', x: 72, y: 48 },
-      { n: 'J. Álvarez', x: 18, y: 26 }, { n: 'Lautaro', x: 50, y: 19 }, { n: 'Messi', x: 82, y: 26 },
+    { label: 'Mezcla 3', players: [
+      { n: 'Maignan', iso: 'fr', x: 50, y: 90 },
+      { n: 'Davies', iso: 'ca', x: 16, y: 68 }, { n: 'Marquinhos', iso: 'br', x: 39, y: 73 }, { n: 'Bastoni', iso: 'it', x: 61, y: 73 }, { n: 'Carvajal', iso: 'es', x: 84, y: 68 },
+      { n: 'Gavi', iso: 'es', x: 28, y: 48 }, { n: 'Kimmich', iso: 'de', x: 50, y: 53 }, { n: 'Valverde', iso: 'uy', x: 72, y: 48 },
+      { n: 'Lautaro', iso: 'ar', x: 18, y: 26 }, { n: 'Lewandowski', iso: 'pl', x: 50, y: 19 }, { n: 'Lamine Yamal', iso: 'es', x: 82, y: 26 },
     ] },
   ];
 
-  // 2) DORSALES — 10 jugadores + 10 dorsales (números distintos dentro de cada set).
+  // 2) DORSALES — dorsal de SELECCIÓN (según su nº más reciente con su país).
+  //    Números distintos dentro de cada set.
   const DORSAL_SETS = [
     { label: 'Cracks 1', pairs: [
-      ['Messi', 'ar', 10], ['Vinícius Jr', 'br', 7], ['Haaland', 'no', 9], ['Pedri', 'es', 8], ['Lamine Yamal', 'es', 19],
-      ['Van Dijk', 'nl', 4], ['Rodri', 'es', 16], ['Musiala', 'de', 14], ['Salah', 'eg', 11], ['Bellingham', 'gb-eng', 5],
+      ['Messi', 'ar', 10], ['Vinícius Jr', 'br', 7], ['Harry Kane', 'gb-eng', 9], ['Van Dijk', 'nl', 4], ['Rodri', 'es', 16],
+      ['Lamine Yamal', 'es', 19], ['Lautaro', 'ar', 22], ['E. Martínez', 'ar', 23], ['Salah', 'eg', 11], ['Saliba', 'fr', 17],
     ] },
     { label: 'Cracks 2', pairs: [
-      ['Mbappé', 'fr', 10], ['Cristiano Ronaldo', 'pt', 7], ['Harry Kane', 'gb-eng', 9], ['Wirtz', 'de', 17], ['Valverde', 'uy', 8],
-      ['Rúben Dias', 'pt', 4], ['Alisson', 'br', 1], ['Raphinha', 'br', 11], ['Lautaro', 'ar', 22], ['Gvardiol', 'hr', 5],
+      ['Mbappé', 'fr', 10], ['Cristiano Ronaldo', 'pt', 7], ['Haaland', 'no', 9], ['Tchouaméni', 'fr', 8], ['Kimmich', 'de', 6],
+      ['Wirtz', 'de', 17], ['Hakimi', 'ma', 2], ['Foden', 'gb-eng', 11], ['Mac Allister', 'ar', 20], ['Rúben Dias', 'pt', 3],
     ] },
     { label: 'Cracks 3', pairs: [
-      ['Bellingham', 'gb-eng', 10], ['Son', 'kr', 7], ['J. Álvarez', 'ar', 9], ['Gavi', 'es', 6], ['Foden', 'gb-eng', 11],
-      ['Hakimi', 'ma', 2], ['E. Martínez', 'ar', 23], ['Declan Rice', 'gb-eng', 4], ['Gakpo', 'nl', 8], ['De Jong', 'nl', 21],
+      ['Bellingham', 'gb-eng', 10], ['Son', 'kr', 7], ['J. Álvarez', 'ar', 9], ['Nico Williams', 'es', 17], ['Pedri', 'es', 8],
+      ['Gvardiol', 'hr', 20], ['Theo Hernández', 'fr', 22], ['Maignan', 'fr', 16], ['Gündoğan', 'de', 21], ['Cucurella', 'es', 14],
     ] },
   ];
 
@@ -56,219 +69,252 @@
     { label: 'Difícil', gravity: 1600, bounce: 540, ball: 44 },
   ];
 
+  // 4) GOL O TARJETA — jugador con país+posición reales.
+  const POSITIONS = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
+  const COUNTRIES = [
+    { name: 'Argentina', iso: 'ar' }, { name: 'Brasil', iso: 'br' }, { name: 'Francia', iso: 'fr' }, { name: 'España', iso: 'es' },
+    { name: 'Inglaterra', iso: 'gb-eng' }, { name: 'Portugal', iso: 'pt' }, { name: 'Alemania', iso: 'de' }, { name: 'Países Bajos', iso: 'nl' },
+    { name: 'Bélgica', iso: 'be' }, { name: 'Croacia', iso: 'hr' }, { name: 'Italia', iso: 'it' }, { name: 'Uruguay', iso: 'uy' },
+    { name: 'Marruecos', iso: 'ma' }, { name: 'Noruega', iso: 'no' }, { name: 'Corea del Sur', iso: 'kr' }, { name: 'Polonia', iso: 'pl' },
+  ];
+  const CARD_SETS = [
+    { label: 'Tanda 1', players: [
+      { n: 'Messi', c: 'Argentina', iso: 'ar', p: 'Delantero' }, { n: 'Courtois', c: 'Bélgica', iso: 'be', p: 'Portero' },
+      { n: 'Van Dijk', c: 'Países Bajos', iso: 'nl', p: 'Defensa' }, { n: 'Rodri', c: 'España', iso: 'es', p: 'Centrocampista' },
+      { n: 'Mbappé', c: 'Francia', iso: 'fr', p: 'Delantero' }, { n: 'Bellingham', c: 'Inglaterra', iso: 'gb-eng', p: 'Centrocampista' },
+      { n: 'Hakimi', c: 'Marruecos', iso: 'ma', p: 'Defensa' }, { n: 'Modrić', c: 'Croacia', iso: 'hr', p: 'Centrocampista' },
+      { n: 'Haaland', c: 'Noruega', iso: 'no', p: 'Delantero' }, { n: 'E. Martínez', c: 'Argentina', iso: 'ar', p: 'Portero' },
+    ] },
+    { label: 'Tanda 2', players: [
+      { n: 'Cristiano Ronaldo', c: 'Portugal', iso: 'pt', p: 'Delantero' }, { n: 'Maignan', c: 'Francia', iso: 'fr', p: 'Portero' },
+      { n: 'Rúben Dias', c: 'Portugal', iso: 'pt', p: 'Defensa' }, { n: 'Pedri', c: 'España', iso: 'es', p: 'Centrocampista' },
+      { n: 'Vinícius Jr', c: 'Brasil', iso: 'br', p: 'Delantero' }, { n: 'Kimmich', c: 'Alemania', iso: 'de', p: 'Centrocampista' },
+      { n: 'Saliba', c: 'Francia', iso: 'fr', p: 'Defensa' }, { n: 'Son', c: 'Corea del Sur', iso: 'kr', p: 'Delantero' },
+      { n: 'Harry Kane', c: 'Inglaterra', iso: 'gb-eng', p: 'Delantero' }, { n: 'Theo Hernández', c: 'Francia', iso: 'fr', p: 'Defensa' },
+    ] },
+    { label: 'Tanda 3', players: [
+      { n: 'Lautaro', c: 'Argentina', iso: 'ar', p: 'Delantero' }, { n: 'Donnarumma', c: 'Italia', iso: 'it', p: 'Portero' },
+      { n: 'Marquinhos', c: 'Brasil', iso: 'br', p: 'Defensa' }, { n: 'De Bruyne', c: 'Bélgica', iso: 'be', p: 'Centrocampista' },
+      { n: 'Lewandowski', c: 'Polonia', iso: 'pl', p: 'Delantero' }, { n: 'Gavi', c: 'España', iso: 'es', p: 'Centrocampista' },
+      { n: 'Valverde', c: 'Uruguay', iso: 'uy', p: 'Centrocampista' }, { n: 'Davies', c: 'Canadá', iso: 'ca', p: 'Defensa' },
+      { n: 'Lamine Yamal', c: 'España', iso: 'es', p: 'Delantero' }, { n: 'Carvajal', c: 'España', iso: 'es', p: 'Defensa' },
+    ] },
+  ];
+
   // ── 1) MEMORY ─────────────────────────────────────────────────────────
   function mountMemory(root, content) {
     const players = content.players;
-    let state;
-    function reset() { state = { phase: 'intro', placed: {}, selected: null, secs: 5 }; paint(); }
-    function chipsHTML() {
+    let phase = 'intro', secs = 15, typed = {}, cd = null;
+    function pitch(inner) { return `<div class="ng-pitch ng-phase-${phase}">${inner}</div>`; }
+    function chipsMemo() { return players.map(p => `<div class="ng-chip show" style="left:${p.x}%;top:${p.y}%">${flag(p.iso)} ${esc(p.n)}</div>`).join(''); }
+    function chipsInputs() { return players.map((p, i) => `<input class="ng-chip ng-input" data-chip="${i}" style="left:${p.x}%;top:${p.y}%" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="?">`).join(''); }
+    function chipsDone() {
       return players.map((p, i) => {
-        const placedName = state.placed[i];
-        let cls = 'ng-chip', label = '';
-        if (state.phase === 'memo') { cls += ' show'; label = p.n; }
-        else if (state.phase === 'recall') { cls += placedName ? ' filled' : ' empty'; label = placedName || ''; }
-        else if (state.phase === 'done') {
-          const ok = placedName === p.n;
-          cls += ok ? ' correct' : ' wrong';
-          label = ok ? p.n : `${placedName || '—'}<span class="ng-chip-fix">${esc(p.n)}</span>`;
-          return `<div class="${cls}" style="left:${p.x}%;top:${p.y}%">${ok ? esc(p.n) : label}</div>`;
-        } else { cls += ' empty'; label = '•'; }
-        return `<div class="${cls}" style="left:${p.x}%;top:${p.y}%" data-chip="${i}">${state.phase === 'memo' ? esc(label) : (placedName ? esc(placedName) : (state.phase === 'recall' ? '' : '•'))}</div>`;
+        const ok = nameMatch(typed[i] || '', p.n);
+        const shown = (typed[i] || '').trim() || '—';
+        return `<div class="ng-chip ${ok ? 'correct' : 'wrong'}" style="left:${p.x}%;top:${p.y}%">${ok ? esc(p.n) : esc(shown) + `<span class="ng-chip-fix">${esc(p.n)}</span>`}</div>`;
       }).join('');
     }
-    function bankHTML() {
-      const used = Object.values(state.placed);
-      return shuffleStable(players.map(p => p.n)).map(n => {
-        const isUsed = used.indexOf(n) >= 0;
-        return `<button type="button" class="ng-bank-name${state.selected === n ? ' sel' : ''}${isUsed ? ' used' : ''}" data-name="${esc(n)}"${isUsed ? ' disabled' : ''}>${esc(n)}</button>`;
-      }).join('');
-    }
-    // Orden de banco estable durante la fase recall (no se baraja en cada repintado).
-    let bankOrder = null;
-    function shuffleStable(names) { if (!bankOrder) bankOrder = shuffle(names); return bankOrder; }
-
     function paint() {
-      let controls = '', extra = '';
-      if (state.phase === 'intro') {
-        controls = `<button type="button" class="btn-primary ng-btn" data-act="memo">👀 Memorizar (5 s)</button>`;
-      } else if (state.phase === 'memo') {
-        controls = `<div class="ng-memo-count">Memoriza… <b>${state.secs}</b> s</div>`;
-      } else if (state.phase === 'recall') {
-        const placedN = Object.keys(state.placed).length;
-        controls = `<div class="ng-bank">${bankHTML()}</div>
-          <button type="button" class="btn-primary ng-btn" data-act="check"${placedN === 0 ? ' disabled' : ''}>✅ Comprobar (${placedN}/11)</button>`;
-        extra = `<div class="ng-hint">Toca un nombre y luego su posición. Toca una posición llena para vaciarla.</div>`;
-      } else if (state.phase === 'done') {
-        let correct = 0; players.forEach((p, i) => { if (state.placed[i] === p.n) correct++; });
-        controls = `<div class="ng-result">Acertaste <b>${correct}/11</b> jugadores ${correct >= 9 ? '🏆' : correct >= 6 ? '👏' : '💪'}</div>
-          <button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Reiniciar</button>`;
-      }
-      root.innerHTML = `<div class="ng-pitch ng-phase-${state.phase}">${chipsHTML()}</div>${extra}<div class="ng-controls">${controls}</div>`;
-    }
-
-    root.addEventListener('click', e => {
-      const act = e.target.closest('[data-act]'); const chip = e.target.closest('[data-chip]'); const name = e.target.closest('[data-name]');
-      if (act) {
-        const a = act.dataset.act;
-        if (a === 'memo') { state.phase = 'memo'; state.secs = 5; bankOrder = null; paint(); runCountdown(); }
-        else if (a === 'check') { state.phase = 'done'; paint(); }
-        else if (a === 'reset') { bankOrder = null; reset(); }
+      if (phase === 'intro') {
+        root.innerHTML = intro('🧠', `<p class="ng-intro-rules"><b>Memoriza la alineación.</b> Verás 11 jugadores de <b>distintos países</b> colocados en el campo durante <b>15 segundos</b>. Luego desaparecen y tienes que <b>escribir el nombre</b> de cada uno en su posición.</p><p class="ng-intro-note">Vale con el apellido (p. ej. «yamal»). Gana quien recuerde más.</p>`, '👀 Empezar a memorizar');
         return;
       }
-      if (state.phase !== 'recall') return;
-      if (name && !name.disabled) { state.selected = (state.selected === name.dataset.name) ? null : name.dataset.name; paint(); return; }
-      if (chip) {
-        const i = +chip.dataset.chip;
-        if (state.placed[i]) { delete state.placed[i]; }            // vaciar
-        else if (state.selected) { state.placed[i] = state.selected; state.selected = null; } // colocar
-        paint();
+      if (phase === 'memo') { root.innerHTML = pitch(chipsMemo()) + `<div class="ng-controls"><div class="ng-memo-count">Memoriza… <b>${secs}</b> s</div></div>`; return; }
+      if (phase === 'recall') { root.innerHTML = pitch(chipsInputs()) + `<div class="ng-hint">Escribe el nombre de cada posición y pulsa Comprobar.</div><div class="ng-controls"><button type="button" class="btn-primary ng-btn" data-act="check">✅ Comprobar</button></div>`; return; }
+      if (phase === 'done') {
+        let ok = 0; players.forEach((p, i) => { if (nameMatch(typed[i] || '', p.n)) ok++; });
+        root.innerHTML = pitch(chipsDone()) + `<div class="ng-controls"><div class="ng-result">Acertaste <b>${ok}/11</b> ${ok >= 9 ? '🏆' : ok >= 6 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
       }
-    });
-    let cdTimer = null;
-    function runCountdown() {
-      clearInterval(cdTimer);
-      cdTimer = setInterval(() => {
-        state.secs--;
-        if (state.secs <= 0) { clearInterval(cdTimer); state.phase = 'recall'; state.selected = null; paint(); }
-        else paint();
-      }, 1000);
     }
-    reset();
+    root.addEventListener('click', e => {
+      const act = e.target.closest('[data-act]'); if (!act) return;
+      if (act.dataset.act === 'start') { phase = 'memo'; secs = 15; typed = {}; paint(); clearInterval(cd); cd = setInterval(() => { secs--; if (secs <= 0) { clearInterval(cd); phase = 'recall'; paint(); } else paint(); }, 1000); }
+      else if (act.dataset.act === 'check') { root.querySelectorAll('.ng-input').forEach(inp => { typed[+inp.dataset.chip] = inp.value; }); phase = 'done'; paint(); }
+      else if (act.dataset.act === 'reset') { phase = 'intro'; paint(); }
+    });
+    paint();
   }
 
   // ── 2) DORSALES ───────────────────────────────────────────────────────
   function mountDorsales(root, content) {
     const players = content.pairs.map((p, i) => ({ idx: i, name: p[0], iso: p[1], num: p[2] }));
     const numbers = shuffle(players.map(p => p.num));
-    let state;
-    function reset() { state = { assign: {}, selPlayer: null, done: false }; paint(); }
-    function numOf(idx) { return state.assign[idx]; }
-    function playerOfNum(num) { for (const k in state.assign) if (state.assign[k] === num) return +k; return null; }
+    let phase = 'intro', assign = {}, selPlayer = null;
+    function numOf(idx) { return assign[idx]; }
+    function playerOfNum(num) { for (const k in assign) if (assign[k] === num) return +k; return null; }
     function paint() {
+      if (phase === 'intro') {
+        root.innerHTML = intro('🔢', `<p class="ng-intro-rules"><b>Relaciona cada jugador con su dorsal</b> (el número que lleva con su selección). Toca un jugador y luego su número. Puedes cambiarlo antes de comprobar.</p><p class="ng-intro-note">10 jugadores · gana quien acierte más.</p>`, '▶️ Empezar');
+        return;
+      }
+      const done = phase === 'done';
       const left = players.map(p => {
-        const n = numOf(p.idx);
-        let cls = 'ng-pl-row';
-        if (state.selPlayer === p.idx) cls += ' sel';
-        if (state.done) cls += (n === p.num ? ' correct' : ' wrong');
+        const n = numOf(p.idx); let cls = 'ng-pl-row';
+        if (selPlayer === p.idx) cls += ' sel';
+        if (done) cls += (n === p.num ? ' correct' : ' wrong');
         const badge = n != null ? `<span class="ng-pl-num">${n}</span>` : `<span class="ng-pl-num empty">—</span>`;
-        const fix = (state.done && n !== p.num) ? `<span class="ng-pl-fix">es ${p.num}</span>` : '';
-        return `<button type="button" class="${cls}" data-pl="${p.idx}"${state.done ? ' disabled' : ''}>${flag(p.iso)}<span class="ng-pl-name">${esc(p.name)}</span>${fix}${badge}</button>`;
+        const fix = (done && n !== p.num) ? `<span class="ng-pl-fix">es ${p.num}</span>` : '';
+        return `<button type="button" class="${cls}" data-pl="${p.idx}"${done ? ' disabled' : ''}>${flag(p.iso)}<span class="ng-pl-name">${esc(p.name)}</span>${fix}${badge}</button>`;
       }).join('');
       const right = numbers.map(num => {
-        const owner = playerOfNum(num);
-        let cls = 'ng-num';
-        if (owner != null) cls += ' used';
-        return `<button type="button" class="${cls}" data-num="${num}"${state.done ? ' disabled' : ''}>${num}</button>`;
+        const owner = playerOfNum(num); let cls = 'ng-num'; if (owner != null) cls += ' used';
+        return `<button type="button" class="${cls}" data-num="${num}"${done ? ' disabled' : ''}>${num}</button>`;
       }).join('');
       let footer;
-      if (state.done) {
-        let correct = 0; players.forEach(p => { if (numOf(p.idx) === p.num) correct++; });
-        footer = `<div class="ng-result">Acertaste <b>${correct}/10</b> dorsales ${correct >= 8 ? '🏆' : correct >= 5 ? '👏' : '💪'}</div>
-          <button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Reiniciar</button>`;
-      } else {
-        const placed = Object.keys(state.assign).length;
-        footer = `<button type="button" class="btn-primary ng-btn" data-act="check"${placed === 0 ? ' disabled' : ''}>✅ Comprobar (${placed}/10)</button>`;
-      }
-      root.innerHTML = `<div class="ng-hint">Toca un jugador y luego su dorsal.</div>
-        <div class="ng-dorsal"><div class="ng-dorsal-players">${left}</div><div class="ng-dorsal-nums">${right}</div></div>
-        <div class="ng-controls">${footer}</div>`;
+      if (done) { let ok = 0; players.forEach(p => { if (numOf(p.idx) === p.num) ok++; }); footer = `<div class="ng-result">Acertaste <b>${ok}/10</b> ${ok >= 8 ? '🏆' : ok >= 5 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button>`; }
+      else { const placed = Object.keys(assign).length; footer = `<button type="button" class="btn-primary ng-btn" data-act="check"${placed === 0 ? ' disabled' : ''}>✅ Comprobar (${placed}/10)</button>`; }
+      root.innerHTML = `<div class="ng-hint">Toca un jugador y luego su dorsal.</div><div class="ng-dorsal"><div class="ng-dorsal-players">${left}</div><div class="ng-dorsal-nums">${right}</div></div><div class="ng-controls">${footer}</div>`;
     }
     root.addEventListener('click', e => {
-      const act = e.target.closest('[data-act]'); const pl = e.target.closest('[data-pl]'); const num = e.target.closest('[data-num]');
-      if (act) { if (act.dataset.act === 'check') { state.done = true; paint(); } else if (act.dataset.act === 'reset') reset(); return; }
-      if (state.done) return;
-      if (pl) { const i = +pl.dataset.pl; state.selPlayer = (state.selPlayer === i) ? null : i; paint(); return; }
-      if (num) {
-        const v = +num.dataset.num;
-        if (state.selPlayer == null) return;
-        const prevOwner = playerOfNum(v); if (prevOwner != null) delete state.assign[prevOwner]; // ese dorsal se mueve
-        state.assign[state.selPlayer] = v; state.selPlayer = null; paint();
-      }
+      const act = e.target.closest('[data-act]'), pl = e.target.closest('[data-pl]'), num = e.target.closest('[data-num]');
+      if (act) { if (act.dataset.act === 'start') phase = 'play'; else if (act.dataset.act === 'check') phase = 'done'; else if (act.dataset.act === 'reset') { phase = 'intro'; assign = {}; selPlayer = null; } paint(); return; }
+      if (phase !== 'play') return;
+      if (pl) { const i = +pl.dataset.pl; selPlayer = (selPlayer === i) ? null : i; paint(); return; }
+      if (num) { const v = +num.dataset.num; if (selPlayer == null) return; const prev = playerOfNum(v); if (prev != null) delete assign[prev]; assign[selPlayer] = v; selPlayer = null; paint(); }
     });
-    reset();
+    paint();
   }
 
-  // ── 3) KEEPIE (que no caiga la pelota) ────────────────────────────────
+  // ── 3) KEEPIE (que no caiga la pelota) — 3 intentos, cuenta el mejor ──
   function mountKeepie(root, content) {
-    let raf = null, last = 0, running = false, startT = 0, touches = 0, best = 0;
-    let b = null, w = 0, h = 0;
-    function html(body) {
+    let raf = null, last = 0, running = false, startT = 0, touches = 0;
+    let attempt = 0, best = 0, b = null, w = 0, h = 0;
+    function shell(controls, msg) {
       root.innerHTML = `<div class="ng-keepie-area" data-area>
           <div class="ng-keepie-hud" data-hud></div>
-          <div class="ng-ball" data-ball>⚽</div>
-          ${body || ''}
+          <div class="ng-ball" data-ball style="display:none">⚽</div>
+          ${msg ? `<div class="ng-keepie-msg" data-msg>${msg}</div>` : ''}
         </div>
-        <div class="ng-controls" data-controls></div>`;
+        <div class="ng-controls" data-controls>${controls}</div>`;
     }
-    function idle() {
-      stop();
-      html(`<div class="ng-keepie-msg" data-msg>Toca «Empezar» y mantén la pelota en el aire tocándola.${best ? `<br>🔥 Mejor: <b>${best.toFixed(1)} s</b>` : ''}</div>`);
-      const ball = root.querySelector('[data-ball]'); if (ball) ball.style.display = 'none';
-      root.querySelector('[data-controls]').innerHTML = `<button type="button" class="btn-primary ng-btn" data-act="start">▶️ Empezar</button>`;
+    function introScreen() {
+      stop(); attempt = 0; best = 0;
+      root.innerHTML = intro('⚽', `<p class="ng-intro-rules"><b>No dejes caer la pelota.</b> Tócala para impulsarla hacia arriba antes de que toque el suelo. Aguanta el máximo de segundos.</p><p class="ng-intro-note">Tienes <b>3 intentos</b> · cuenta tu <b>mejor</b> tiempo.</p>`, '▶️ Empezar');
     }
+    function bestLine() { return best ? ` · 🔥 Mejor: <b>${best.toFixed(1)} s</b>` : ''; }
     function start() {
-      const area = root.querySelector('[data-area]');
-      const r = area.getBoundingClientRect(); w = r.width; h = r.height;
-      if (w < 20 || h < 20) { w = 320; h = 260; }
+      attempt++;
+      shell(`<span class="ng-hint">Intento ${attempt}/3 · toca la pelota ⚽</span>`);
+      const area = root.querySelector('[data-area]'); const r = area.getBoundingClientRect();
+      w = r.width; h = r.height; if (w < 20 || h < 20) { w = 320; h = 260; }
       const rad = content.ball / 2;
-      // Sale lanzado hacia arriba desde el centro para dar tiempo al primer toque.
       b = { x: w / 2, y: h * 0.5, vx: (Math.random() * 100 - 50), vy: -content.bounce * 0.75, r: rad };
       touches = 0; running = true; startT = performance.now(); last = 0;
-      const ball = root.querySelector('[data-ball]');
-      ball.style.display = ''; ball.style.width = ball.style.height = content.ball + 'px';
-      root.querySelector('[data-msg]') && root.querySelector('[data-msg]').remove();
-      root.querySelector('[data-controls]').innerHTML = `<span class="ng-hint">Toca la pelota ⚽ antes de que caiga</span>`;
+      const ball = root.querySelector('[data-ball]'); ball.style.display = ''; ball.style.width = ball.style.height = content.ball + 'px';
       place(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
     }
     function place() {
       const ball = root.querySelector('[data-ball]'); if (!ball) return;
       ball.style.left = b.x + 'px'; ball.style.top = b.y + 'px';
-      const hud = root.querySelector('[data-hud]'); if (hud) hud.innerHTML = `⏱ <b>${((performance.now() - startT) / 1000).toFixed(1)}</b> s · ${touches} toques`;
+      const hud = root.querySelector('[data-hud]'); if (hud) hud.innerHTML = `Intento ${attempt}/3 · ⏱ <b>${((performance.now() - startT) / 1000).toFixed(1)}</b> s · ${touches} toques${bestLine()}`;
     }
     function loop(t) {
       if (!running) return;
-      if (!last) last = t;
-      let dt = (t - last) / 1000; last = t; if (dt > 0.05) dt = 0.05;
-      b.vy += content.gravity * dt;
-      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (!last) last = t; let dt = (t - last) / 1000; last = t; if (dt > 0.05) dt = 0.05;
+      b.vy += content.gravity * dt; b.x += b.vx * dt; b.y += b.vy * dt;
       if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.85; }
       if (b.x > w - b.r) { b.x = w - b.r; b.vx = -Math.abs(b.vx) * 0.85; }
       if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy) * 0.5; }
-      if (b.y > h - b.r) { return over(); }
+      if (b.y > h - b.r) return over();
       place(); raf = requestAnimationFrame(loop);
     }
-    function tap(e) {
-      if (!running) return;
-      e.preventDefault();
-      b.vy = -content.bounce;
-      b.vx += (Math.random() * 140 - 70);
-      if (b.vx > 260) b.vx = 260; if (b.vx < -260) b.vx = -260;
-      touches++;
-    }
+    function tap(e) { if (!running) return; e.preventDefault(); b.vy = -content.bounce; b.vx += (Math.random() * 140 - 70); if (b.vx > 260) b.vx = 260; if (b.vx < -260) b.vx = -260; touches++; }
     function over() {
       running = false; cancelAnimationFrame(raf);
       const secs = (performance.now() - startT) / 1000; if (secs > best) best = secs;
-      const hud = root.querySelector('[data-hud]'); if (hud) hud.innerHTML = `💥 ¡Cayó al suelo!`;
-      root.querySelector('[data-controls]').innerHTML =
-        `<div class="ng-result">Aguantaste <b>${secs.toFixed(1)} s</b> · ${touches} toques ${secs >= 20 ? '🏆' : secs >= 10 ? '👏' : '💪'}</div>
-         <button type="button" class="btn-primary ng-btn" data-act="start">🔄 Otra vez</button>`;
+      const ctrls = root.querySelector('[data-controls]');
+      const ball = root.querySelector('[data-ball]'); if (ball) ball.style.display = 'none';
+      const hud = root.querySelector('[data-hud]'); if (hud) hud.innerHTML = `💥 ¡Cayó!${bestLine()}`;
+      if (attempt < 3) ctrls.innerHTML = `<div class="ng-result">Intento ${attempt}: <b>${secs.toFixed(1)} s</b></div><button type="button" class="btn-primary ng-btn" data-act="next">▶️ Intento ${attempt + 1}/3</button>`;
+      else ctrls.innerHTML = `<div class="ng-result">¡Terminado! Tu mejor: <b>${best.toFixed(1)} s</b> ${best >= 20 ? '🏆' : best >= 10 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez (3 intentos)</button>`;
     }
     function stop() { running = false; cancelAnimationFrame(raf); raf = null; }
-    root.addEventListener('click', e => { const act = e.target.closest('[data-act]'); if (act && act.dataset.act === 'start') start(); });
+    root.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (!a) return; if (a.dataset.act === 'start' || a.dataset.act === 'next') start(); else if (a.dataset.act === 'reset') introScreen(); });
     root.addEventListener('pointerdown', e => { if (e.target.closest('[data-ball]')) tap(e); });
-    idle();
+    introScreen();
+  }
+
+  // ── 4) GOL O TARJETA ──────────────────────────────────────────────────
+  function mountCard(root, content) {
+    const pool = content.players;
+    let phase = 'intro', rounds = [], idx = 0, score = 0, answered = false, timer = null, deadline = 0;
+    function wrongCountry(p) { const opts = COUNTRIES.filter(c => c.name !== p.c); return opts[Math.floor(Math.random() * opts.length)]; }
+    function wrongPos(pos) { const opts = POSITIONS.filter(x => x !== pos); return opts[Math.floor(Math.random() * opts.length)]; }
+    function build() {
+      const cats = shuffle(['gol', 'gol', 'gol', 'yellow', 'yellow', 'yellow', 'yellow', 'red', 'red', 'red']);
+      rounds = shuffle(pool).map((p, i) => {
+        const cat = cats[i]; let okC = true, okP = true;
+        if (cat === 'red') { okC = okP = false; }
+        else if (cat === 'yellow') { if (Math.random() < 0.5) okC = false; else okP = false; }
+        return { p, country: okC ? { name: p.c, iso: p.iso } : wrongCountry(p), pos: okP ? p.p : wrongPos(p.p), ans: cat };
+      });
+      idx = 0; score = 0;
+    }
+    function clearT() { clearInterval(timer); timer = null; }
+    function startTimer() {
+      clearT(); deadline = performance.now() + 10000;
+      timer = setInterval(() => {
+        const rem = Math.max(0, deadline - performance.now());
+        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / 10000 * 100) + '%'; bar.classList.toggle('low', rem <= 3000); }
+        if (rem <= 0) { clearT(); answer(null); }
+      }, 80);
+    }
+    function paintRound() {
+      const r = rounds[idx];
+      root.innerHTML = `<div class="ng-card-game">
+        <div class="ng-card-meta">Jugador <b>${idx + 1}/10</b> · Aciertos: <b>${score}</b></div>
+        <div class="ng-card-bar"><div class="ng-card-bar-fill" data-bar style="width:100%"></div></div>
+        <div class="ng-card-player">
+          <div class="ng-card-name">${esc(r.p.n)}</div>
+          <div class="ng-card-attrs"><span class="ng-card-attr">${flag(r.country.iso)} ${esc(r.country.name)}</span><span class="ng-card-attr">${esc(r.pos)}</span></div>
+        </div>
+        <div class="ng-card-btns">
+          <button type="button" class="ng-card-btn gol" data-ans="gol">⚽<span>Gol</span></button>
+          <button type="button" class="ng-card-btn yellow" data-ans="yellow">🟨<span>Amarilla</span></button>
+          <button type="button" class="ng-card-btn red" data-ans="red">🟥<span>Roja</span></button>
+        </div>
+        <div class="ng-card-fb" data-fb></div>
+      </div>`;
+    }
+    function answer(choice) {
+      if (answered) return; answered = true; clearT();
+      const r = rounds[idx]; const ok = choice === r.ans; if (ok) score++;
+      root.querySelectorAll('.ng-card-btn').forEach(btn => { btn.disabled = true; if (btn.dataset.ans === r.ans) btn.classList.add('right'); else if (btn.dataset.ans === choice) btn.classList.add('chosen-wrong'); });
+      const why = `Real: ${flag(r.p.iso)} ${esc(r.p.c)} · ${esc(r.p.p)}`;
+      const fb = root.querySelector('[data-fb]'); if (fb) fb.innerHTML = `<div class="${ok ? 'ng-fb-ok' : 'ng-fb-bad'}">${ok ? '✅ ¡Bien!' : (choice ? '❌ Fallaste' : '⏱ Sin tiempo')}</div><div class="ng-fb-why">${why}</div>`;
+      setTimeout(() => { idx++; if (idx >= rounds.length) finish(); else { answered = false; paintRound(); startTimer(); } }, 1500);
+    }
+    function finish() {
+      root.innerHTML = `<div class="ng-controls"><div class="ng-result">Acertaste <b>${score}/10</b> ${score >= 8 ? '🏆' : score >= 5 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
+    }
+    function paintIntro() {
+      phase = 'intro'; clearT();
+      root.innerHTML = intro('🟨', `<p class="ng-intro-rules">Verás un jugador con un <b>país</b> y una <b>posición</b>. Decide rápido:</p>
+        <ul class="ng-intro-list">
+          <li>⚽ <b>Gol</b> — si país <b>y</b> posición son <b>correctos</b>.</li>
+          <li>🟨 <b>Amarilla</b> — si <b>solo uno</b> es correcto.</li>
+          <li>🟥 <b>Roja</b> — si los <b>dos están mal</b>.</li>
+        </ul>
+        <div class="ng-intro-example"><b>Ejemplo:</b> «Messi · Argentina · Delantero» → ⚽ &nbsp;·&nbsp; «Messi · Brasil · Delantero» → 🟨 &nbsp;·&nbsp; «Messi · Brasil · Portero» → 🟥</div>
+        <p class="ng-intro-note">10 segundos por jugador · 10 jugadores · gana quien acierte más.</p>`, '▶️ Empezar');
+    }
+    root.addEventListener('click', e => {
+      const act = e.target.closest('[data-act]'), ans = e.target.closest('[data-ans]');
+      if (act) { if (act.dataset.act === 'start') { build(); phase = 'play'; answered = false; paintRound(); startTimer(); } else if (act.dataset.act === 'reset') paintIntro(); return; }
+      if (ans && phase === 'play') answer(ans.dataset.ans);
+    });
+    paintIntro();
   }
 
   // ── Montaje en la página admin ────────────────────────────────────────
   function card(title, sub) {
-    const el = document.createElement('div');
-    el.className = 'ng-game';
+    const el = document.createElement('div'); el.className = 'ng-game';
     el.innerHTML = `<div class="ng-game-head">${title}${sub ? ` <span class="ng-game-sub">${sub}</span>` : ''}</div><div class="ng-game-body"></div>`;
     return el;
   }
   function section(emoji, name, desc) {
-    const s = document.createElement('section');
-    s.className = 'ng-section';
+    const s = document.createElement('section'); s.className = 'ng-section';
     s.innerHTML = `<h3 class="ng-section-title">${emoji} ${name}</h3><p class="ng-section-desc">${desc}</p>`;
     return s;
   }
@@ -276,16 +322,19 @@
     const host = document.getElementById('newgames-test'); if (!host || host.dataset.ready) return;
     host.dataset.ready = '1';
 
-    const s1 = section('🧠', 'Memory: memoriza la alineación', 'Pulsa «Memorizar» (5 s), luego coloca cada jugador en su posición. Gana quien acierte más.');
-    LINEUPS.forEach(lu => { const c = card(`${flag(lu.iso)} ${lu.team}`, '4-3-3'); s1.appendChild(c); mountMemory(c.querySelector('.ng-game-body'), lu); });
+    const s1 = section('🧠', 'Memory: memoriza la alineación (mezcla)', '11 jugadores de distintos países, 15 s para memorizar, luego escribe quién va en cada posición.');
+    LINEUPS.forEach(lu => { const c = card(lu.label, '4-3-3'); s1.appendChild(c); mountMemory(c.querySelector('.ng-game-body'), lu); });
 
-    const s2 = section('🔢', 'Relaciona jugador y dorsal', 'Empareja cada jugador con su dorsal. 10 jugadores. Gana quien acierte más.');
+    const s2 = section('🔢', 'Relaciona jugador y dorsal', 'Empareja 10 jugadores con su dorsal de selección.');
     DORSAL_SETS.forEach(ds => { const c = card(ds.label, '10 jugadores'); s2.appendChild(c); mountDorsales(c.querySelector('.ng-game-body'), ds); });
 
-    const s3 = section('⚽', 'Que no caiga la pelota', 'Toca la pelota para impulsarla antes de que toque el suelo. Gana quien aguante más segundos.');
+    const s3 = section('⚽', 'Que no caiga la pelota', 'Toca la pelota para mantenerla en el aire. 3 intentos, cuenta el mejor.');
     KEEPIE.forEach(kp => { const c = card(kp.label, ''); s3.appendChild(c); mountKeepie(c.querySelector('.ng-game-body'), kp); });
 
-    host.appendChild(s1); host.appendChild(s2); host.appendChild(s3);
+    const s4 = section('🟨', 'Gol o tarjeta', '¿País y posición correctos? ⚽ gol · 🟨 uno mal · 🟥 los dos mal. 10 s × 10 jugadores.');
+    CARD_SETS.forEach(cs => { const c = card(cs.label, '10 jugadores'); s4.appendChild(c); mountCard(c.querySelector('.ng-game-body'), cs); });
+
+    host.appendChild(s1); host.appendChild(s2); host.appendChild(s3); host.appendChild(s4);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
