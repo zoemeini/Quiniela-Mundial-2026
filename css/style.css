@@ -1037,6 +1037,67 @@ a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weig
 .fbpred-pick { margin-top: 4px; font-weight: 600; font-size: 14px; }
 .fbpred-pick .fbpred-score { font-family: 'Sora', sans-serif; margin: 0 6px; }
 .fbpred-champ { margin-top: 3px; font-size: 12px; color: var(--muted); }
+
+/* ── 🧪 Minijuegos nuevos en pruebas (página admin) ── */
+.ng-test-wrap { margin-top: 36px; padding-top: 24px; border-top: 2px dashed var(--border); }
+.ng-test-wrap > h2 { font-family: 'Sora', sans-serif; font-size: 20px; }
+.ng-test-intro { color: var(--muted); font-size: 13px; margin: 6px 0 4px; }
+.ng-section { margin-top: 26px; }
+.ng-section-title { font-family: 'Sora', sans-serif; font-size: 17px; }
+.ng-section-desc { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
+.ng-game { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
+.ng-game-head { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ng-game-sub { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--bg3); border-radius: 999px; padding: 2px 9px; }
+.ng-game-head .team-flag-img { width: 22px; }
+.ng-controls { margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ng-btn { width: auto; padding: 9px 18px; }
+.ng-hint { font-size: 12px; color: var(--muted); text-align: center; }
+.ng-result { font-size: 15px; font-weight: 700; text-align: center; }
+
+/* Memory */
+.ng-pitch { position: relative; width: 100%; max-width: 340px; margin: 0 auto; aspect-ratio: 3 / 3.5;
+  border: 2px solid rgba(255,255,255,.25); border-radius: 10px; overflow: hidden;
+  background:
+    linear-gradient(0deg, rgba(255,255,255,.06) 0 1px, transparent 1px) center/100% 50% no-repeat,
+    repeating-linear-gradient(0deg, #15602f 0 24px, #137a39 24px 48px); }
+.ng-chip { position: absolute; transform: translate(-50%, -50%); font-size: 11px; font-weight: 700; line-height: 1.1;
+  padding: 4px 7px; border-radius: 8px; max-width: 86px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: rgba(8,14,26,.85); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+.ng-chip.empty { width: 26px; height: 26px; padding: 0; border-radius: 50%; border-style: dashed; color: rgba(255,255,255,.5); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.ng-chip.filled { background: var(--blue); color: #06231a; border-color: #fff; cursor: pointer; }
+.ng-chip.show { background: var(--gold-dim); border-color: var(--gold); color: #fff; }
+.ng-chip.correct { background: var(--green); color: #06231a; border-color: #fff; }
+.ng-chip.wrong { background: var(--red); color: #2a0b0b; border-color: #fff; }
+.ng-chip-fix { display: block; font-size: 9px; font-weight: 600; opacity: .85; }
+.ng-memo-count { font-size: 15px; font-weight: 700; color: var(--gold); }
+.ng-bank { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.ng-bank-name { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 12px; font-weight: 600; }
+.ng-bank-name.sel { background: var(--green); border-color: var(--green); color: #06231a; }
+.ng-bank-name.used { opacity: .3; pointer-events: none; }
+
+/* Dorsales */
+.ng-dorsal { display: grid; grid-template-columns: 1fr 76px; gap: 12px; }
+.ng-dorsal-players { display: flex; flex-direction: column; gap: 6px; }
+.ng-pl-row { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-weight: 600; font-size: 13px; }
+.ng-pl-row .team-flag-img { width: 22px; }
+.ng-pl-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ng-pl-row.sel { border-color: var(--green); background: var(--green-dim); }
+.ng-pl-row.correct { border-color: var(--green); background: var(--green-dim); }
+.ng-pl-row.wrong { border-color: var(--red); background: rgba(248,113,113,.12); }
+.ng-pl-num { min-width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; background: var(--blue); color: #06231a; font-weight: 800; }
+.ng-pl-num.empty { background: transparent; color: var(--muted); border: 1px dashed var(--border); }
+.ng-pl-fix { font-size: 10px; font-weight: 700; color: var(--red); }
+.ng-dorsal-nums { display: flex; flex-direction: column; gap: 6px; }
+.ng-num { height: 38px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); font-family: 'Sora', sans-serif; font-weight: 800; font-size: 16px; }
+.ng-num.used { opacity: .35; }
+
+/* Keepie */
+.ng-keepie-area { position: relative; width: 100%; height: 280px; border-radius: 10px; overflow: hidden;
+  background: linear-gradient(180deg, #0e2a4d 0%, #103a2a 78%, #0c5a2e 78%, #0c5a2e 100%);
+  border: 1px solid var(--border); touch-action: manipulation; user-select: none; }
+.ng-keepie-hud { position: absolute; top: 8px; left: 10px; font-size: 13px; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.6); z-index: 2; }
+.ng-keepie-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 18px; color: rgba(255,255,255,.9); font-size: 14px; }
+.ng-ball { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; font-size: 40px; line-height: 1; cursor: pointer; will-change: left, top; }
 .mpred-vs { color: var(--muted); font-weight: 600; }
 
 /* Apuesta especial: la Final */
