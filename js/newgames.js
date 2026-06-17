@@ -119,14 +119,24 @@
     ] },
   ];
 
-  // 5) CÁLCULO RELÁMPAGO — 3 niveles de dificultad (60 s, gana quien más acierte).
+  // 5) CÁLCULO MENTAL con incógnitas (⚽ balón, 🥅 portería) — 3 niveles, 75 s.
   const MATH = [
-    { label: 'Fácil', ops: ['add', 'sub'] },
-    { label: 'Medio', ops: ['add', 'sub', 'mul'] },
-    { label: 'Difícil', ops: ['add', 'sub', 'mul', 'chain'] },
+    { label: 'Fácil', level: 1 },
+    { label: 'Medio', level: 2 },
+    { label: 'Difícil', level: 3 },
   ];
-  // 6) MASTERMIND DEL MARCADOR — 3 códigos (3 cifras distintas, 8 intentos).
-  const CODE = [{ label: 'Código 1' }, { label: 'Código 2' }, { label: 'Código 3' }];
+  // 6) MASTERMIND de EQUIPACIONES — 8 equipaciones, combinación de 5 distintas.
+  const KITS = [
+    { t: 'España', c1: '#e11d2a', c2: '#ffd700' },
+    { t: 'Brasil', c1: '#ffd400', c2: '#1f8a3b' },
+    { t: 'Francia', c1: '#1f2a6e', c2: '#ffffff' },
+    { t: 'P. Bajos', c1: '#f36c21', c2: '#ffffff' },
+    { t: 'Argentina', c1: '#79b6e8', c2: '#ffffff' },
+    { t: 'Alemania', c1: '#eceff4', c2: '#111111' },
+    { t: 'México', c1: '#0a7d3c', c2: '#ffffff' },
+    { t: 'Portugal', c1: '#7a1228', c2: '#1f8a3b' },
+  ];
+  const CODE = [{ label: 'Partida 1' }, { label: 'Partida 2' }, { label: 'Partida 3' }];
   function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 
   // ── 1) MEMORY ─────────────────────────────────────────────────────────
@@ -337,27 +347,45 @@
     paintIntro();
   }
 
-  // ── 5) CÁLCULO RELÁMPAGO ──────────────────────────────────────────────
+  // ── 5) CÁLCULO MENTAL con incógnitas ──────────────────────────────────
   function mountMath(root, content) {
-    const DUR = 60000;
+    const DUR = 75000, lvl = content.level;
     let phase = 'intro', score = 0, cur = null, deadline = 0, timer = null;
-    function genOp() {
-      const op = content.ops[ri(0, content.ops.length - 1)];
-      let a, b, c, text, ans;
-      if (op === 'add') { a = ri(8, 49); b = ri(8, 49); ans = a + b; text = `${a} + ${b}`; }
-      else if (op === 'sub') { a = ri(20, 60); b = ri(5, a - 1); ans = a - b; text = `${a} − ${b}`; }
-      else if (op === 'mul') { a = ri(2, 12); b = ri(2, 9); ans = a * b; text = `${a} × ${b}`; }
-      else { a = ri(2, 9); b = ri(2, 9); c = ri(1, 20); const plus = Math.random() < 0.6; ans = plus ? a * b + c : a * b - c; if (ans < 0) { ans = a * b + c; text = `${a} × ${b} + ${c}`; } else text = `${a} × ${b} ${plus ? '+' : '−'} ${c}`; }
+    function genPuzzle() {
+      const cap = lvl === 1 ? 12 : 15;
+      const vb = ri(2, cap), vp = ri(2, cap);            // valores de ⚽ y 🥅
+      const ab = ri(6, 49), ap = ri(6, 49);
+      const eqB = `${ab} + ⚽ = ${ab + vb}`;
+      const eqP = `${ap} + 🥅 = ${ap + vp}`;
+      let expr, ans;
+      if (lvl === 1) { expr = '⚽ + 🥅'; ans = vb + vp; }
+      else if (lvl === 2) {
+        const f = [
+          () => { const c = ri(2, 9); return { e: `⚽ + 2·🥅 + ${c}`, a: vb + 2 * vp + c }; },
+          () => { const c = ri(2, 9); return { e: `2·⚽ + 🥅 + ${c}`, a: 2 * vb + vp + c }; },
+          () => ({ e: `⚽ + 🥅`, a: vb + vp }),
+        ][ri(0, 2)](); expr = f.e; ans = f.a;
+      } else {
+        const f = [
+          () => ({ e: `2·⚽ + 3·🥅`, a: 2 * vb + 3 * vp }),
+          () => { const c = ri(2, 12); return { e: `⚽ + 2·🥅 + ${c}`, a: vb + 2 * vp + c }; },
+          () => { const c = ri(1, 9), r = 3 * vb - vp + c; return r > 0 ? { e: `3·⚽ − 🥅 + ${c}`, a: r } : { e: `2·⚽ + 🥅`, a: 2 * vb + vp }; },
+        ][ri(0, 2)](); expr = f.e; ans = f.a;
+      }
       const opts = new Set([ans]); const list = [ans];
-      while (list.length < 3) { let d = ans + (Math.random() < 0.5 ? -1 : 1) * ri(1, 6); if (d < 0) d = ans + ri(1, 6); if (!opts.has(d)) { opts.add(d); list.push(d); } }
-      return { text, ans, opts: shuffle(list) };
+      while (list.length < 3) { let d = ans + (Math.random() < 0.5 ? -1 : 1) * ri(1, 8); if (d < 0) d = ans + ri(1, 8); if (!opts.has(d)) { opts.add(d); list.push(d); } }
+      return { eqB, eqP, expr, ans, opts: shuffle(list) };
     }
     function paintRound() {
-      cur = genOp();
+      cur = genPuzzle();
       root.innerHTML = `<div class="ng-math">
         <div class="ng-card-meta">Aciertos: <b>${score}</b></div>
         <div class="ng-card-bar"><div class="ng-card-bar-fill" data-bar style="width:100%"></div></div>
-        <div class="ng-math-op">⚽ ${cur.text} <span class="ng-math-eq">=</span> <b>?</b></div>
+        <div class="ng-math-puzzle">
+          <div class="ng-math-eq">${cur.eqB}</div>
+          <div class="ng-math-eq">${cur.eqP}</div>
+          <div class="ng-math-final">${cur.expr} = <b>?</b></div>
+        </div>
         <div class="ng-math-opts">${cur.opts.map(v => `<button type="button" class="ng-math-opt" data-v="${v}">${v}</button>`).join('')}</div>
       </div>`;
     }
@@ -365,15 +393,20 @@
       clearInterval(timer); deadline = performance.now() + DUR;
       timer = setInterval(() => {
         const rem = Math.max(0, deadline - performance.now());
-        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / DUR * 100) + '%'; bar.classList.toggle('low', rem <= 10000); }
+        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / DUR * 100) + '%'; bar.classList.toggle('low', rem <= 12000); }
         if (rem <= 0) { clearInterval(timer); finish(); }
       }, 100);
     }
     function finish() {
       clearInterval(timer);
-      root.innerHTML = `<div class="ng-controls"><div class="ng-result">${score} ${score === 1 ? 'acierto' : 'aciertos'} en 60 s ${score >= 20 ? '🏆' : score >= 12 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
+      root.innerHTML = `<div class="ng-controls"><div class="ng-result">${score} ${score === 1 ? 'acierto' : 'aciertos'} en 75 s ${score >= 12 ? '🏆' : score >= 7 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
     }
-    function paintIntro() { phase = 'intro'; clearInterval(timer); root.innerHTML = intro('⚡', `<p class="ng-intro-rules"><b>Cálculo relámpago.</b> Resuelve el máximo de operaciones en <b>60 segundos</b>. Toca el resultado correcto; si fallas, esa opción se descarta y sigues.</p><p class="ng-intro-note">Gana quien más acierte.</p>`, '▶️ Empezar'); }
+    function paintIntro() {
+      phase = 'intro'; clearInterval(timer);
+      root.innerHTML = intro('🧮', `<p class="ng-intro-rules"><b>Cálculo con incógnitas.</b> Con las dos primeras pistas descubres cuánto vale el <b>⚽ balón</b> y la <b>🥅 portería</b>; luego resuelve la operación final lo más rápido que puedas. Toca el resultado correcto; si fallas, esa opción se descarta.</p>
+        <div class="ng-intro-example"><b>Ejemplo:</b> 52 + ⚽ = 70 → ⚽ vale 18 · 9 + 🥅 = 13 → 🥅 vale 4 · ⚽ + 2·🥅 + 2 = <b>28</b></div>
+        <p class="ng-intro-note">Resuelve el máximo en 75 s · gana quien más acierte.</p>`, '▶️ Empezar');
+    }
     root.addEventListener('click', e => {
       const act = e.target.closest('[data-act]'), opt = e.target.closest('[data-v]');
       if (act) { if (act.dataset.act === 'start') { score = 0; phase = 'play'; paintRound(); startTimer(); } else if (act.dataset.act === 'reset') paintIntro(); return; }
@@ -385,57 +418,58 @@
     paintIntro();
   }
 
-  // ── 6) MASTERMIND DEL MARCADOR ────────────────────────────────────────
-  function mountCode(root, content) {
-    const LEN = 3, MAX = 8;
+  // ── 6) MASTERMIND DE EQUIPACIONES ─────────────────────────────────────
+  function mountKits(root) {
+    const LEN = 5, MAX = 10;
     let phase = 'intro', secret = [], guess = [], history = [], done = false;
-    function newSecret() { const pool = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); return pool.slice(0, LEN); }
-    function evalGuess(g) { return g.map((d, i) => secret[i] === d ? 'g' : (secret.indexOf(d) >= 0 ? 'y' : 'n')); }
-    function rowHTML(g, marks) { return `<div class="ng-code-row">${g.map((d, i) => `<span class="ng-code-cell ${marks[i]}">${d}</span>`).join('')}</div>`; }
+    function newSecret() { return shuffle(KITS.map((_, i) => i)).slice(0, LEN); }
+    function evalGuess(g) { let exact = 0, present = 0; for (let i = 0; i < LEN; i++) if (g[i] === secret[i]) exact++; for (const x of g) if (secret.indexOf(x) >= 0) present++; return { present, exact }; }
+    function kitSVG(i, s) { const k = KITS[i]; s = s || 30; return `<svg class="ng-kit" width="${s}" height="${s}" viewBox="0 0 32 32" role="img" aria-label="${esc(k.t)}"><path d="M11 4 L4 8 L7 14.5 L11 12.5 V28 H21 V12.5 L25 14.5 L28 8 L21 4 L18.5 6 Q16 8 13.5 6 Z" fill="${k.c1}" stroke="rgba(0,0,0,.4)" stroke-width="1"/><path d="M13.5 4 Q16 6.6 18.5 4 L18.5 6 Q16 8 13.5 6 Z" fill="${k.c2}"/></svg>`; }
+    function kitChip(i) { return `<span class="ng-kit-chip">${kitSVG(i, 28)}<span class="ng-kit-name">${esc(KITS[i].t)}</span></span>`; }
     function paint() {
       if (phase === 'intro') {
-        root.innerHTML = intro('🔢', `<p class="ng-intro-rules"><b>Adivina el código de 3 cifras distintas (0-9).</b> Tras cada intento verás:</p>
+        root.innerHTML = intro('🎽', `<p class="ng-intro-rules"><b>Mastermind de equipaciones.</b> Hay un código oculto de <b>5 equipaciones distintas</b> (de 8 posibles, en cierto orden). Propón una combinación y te diremos:</p>
           <ul class="ng-intro-list">
-            <li><span class="ng-code-cell g">7</span> cifra correcta <b>y en su sitio</b>.</li>
-            <li><span class="ng-code-cell y">4</span> cifra correcta pero <b>mal colocada</b>.</li>
-            <li><span class="ng-code-cell n">1</span> esa cifra <b>no está</b>.</li>
+            <li>✅ <b>cuántas son correctas</b> (están en el código).</li>
+            <li>🎯 <b>cuántas, además, están en su posición</b>.</li>
           </ul>
-          <p class="ng-intro-note">Tienes <b>${MAX} intentos</b> · gana quien lo saque en menos.</p>`, '▶️ Empezar');
+          <p class="ng-intro-note">Pero <b>no cuáles</b>. Tienes <b>${MAX} intentos</b> para deducir el código.</p>`, '▶️ Empezar');
         return;
       }
-      const slots = `<div class="ng-code-guess">${[0, 1, 2].map(i => `<span class="ng-code-slot${guess[i] != null ? ' filled' : ''}">${guess[i] != null ? guess[i] : ''}</span>`).join('')}</div>`;
-      const pad = `<div class="ng-keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(d => `<button type="button" class="ng-key" data-d="${d}"${(guess.indexOf(d) >= 0 || guess.length >= LEN || done) ? ' disabled' : ''}>${d}</button>`).join('')}
-        <button type="button" class="ng-key wide" data-act="del"${guess.length === 0 || done ? ' disabled' : ''}>⌫</button>
-        <button type="button" class="ng-key go" data-act="try"${guess.length < LEN || done ? ' disabled' : ''}>Probar</button></div>`;
+      const hist = history.map(h => `<div class="ng-kit-row"><span class="ng-kit-row-kits">${h.g.map(i => kitSVG(i, 26)).join('')}</span><span class="ng-kit-fb"><span class="ng-kit-fb-ok">✅ ${h.present}</span><span class="ng-kit-fb-pos">🎯 ${h.exact}</span></span></div>`).join('');
+      const slots = `<div class="ng-kit-slots">${[0, 1, 2, 3, 4].map(i => `<button type="button" class="ng-kit-slot${guess[i] != null ? ' filled' : ''}" data-slot="${i}"${done ? ' disabled' : ''}>${guess[i] != null ? kitSVG(guess[i], 30) : '<span class="ng-kit-slot-n">' + (i + 1) + '</span>'}</button>`).join('')}</div>`;
+      const palette = `<div class="ng-kit-palette">${KITS.map((k, i) => `<button type="button" class="ng-kit-btn" data-kit="${i}"${(guess.indexOf(i) >= 0 || guess.length >= LEN || done) ? ' disabled' : ''}>${kitSVG(i, 30)}<span class="ng-kit-name">${esc(k.t)}</span></button>`).join('')}</div>`;
       let foot = '';
       if (done) {
-        const win = history.length && history[history.length - 1].marks.every(m => m === 'g');
-        foot = win ? `<div class="ng-result">¡Lo sacaste en <b>${history.length}</b> ${history.length === 1 ? 'intento' : 'intentos'}! ${history.length <= 3 ? '🏆' : history.length <= 5 ? '👏' : '💪'}</div>`
-                   : `<div class="ng-result">No lo sacaste. Era <b>${secret.join(' ')}</b> 😅</div>`;
+        const win = history.length && history[history.length - 1].exact === LEN;
+        foot = win ? `<div class="ng-result">¡Lo sacaste en <b>${history.length}</b> ${history.length === 1 ? 'intento' : 'intentos'}! ${history.length <= 4 ? '🏆' : history.length <= 7 ? '👏' : '💪'}</div>`
+                   : `<div class="ng-result">No lo sacaste 😅 El código era:</div><div class="ng-kit-row-kits ng-kit-reveal">${secret.map(i => kitChip(i)).join('')}</div>`;
         foot += `<button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button>`;
+      } else {
+        foot = `<button type="button" class="btn-primary ng-btn" data-act="try"${guess.length < LEN ? ' disabled' : ''}>✅ Probar (${guess.length}/5)</button>`;
       }
-      root.innerHTML = `<div class="ng-code">
+      root.innerHTML = `<div class="ng-kit-game">
         <div class="ng-card-meta">Intento <b>${history.length}</b>/${MAX}</div>
-        <div class="ng-code-history">${history.map(h => rowHTML(h.g, h.marks)).join('') || '<div class="ng-hint">Escribe 3 cifras distintas y pulsa Probar.</div>'}</div>
-        ${done ? '' : slots + pad}
+        <div class="ng-kit-history">${hist || '<div class="ng-hint">Propón 5 equipaciones distintas y pulsa Probar.</div>'}</div>
+        ${done ? '' : slots + palette}
         <div class="ng-controls">${foot}</div>
       </div>`;
     }
     root.addEventListener('click', e => {
-      const act = e.target.closest('[data-act]'), key = e.target.closest('[data-d]');
+      const act = e.target.closest('[data-act]'), kit = e.target.closest('[data-kit]'), slot = e.target.closest('[data-slot]');
       if (act) {
         if (act.dataset.act === 'start') { secret = newSecret(); guess = []; history = []; done = false; phase = 'play'; paint(); }
         else if (act.dataset.act === 'reset') { phase = 'intro'; paint(); }
-        else if (act.dataset.act === 'del') { guess.pop(); paint(); }
         else if (act.dataset.act === 'try' && guess.length === LEN) {
-          const marks = evalGuess(guess); history.push({ g: guess.slice(), marks });
-          const win = marks.every(m => m === 'g');
-          if (win || history.length >= MAX) done = true;
+          const m = evalGuess(guess); history.push({ g: guess.slice(), present: m.present, exact: m.exact });
+          if (m.exact === LEN || history.length >= MAX) done = true;
           guess = []; paint();
         }
         return;
       }
-      if (key && phase === 'play' && !done && guess.length < LEN && guess.indexOf(+key.dataset.d) < 0) { guess.push(+key.dataset.d); paint(); }
+      if (done || phase !== 'play') return;
+      if (slot) { const i = +slot.dataset.slot; if (guess[i] != null) { guess.splice(i, 1); paint(); } return; }
+      if (kit) { const i = +kit.dataset.kit; if (guess.indexOf(i) < 0 && guess.length < LEN) { guess.push(i); paint(); } }
     });
     paint();
   }
@@ -467,11 +501,11 @@
     const s4 = section('🟨', 'Gol o tarjeta', '¿País y posición correctos? ⚽ gol · 🟨 uno mal · 🟥 los dos mal. 10 s × 10 jugadores.');
     CARD_SETS.forEach(cs => { const c = card(cs.label, '10 jugadores'); s4.appendChild(c); mountCard(c.querySelector('.ng-game-body'), cs); });
 
-    const s5 = section('⚡', 'Cálculo relámpago', 'Resuelve el máximo de operaciones en 60 s. Cálculo mental puro.');
-    MATH.forEach(m => { const c = card(m.label, '60 s'); s5.appendChild(c); mountMath(c.querySelector('.ng-game-body'), m); });
+    const s5 = section('🧮', 'Cálculo con incógnitas', 'Descubre cuánto vale el ⚽ y la 🥅, y resuelve la operación final. 75 s.');
+    MATH.forEach(m => { const c = card(m.label, '75 s'); s5.appendChild(c); mountMath(c.querySelector('.ng-game-body'), m); });
 
-    const s6 = section('🔢', 'Mastermind del marcador', 'Adivina el código de 3 cifras distintas con pistas. Deducción/lógica.');
-    CODE.forEach(cd => { const c = card(cd.label, '8 intentos'); s6.appendChild(c); mountCode(c.querySelector('.ng-game-body'), cd); });
+    const s6 = section('🎽', 'Mastermind de equipaciones', 'Adivina el código de 5 equipaciones (de 8) con pistas de aciertos y posición.');
+    CODE.forEach(cd => { const c = card(cd.label, '10 intentos'); s6.appendChild(c); mountKits(c.querySelector('.ng-game-body')); });
 
     host.appendChild(s1); host.appendChild(s2); host.appendChild(s3); host.appendChild(s4); host.appendChild(s5); host.appendChild(s6);
   }
