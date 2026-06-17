@@ -349,7 +349,7 @@
 
   // ── 5) CÁLCULO MENTAL con incógnitas ──────────────────────────────────
   function mountMath(root, content) {
-    const DUR = 75000, lvl = content.level;
+    const DUR = 25000, lvl = content.level;
     let phase = 'intro', score = 0, cur = null, deadline = 0, timer = null, typed = '';
     function genPuzzle() {
       const cap = lvl === 1 ? 12 : 15;
@@ -402,19 +402,19 @@
       clearInterval(timer); deadline = performance.now() + DUR;
       timer = setInterval(() => {
         const rem = Math.max(0, deadline - performance.now());
-        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / DUR * 100) + '%'; bar.classList.toggle('low', rem <= 12000); }
+        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / DUR * 100) + '%'; bar.classList.toggle('low', rem <= 7000); }
         if (rem <= 0) { clearInterval(timer); finish(); }
       }, 100);
     }
     function finish() {
       clearInterval(timer);
-      root.innerHTML = `<div class="ng-controls"><div class="ng-result">${score} ${score === 1 ? 'acierto' : 'aciertos'} en 75 s ${score >= 12 ? '🏆' : score >= 7 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
+      root.innerHTML = `<div class="ng-controls"><div class="ng-result">${score} ${score === 1 ? 'acierto' : 'aciertos'} en 25 s ${score >= 6 ? '🏆' : score >= 3 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
     }
     function paintIntro() {
       phase = 'intro'; clearInterval(timer);
       root.innerHTML = intro('🧮', `<p class="ng-intro-rules"><b>Cálculo con incógnitas.</b> Con las dos primeras pistas descubres cuánto vale el <b>⚽ balón</b> y la <b>🥅 portería</b>; luego resuelve la operación final lo más rápido que puedas. <b>Escribe el resultado</b> con el teclado y pulsa <b>✓</b>.</p>
         <div class="ng-intro-example"><b>Ejemplo:</b> 52 + ⚽ = 70 → ⚽ vale 18 · 9 + 🥅 = 13 → 🥅 vale 4 · ⚽ + 2·🥅 + 2 = <b>28</b></div>
-        <p class="ng-intro-note">Resuelve el máximo en 75 s · gana quien más acierte.</p>`, '▶️ Empezar');
+        <p class="ng-intro-note">Resuelve el máximo en 25 s · gana quien más acierte.</p>`, '▶️ Empezar');
     }
     root.addEventListener('click', e => {
       const act = e.target.closest('[data-act]');
@@ -433,13 +433,18 @@
   function mountKits(root) {
     const LEN = 5, MAX = 10;
     let phase = 'intro', secret = [], guess = [], history = [], done = false;
-    function newSecret() { return shuffle(KITS.map((_, i) => i)).slice(0, LEN); }
-    function evalGuess(g) { let exact = 0, present = 0; for (let i = 0; i < LEN; i++) if (g[i] === secret[i]) exact++; for (const x of g) if (secret.indexOf(x) >= 0) present++; return { present, exact }; }
+    function newSecret() { return Array.from({ length: LEN }, () => ri(0, KITS.length - 1)); } // con repeticiones
+    function evalGuess(g) {
+      let exact = 0; const sc = {}, gc = {};
+      for (let i = 0; i < LEN; i++) { if (g[i] === secret[i]) exact++; else { sc[secret[i]] = (sc[secret[i]] || 0) + 1; gc[g[i]] = (gc[g[i]] || 0) + 1; } }
+      let white = 0; for (const k in gc) white += Math.min(gc[k], sc[k] || 0);
+      return { exact, white };
+    }
     function kitSVG(i, s) { const k = KITS[i]; s = s || 30; return `<svg class="ng-kit" width="${s}" height="${s}" viewBox="0 0 32 32" role="img" aria-label="${esc(k.t)}"><path d="M11 4 L4 8 L7 14.5 L11 12.5 V28 H21 V12.5 L25 14.5 L28 8 L21 4 L18.5 6 Q16 8 13.5 6 Z" fill="${k.c1}" stroke="rgba(0,0,0,.4)" stroke-width="1"/><path d="M13.5 4 Q16 6.6 18.5 4 L18.5 6 Q16 8 13.5 6 Z" fill="${k.c2}"/></svg>`; }
     function kitChip(i) { return `<span class="ng-kit-chip">${kitSVG(i, 28)}<span class="ng-kit-name">${esc(KITS[i].t)}</span></span>`; }
     function paint() {
       if (phase === 'intro') {
-        root.innerHTML = intro('🎽', `<p class="ng-intro-rules"><b>Mastermind de equipaciones.</b> Hay un código oculto de <b>5 equipaciones distintas</b> (de 8 posibles, en cierto orden). Propón una combinación y verás bolas de pista:</p>
+        root.innerHTML = intro('🎽', `<p class="ng-intro-rules"><b>Mastermind de equipaciones.</b> Hay un código oculto de <b>5 equipaciones</b> (de 8 posibles, en cierto orden, <b>se pueden repetir</b>). Propón una combinación y verás bolas de pista:</p>
           <ul class="ng-intro-list">
             <li><span class="ng-peg black"></span> <b>bola negra</b>: una equipación correcta <b>y en su posición</b>.</li>
             <li><span class="ng-peg white"></span> <b>bola blanca</b>: una equipación correcta pero <b>mal colocada</b>.</li>
@@ -447,10 +452,10 @@
           <p class="ng-intro-note">Las bolas <b>no dicen cuáles</b> son. Tienes <b>${MAX} intentos</b> para deducir el código.</p>`, '▶️ Empezar');
         return;
       }
-      const pegs = (exact, present) => { let s = ''; for (let i = 0; i < exact; i++) s += '<span class="ng-peg black"></span>'; for (let i = 0; i < present - exact; i++) s += '<span class="ng-peg white"></span>'; for (let i = present; i < LEN; i++) s += '<span class="ng-peg empty"></span>'; return `<span class="ng-pegs">${s}</span>`; };
-      const hist = history.map(h => `<div class="ng-kit-row"><span class="ng-kit-row-kits">${h.g.map(i => kitSVG(i, 26)).join('')}</span>${pegs(h.exact, h.present)}</div>`).join('');
+      const pegs = (exact, white) => { let s = ''; for (let i = 0; i < exact; i++) s += '<span class="ng-peg black"></span>'; for (let i = 0; i < white; i++) s += '<span class="ng-peg white"></span>'; for (let i = exact + white; i < LEN; i++) s += '<span class="ng-peg empty"></span>'; return `<span class="ng-pegs">${s}</span>`; };
+      const hist = history.map(h => `<div class="ng-kit-row"><span class="ng-kit-row-kits">${h.g.map(i => kitSVG(i, 26)).join('')}</span>${pegs(h.exact, h.white)}</div>`).join('');
       const slots = `<div class="ng-kit-slots">${[0, 1, 2, 3, 4].map(i => `<button type="button" class="ng-kit-slot${guess[i] != null ? ' filled' : ''}" data-slot="${i}"${done ? ' disabled' : ''}>${guess[i] != null ? kitSVG(guess[i], 30) : '<span class="ng-kit-slot-n">' + (i + 1) + '</span>'}</button>`).join('')}</div>`;
-      const palette = `<div class="ng-kit-palette">${KITS.map((k, i) => `<button type="button" class="ng-kit-btn" data-kit="${i}"${(guess.indexOf(i) >= 0 || guess.length >= LEN || done) ? ' disabled' : ''}>${kitSVG(i, 30)}<span class="ng-kit-name">${esc(k.t)}</span></button>`).join('')}</div>`;
+      const palette = `<div class="ng-kit-palette">${KITS.map((k, i) => `<button type="button" class="ng-kit-btn" data-kit="${i}"${(guess.length >= LEN || done) ? ' disabled' : ''}>${kitSVG(i, 30)}<span class="ng-kit-name">${esc(k.t)}</span></button>`).join('')}</div>`;
       let foot = '';
       if (done) {
         const win = history.length && history[history.length - 1].exact === LEN;
@@ -462,7 +467,7 @@
       }
       root.innerHTML = `<div class="ng-kit-game">
         <div class="ng-card-meta">Intento <b>${history.length}</b>/${MAX}</div>
-        <div class="ng-kit-history">${hist || '<div class="ng-hint">Propón 5 equipaciones distintas y pulsa Probar.</div>'}</div>
+        <div class="ng-kit-history">${hist || '<div class="ng-hint">Propón 5 equipaciones (pueden repetirse) y pulsa Probar.</div>'}</div>
         ${done ? '' : slots + palette}
         <div class="ng-controls">${foot}</div>
       </div>`;
@@ -473,7 +478,7 @@
         if (act.dataset.act === 'start') { secret = newSecret(); guess = []; history = []; done = false; phase = 'play'; paint(); }
         else if (act.dataset.act === 'reset') { phase = 'intro'; paint(); }
         else if (act.dataset.act === 'try' && guess.length === LEN) {
-          const m = evalGuess(guess); history.push({ g: guess.slice(), present: m.present, exact: m.exact });
+          const m = evalGuess(guess); history.push({ g: guess.slice(), exact: m.exact, white: m.white });
           if (m.exact === LEN || history.length >= MAX) done = true;
           guess = []; paint();
         }
@@ -481,7 +486,7 @@
       }
       if (done || phase !== 'play') return;
       if (slot) { const i = +slot.dataset.slot; if (guess[i] != null) { guess.splice(i, 1); paint(); } return; }
-      if (kit) { const i = +kit.dataset.kit; if (guess.indexOf(i) < 0 && guess.length < LEN) { guess.push(i); paint(); } }
+      if (kit) { const i = +kit.dataset.kit; if (guess.length < LEN) { guess.push(i); paint(); } }
     });
     paint();
   }
@@ -513,8 +518,8 @@
     const s4 = section('🟨', 'Gol o tarjeta', '¿País y posición correctos? ⚽ gol · 🟨 uno mal · 🟥 los dos mal. 10 s × 10 jugadores.');
     CARD_SETS.forEach(cs => { const c = card(cs.label, '10 jugadores'); s4.appendChild(c); mountCard(c.querySelector('.ng-game-body'), cs); });
 
-    const s5 = section('🧮', 'Cálculo con incógnitas', 'Descubre cuánto vale el ⚽ y la 🥅, y resuelve la operación final. 75 s.');
-    MATH.forEach(m => { const c = card(m.label, '75 s'); s5.appendChild(c); mountMath(c.querySelector('.ng-game-body'), m); });
+    const s5 = section('🧮', 'Cálculo con incógnitas', 'Descubre cuánto vale el ⚽ y la 🥅, y resuelve la operación final. 25 s.');
+    MATH.forEach(m => { const c = card(m.label, '25 s'); s5.appendChild(c); mountMath(c.querySelector('.ng-game-body'), m); });
 
     const s6 = section('🎽', 'Mastermind de equipaciones', 'Adivina el código de 5 equipaciones (de 8) con pistas de aciertos y posición.');
     CODE.forEach(cd => { const c = card(cd.label, '10 intentos'); s6.appendChild(c); mountKits(c.querySelector('.ng-game-body')); });
