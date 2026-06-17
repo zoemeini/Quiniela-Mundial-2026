@@ -1166,6 +1166,27 @@ a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weig
 .ng-peg.black { background: radial-gradient(circle at 34% 30%, #6b7180, #07090e 72%); box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
 .ng-peg.white { background: radial-gradient(circle at 34% 30%, #ffffff, #c4cad6 78%); box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
 .ng-peg.empty { background: rgba(0,0,0,.28); box-shadow: inset 0 0 3px rgba(0,0,0,.6), 0 0 0 1px var(--border); }
+
+/* Rotación completa (test) + bonus track */
+.ng-seq-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ng-seq-day { font-size: 12px; font-weight: 700; color: var(--muted); background: var(--bg3); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+.ng-seq-name { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 15px; flex: 1 1 auto; min-width: 0; }
+.ng-seq-exit { margin-left: auto; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg2); color: var(--muted); cursor: pointer; flex: 0 0 auto; font-weight: 700; }
+.ng-seq-exit:hover { color: var(--text); border-color: var(--red); }
+.ng-seq-foot { margin-top: 14px; text-align: center; }
+.ng-seq-next.ready { animation: ngFastPulse 1s ease-in-out infinite; box-shadow: 0 0 0 2px var(--green); }
+.ng-seq-orig { text-align: center; padding: 22px 10px; }
+.ng-seq-orig-emoji { font-size: 40px; margin-bottom: 8px; }
+.ng-bonus { text-align: center; }
+.ng-bonus-title { font-family: 'Sora', sans-serif; font-size: 18px; margin: 4px 0 8px; }
+.ng-bonus-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+.ng-bonus-opt { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg2); color: var(--text); font-size: 22px; cursor: pointer; }
+.ng-bonus-opt span { font-size: 11px; font-weight: 700; }
+.ng-bonus-opt:hover { border-color: var(--green); }
+.ng-bonus-opt.on { border-color: var(--green); background: var(--green-dim); }
+.ng-bonus-res { display: flex; flex-direction: column; gap: 8px; max-width: 380px; margin: 12px auto; }
+.ng-bonus-res-row { display: flex; justify-content: space-between; gap: 12px; background: var(--bg3); border-radius: 10px; padding: 9px 12px; text-align: left; align-items: center; }
+.ng-bonus-res-txt { color: var(--green); font-weight: 700; }
 .ng-kit-slots { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
 .ng-kit-slot { width: 46px; height: 50px; border-radius: 10px; border: 2px dashed var(--border); background: var(--bg2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .ng-kit-slot.filled { border-style: solid; border-color: var(--green); }

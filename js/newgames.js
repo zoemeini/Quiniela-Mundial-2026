@@ -61,6 +61,12 @@
       { n: 'Gavi', iso: 'es', x: 22, y: 47 }, { n: 'Kimmich', iso: 'de', x: 50, y: 52 }, { n: 'Valverde', iso: 'uy', x: 78, y: 47 },
       { n: 'Lautaro', iso: 'ar', x: 16, y: 24 }, { n: 'Lewandowski', iso: 'pl', x: 50, y: 18 }, { n: 'Lamine Yamal', iso: 'es', x: 84, y: 24 },
     ] },
+    { label: 'Mezcla 4 (final)', players: [
+      { n: 'Alisson', iso: 'br', x: 50, y: 91 },
+      { n: 'Cucurella', iso: 'es', x: 12, y: 67 }, { n: 'Saliba', iso: 'fr', x: 37, y: 72 }, { n: 'Bastoni', iso: 'it', x: 63, y: 72 }, { n: 'Hakimi', iso: 'ma', x: 88, y: 67 },
+      { n: 'Tchouaméni', iso: 'fr', x: 22, y: 47 }, { n: 'Bellingham', iso: 'gb-eng', x: 50, y: 52 }, { n: 'Wirtz', iso: 'de', x: 78, y: 47 },
+      { n: 'Salah', iso: 'eg', x: 16, y: 24 }, { n: 'Kane', iso: 'gb-eng', x: 50, y: 18 }, { n: 'Lamine Yamal', iso: 'es', x: 84, y: 24 },
+    ] },
   ];
 
   // 2) DORSALES — dorsal de SELECCIÓN (según su nº más reciente con su país).
@@ -78,6 +84,10 @@
       ['Bellingham', 'gb-eng', 10], ['Son', 'kr', 7], ['J. Álvarez', 'ar', 9], ['Nico Williams', 'es', 17], ['Pedri', 'es', 8],
       ['Gvardiol', 'hr', 20], ['Theo Hernández', 'fr', 22], ['Maignan', 'fr', 16], ['Gündoğan', 'de', 21], ['Cucurella', 'es', 14],
     ] },
+    { label: 'Cracks 4 (final)', pairs: [
+      ['Modrić', 'hr', 10], ['Harry Kane', 'gb-eng', 9], ['De Bruyne', 'be', 7], ['Gakpo', 'nl', 8], ['Camavinga', 'fr', 6],
+      ['Cancelo', 'pt', 20], ['Enzo Fernández', 'ar', 24], ['Dani Olmo', 'es', 21], ['Donnarumma', 'it', 1], ['Griezmann', 'fr', 11],
+    ] },
   ];
 
   // 3) KEEPIE — 3 variantes de dificultad (px/s²).
@@ -94,6 +104,7 @@
     { name: 'Inglaterra', iso: 'gb-eng' }, { name: 'Portugal', iso: 'pt' }, { name: 'Alemania', iso: 'de' }, { name: 'Países Bajos', iso: 'nl' },
     { name: 'Bélgica', iso: 'be' }, { name: 'Croacia', iso: 'hr' }, { name: 'Italia', iso: 'it' }, { name: 'Uruguay', iso: 'uy' },
     { name: 'Marruecos', iso: 'ma' }, { name: 'Noruega', iso: 'no' }, { name: 'Corea del Sur', iso: 'kr' }, { name: 'Polonia', iso: 'pl' },
+    { name: 'Egipto', iso: 'eg' },
   ];
   const CARD_SETS = [
     { label: 'Tanda 1', players: [
@@ -116,6 +127,13 @@
       { n: 'Lewandowski', c: 'Polonia', iso: 'pl', p: 'Delantero' }, { n: 'Gavi', c: 'España', iso: 'es', p: 'Centrocampista' },
       { n: 'Valverde', c: 'Uruguay', iso: 'uy', p: 'Centrocampista' }, { n: 'Davies', c: 'Canadá', iso: 'ca', p: 'Defensa' },
       { n: 'Lamine Yamal', c: 'España', iso: 'es', p: 'Delantero' }, { n: 'Carvajal', c: 'España', iso: 'es', p: 'Defensa' },
+    ] },
+    { label: 'Tanda 4 (final)', players: [
+      { n: 'Modrić', c: 'Croacia', iso: 'hr', p: 'Centrocampista' }, { n: 'Alisson', c: 'Brasil', iso: 'br', p: 'Portero' },
+      { n: 'Cancelo', c: 'Portugal', iso: 'pt', p: 'Defensa' }, { n: 'De Bruyne', c: 'Bélgica', iso: 'be', p: 'Centrocampista' },
+      { n: 'Salah', c: 'Egipto', iso: 'eg', p: 'Delantero' }, { n: 'Dani Olmo', c: 'España', iso: 'es', p: 'Centrocampista' },
+      { n: 'Griezmann', c: 'Francia', iso: 'fr', p: 'Delantero' }, { n: 'Gakpo', c: 'Países Bajos', iso: 'nl', p: 'Delantero' },
+      { n: 'Tchouaméni', c: 'Francia', iso: 'fr', p: 'Centrocampista' }, { n: 'Cucurella', c: 'España', iso: 'es', p: 'Defensa' },
     ] },
   ];
 
@@ -491,6 +509,93 @@
     paint();
   }
 
+  // ── ROTACIÓN COMPLETA (test) + BONUS TRACK de la final ────────────────
+  // Los 6 juegos nuevos jugables. mount(el, bonus): bonus=true usa CONTENIDO NUEVO.
+  const NEW_GAMES = [
+    { key: 'memory', emoji: '🧠', name: 'Memory', mount: (el, b) => mountMemory(el, LINEUPS[b ? 3 : 0]) },
+    { key: 'keepie', emoji: '⚽', name: 'Que no caiga', mount: (el, b) => mountKeepie(el, KEEPIE[b ? 1 : 0]) },
+    { key: 'card', emoji: '🟨', name: 'Gol o tarjeta', mount: (el, b) => mountCard(el, CARD_SETS[b ? 3 : 0]) },
+    { key: 'math', emoji: '🧮', name: 'Cálculo', mount: (el, b) => mountMath(el, MATH[b ? 2 : 1]) },
+    { key: 'mastermind', emoji: '🎽', name: 'Mastermind', mount: (el) => mountKits(el) },
+    { key: 'dorsales', emoji: '🔢', name: 'Dorsales', mount: (el, b) => mountDorsales(el, DORSAL_SETS[b ? 3 : 0]) },
+  ];
+  const ROT_ORIG = [['🎯', '¿Más o menos?'], ['🌍', '¿De qué selección es?'], ['📸', '¿Quién es este jugador?'], ['🥅', 'Puntería'], ['🕵️', 'Adivina con pistas'], ['🔤', 'Wordle de jugadores'], ['⚽', 'Goles míticos'], ['🧩', 'Sudoku de fútbol']];
+  function watchDone(body, cb) { const o = new MutationObserver(() => { if (body.querySelector('.ng-result')) { o.disconnect(); cb(); } }); o.observe(body, { childList: true, subtree: true }); return o; }
+
+  function mountRotationTest(host, exit) {
+    const SEQ = ROT_ORIG.map(o => ({ orig: true, emoji: o[0], name: o[1] })).concat(NEW_GAMES.map(g => ({ orig: false, g })));
+    let idx = 0, obs = null, bonusAdv = null;
+    const bar = (label, name, emoji) => `<div class="ng-seq-bar"><span class="ng-seq-day">${label}</span><span class="ng-seq-name">${emoji} ${esc(name)}</span><button type="button" class="ng-seq-exit" data-seq="exit">✕</button></div>`;
+    function clearObs() { if (obs) { obs.disconnect(); obs = null; } }
+    function advance() { clearObs(); idx++; if (idx < SEQ.length) render(); else bonusIntro(); }
+    function render() {
+      bonusAdv = null;
+      const it = SEQ[idx]; const name = it.orig ? it.name : it.g.name, emoji = it.orig ? it.emoji : it.g.emoji;
+      host.innerHTML = `<div class="ng-seq">${bar('Día ' + (idx + 1) + ' / 14', name, emoji)}
+        <div class="ng-seq-body"></div>
+        <div class="ng-seq-foot"><button type="button" class="btn-primary ng-btn ng-seq-next" data-seq="next">➡️ Día siguiente</button></div></div>`;
+      const body = host.querySelector('.ng-seq-body');
+      if (it.orig) body.innerHTML = `<div class="ng-seq-orig"><div class="ng-seq-orig-emoji">${emoji}</div><p><b>${esc(name)}</b></p><p class="ng-hint">Juego original (ya en producción). Pruébalo desde el «Reto del día». Pulsa «Día siguiente» para continuar.</p></div>`;
+      else { it.g.mount(body, false); obs = watchDone(body, () => { const n = host.querySelector('.ng-seq-next'); if (n) n.classList.add('ready'); }); }
+    }
+    function bonusIntro() {
+      clearObs(); bonusAdv = null;
+      host.innerHTML = `<div class="ng-bonus">${bar('🏆 Final', 'Bonus track', '🏆')}
+        <div class="ng-bonus-body">
+          <p class="ng-intro-rules">Elige tus <b>3 minijuegos</b> favoritos y juégalos seguidos (con <b>contenido nuevo</b>). En la final real, tus 3 puntuaciones se normalizan (0–100) y se suman → <b>ranking del bonus</b>.</p>
+          <p class="ng-intro-note">(En la prueba eliges entre los 6 nuevos; en producción saldrán los 14.)</p>
+          <div class="ng-bonus-pick">${NEW_GAMES.map((g, i) => `<button type="button" class="ng-bonus-opt" data-pick="${i}">${g.emoji}<span>${esc(g.name)}</span></button>`).join('')}</div>
+          <button type="button" class="btn-primary ng-btn" data-bonus="go" disabled>▶️ Jugar los 3</button>
+        </div></div>`;
+      const picked = [], go = host.querySelector('[data-bonus="go"]');
+      host.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
+        const i = +b.dataset.pick, at = picked.indexOf(i);
+        if (at >= 0) { picked.splice(at, 1); b.classList.remove('on'); }
+        else { if (picked.length >= 3) return; picked.push(i); b.classList.add('on'); }
+        go.disabled = picked.length !== 3;
+      }));
+      go.addEventListener('click', () => { if (picked.length === 3) bonusPlay(picked.slice()); });
+    }
+    function bonusPlay(picks) {
+      let bi = 0, results = [], o2 = null;
+      function adv() {
+        if (o2) { o2.disconnect(); o2 = null; }
+        const r = host.querySelector('.ng-seq-body .ng-result');
+        results[bi] = { name: NEW_GAMES[picks[bi]].name, emoji: NEW_GAMES[picks[bi]].emoji, txt: r ? r.textContent.trim() : '— (sin terminar)' };
+        bi++; if (bi < 3) step(); else summary();
+      }
+      function step() {
+        const g = NEW_GAMES[picks[bi]];
+        host.innerHTML = `<div class="ng-seq">${bar('Bonus ' + (bi + 1) + ' / 3', g.name, g.emoji)}
+          <div class="ng-seq-body"></div>
+          <div class="ng-seq-foot"><button type="button" class="btn-primary ng-btn ng-seq-next" data-seq="next">➡️ Siguiente</button></div></div>`;
+        const body = host.querySelector('.ng-seq-body');
+        g.mount(body, true);
+        o2 = watchDone(body, () => { const n = host.querySelector('.ng-seq-next'); if (n) n.classList.add('ready'); });
+      }
+      function summary() {
+        bonusAdv = null;
+        host.innerHTML = `<div class="ng-bonus">${bar('🏆 Final', 'Bonus completado', '🏆')}
+          <div class="ng-bonus-body">
+            <div class="ng-intro-emoji">🎉</div>
+            <div class="ng-bonus-res">${results.map(r => `<div class="ng-bonus-res-row"><span>${r.emoji} <b>${esc(r.name)}</b></span><span class="ng-bonus-res-txt">${esc(r.txt)}</span></div>`).join('')}</div>
+            <p class="ng-intro-note">En la final real, cada resultado pasa a una <b>nota 0–100</b> (según lo bien que lo hagas frente al resto) y se suman las 3 → ranking del bonus.</p>
+            <button type="button" class="btn-outline ng-btn" data-seq="restart">🔄 Repetir desde el principio</button>
+          </div></div>`;
+      }
+      bonusAdv = adv; // el botón "Siguiente" del bonus avanza entre los 3 juegos
+      step();
+    }
+    // Delegación de los controles del stepper (onclick = reemplaza, no acumula)
+    host.onclick = e => {
+      const s = e.target.closest('[data-seq]'); if (!s) return;
+      if (s.dataset.seq === 'exit') { clearObs(); if (exit) exit(); }
+      else if (s.dataset.seq === 'restart') { idx = 0; render(); }
+      else if (s.dataset.seq === 'next') { if (bonusAdv) bonusAdv(); else advance(); }
+    };
+    render();
+  }
+
   // ── Montaje en la página admin ────────────────────────────────────────
   function card(title, sub) {
     const el = document.createElement('div'); el.className = 'ng-game';
@@ -505,6 +610,12 @@
   function init() {
     const host = document.getElementById('newgames-test'); if (!host || host.dataset.ready) return;
     host.dataset.ready = '1';
+
+    // Panel "Probar la rotación completa" (juega seguido hasta el bonus de la final)
+    const rot = section('🗓️', 'Probar la rotación completa', 'Juega los juegos seguidos (al acabar uno → «➡️ Día siguiente») hasta llegar al bonus track de la final. Los 8 originales son un paso rápido; los 6 nuevos, jugables.');
+    const rotCard = document.createElement('div'); rotCard.className = 'ng-game'; rotCard.id = 'ng-rot-host';
+    rot.appendChild(rotCard); host.appendChild(rot);
+    (function openRot() { rotCard.innerHTML = '<div style="text-align:center;padding:6px"><button type="button" class="btn-primary ng-btn" id="ng-rot-start">▶️ Empezar la rotación de prueba</button></div>'; document.getElementById('ng-rot-start').onclick = () => mountRotationTest(rotCard, openRot); })();
 
     const s1 = section('🧠', 'Memory: memoriza la alineación (mezcla)', '11 jugadores de distintos países, 20 s para memorizar, luego escribe quién va en cada posición.');
     LINEUPS.forEach(lu => { const c = card(lu.label, '4-3-3'); s1.appendChild(c); mountMemory(c.querySelector('.ng-game-body'), lu); });
