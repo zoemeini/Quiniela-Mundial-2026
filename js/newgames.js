@@ -637,6 +637,47 @@
 
     host.appendChild(s1); host.appendChild(s2); host.appendChild(s3); host.appendChild(s4); host.appendChild(s5); host.appendChild(s6);
   }
+  // ── Bonus track autónomo (para el pop-up real) ───────────────────────
+  function mountBonus(host) {
+    const bar = (label, name, emoji) => `<div class="ng-seq-bar"><span class="ng-seq-day">${label}</span><span class="ng-seq-name">${emoji} ${esc(name)}</span></div>`;
+    let picks = [], bi = 0, results = [], o2 = null, adv = null;
+    function intro() {
+      if (o2) { o2.disconnect(); o2 = null; } adv = null; picks = [];
+      host.innerHTML = `<div class="ng-bonus"><div class="ng-intro-emoji">🏆</div><h3 class="ng-bonus-title">Bonus track de la final</h3>
+        <p class="ng-intro-rules">Elige tus <b>3 minijuegos</b> favoritos y juégalos seguidos (con <b>contenido nuevo</b>). Tus 3 notas se normalizan (0–100) y se suman → ranking.</p>
+        <div class="ng-bonus-pick">${NEW_GAMES.map((g, i) => `<button type="button" class="ng-bonus-opt" data-pick="${i}">${g.emoji}<span>${esc(g.name)}</span></button>`).join('')}</div>
+        <button type="button" class="btn-primary ng-btn" data-bonus="go" disabled>▶️ Jugar los 3</button></div>`;
+    }
+    function step() {
+      const g = NEW_GAMES[picks[bi]];
+      host.innerHTML = `<div class="ng-seq">${bar('Bonus ' + (bi + 1) + ' / 3', g.name, g.emoji)}<div class="ng-seq-body"></div><div class="ng-seq-foot"><button type="button" class="btn-primary ng-btn ng-seq-next" data-bonus="next">➡️ Siguiente</button></div></div>`;
+      g.mount(host.querySelector('.ng-seq-body'), true);
+      o2 = watchDone(host.querySelector('.ng-seq-body'), () => { const n = host.querySelector('.ng-seq-next'); if (n) n.classList.add('ready'); });
+      adv = () => { if (o2) { o2.disconnect(); o2 = null; } const r = host.querySelector('.ng-seq-body .ng-result'); results[bi] = { name: g.name, emoji: g.emoji, txt: r ? r.textContent.trim() : '— (sin terminar)' }; bi++; if (bi < 3) step(); else summary(); };
+    }
+    function summary() {
+      adv = null;
+      host.innerHTML = `<div class="ng-bonus"><div class="ng-intro-emoji">🎉</div><h3 class="ng-bonus-title">¡Bonus completado!</h3>
+        <div class="ng-bonus-res">${results.map(r => `<div class="ng-bonus-res-row"><span>${r.emoji} <b>${esc(r.name)}</b></span><span class="ng-bonus-res-txt">${esc(r.txt)}</span></div>`).join('')}</div>
+        <p class="ng-intro-note">En la final real, cada resultado pasa a una nota 0–100 (según tu posición frente al resto) y se suman → ranking del bonus.</p>
+        <button type="button" class="btn-outline ng-btn" data-bonus="again">🔄 Otra vez</button></div>`;
+    }
+    host.onclick = e => {
+      const p = e.target.closest('[data-pick]'), b = e.target.closest('[data-bonus]');
+      if (p) { const i = +p.dataset.pick, at = picks.indexOf(i); if (at >= 0) { picks.splice(at, 1); p.classList.remove('on'); } else { if (picks.length >= 3) return; picks.push(i); p.classList.add('on'); } const go = host.querySelector('[data-bonus="go"]'); if (go) go.disabled = picks.length !== 3; return; }
+      if (b) { if (b.dataset.bonus === 'go') { if (picks.length === 3) { bi = 0; results = []; step(); } } else if (b.dataset.bonus === 'next') { if (adv) adv(); } else if (b.dataset.bonus === 'again') intro(); }
+    };
+    intro();
+  }
+
+  // Librería pública para que el pop-up real (minigame.js) juegue los juegos nuevos.
+  window.NG = {
+    has: k => NEW_GAMES.some(g => g.key === k),
+    meta: k => { const g = NEW_GAMES.find(g => g.key === k) || {}; return { emoji: g.emoji || '🎮', name: g.name || k }; },
+    mount: (k, el, bonus) => { const g = NEW_GAMES.find(g => g.key === k); if (g) g.mount(el, !!bonus); },
+    mountBonus: mountBonus,
+  };
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

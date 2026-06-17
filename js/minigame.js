@@ -355,7 +355,23 @@ const MG_ROTATION = [
   // El calendario va del 10-jun-2026 al 19-jul-2026 (40 retos, uno por día). Después: «fin».
   const MG_START_ORD = (function () { const p = '2026-06-10'.split('-'); return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); })();
   function scheduleIdx() { return dayOrdinal() - MG_START_ORD; }
-  function currentEntry() { let i = scheduleIdx(); if (i < 0) i = 0; if (i >= MG_ROTATION.length) return { mode: 'over' }; return MG_ROTATION[i]; }
+  // ── MODO PRUEBA (solo en la página admin) ──────────────────────────────
+  // En admin, el pop-up recorre TODA la rotación (8 originales + 6 nuevos +
+  // bonus) con flechas ‹ ›, jugando cada juego de verdad. NO afecta al resto de
+  // páginas (allí la rotación sigue siendo la normal por fecha).
+  const IS_ADMIN = !!document.getElementById('admin-panel');
+  const MG_TEST_SEQ = [
+    { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 0 }, { mode: 'punteria' },
+    { mode: 'pistas', i: 0 }, { mode: 'wordle', i: 0 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
+    { mode: 'memory' }, { mode: 'keepie' }, { mode: 'card' }, { mode: 'math' }, { mode: 'mastermind' }, { mode: 'dorsales' },
+    { mode: 'bonus' },
+  ];
+  const MG_NEW = ['memory', 'keepie', 'card', 'math', 'mastermind', 'dorsales'];
+  let testIdx = 0;
+  function currentEntry() {
+    if (IS_ADMIN) return MG_TEST_SEQ[testIdx] || { mode: 'over' };
+    let i = scheduleIdx(); if (i < 0) i = 0; if (i >= MG_ROTATION.length) return { mode: 'over' }; return MG_ROTATION[i];
+  }
   function themeByKey(k) { return MG_THEMES.find(t => t.key === k) || MG_THEMES[0]; }
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function flag(iso) { return `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">`; }
@@ -462,6 +478,33 @@ const MG_ROTATION = [
   document.body.appendChild(panel);
   document.body.appendChild(fab);
 
+  // ── Navegador de días (SOLO admin): recorre toda la rotación + bonus ──
+  if (IS_ADMIN) {
+    const step = document.createElement('div');
+    step.className = 'mg-teststep';
+    step.innerHTML = '<button type="button" class="mg-day-arrow" data-st="prev" aria-label="Anterior">‹</button>' +
+      '<span class="mg-teststep-lbl" id="mg-teststep-lbl">Prueba</span>' +
+      '<button type="button" class="mg-day-arrow" data-st="next" aria-label="Siguiente">›</button>';
+    const pv = el('mg-play-view'); if (pv) pv.insertBefore(step, pv.firstChild);
+    step.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-st]'); if (!b) return;
+      testIdx = b.dataset.st === 'next' ? Math.min(MG_TEST_SEQ.length - 1, testIdx + 1) : Math.max(0, testIdx - 1);
+      started = false; gameOver = false; startDay();
+    });
+  }
+  function origName(e) {
+    const map = { mm: '🎯 ¿Más o menos?', nat: '🌍 ¿De qué selección?', foto: '📸 ¿Quién es?', punteria: '🥅 Puntería', pistas: '🕵️ Pistas', wordle: '🔤 Wordle', porteria: '⚽ Goles míticos', sudoku: '🧩 Sudoku' };
+    return map[(e || {}).mode] || (e || {}).mode || '';
+  }
+  function updateTestStep() {
+    const l = el('mg-teststep-lbl'); if (!l) return;
+    const e = MG_TEST_SEQ[testIdx] || {}; let name;
+    if (e.mode === 'bonus') name = '🏆 Bonus final';
+    else if (window.NG && window.NG.has(e.mode)) { const m = window.NG.meta(e.mode); name = m.emoji + ' ' + m.name; }
+    else name = origName(e);
+    l.innerHTML = `Prueba ${testIdx + 1}/${MG_TEST_SEQ.length} · ${esc(name)}`;
+  }
+
   fab.addEventListener('click', function () {
     open = !open;
     panel.classList.toggle('hidden', !open);
@@ -521,6 +564,18 @@ const MG_ROTATION = [
     const entry = currentEntry();
     gameOver = false; busy = false; started = true;
     const tb = el('mg-theme');
+    if (IS_ADMIN) updateTestStep();
+    // Admin: juegos NUEVOS y bonus → delegados a newgames.js, jugados en el pop-up real.
+    if (IS_ADMIN && window.NG && (entry.mode === 'bonus' || window.NG.has(entry.mode))) {
+      setTimerVisible(false); setHud(''); Game = null;
+      const board = el('mg-board');
+      if (board) {
+        board.innerHTML = ''; const sub = document.createElement('div'); board.appendChild(sub);
+        if (entry.mode === 'bonus') { if (tb) tb.innerHTML = '🏆 <b>Bonus track de la final</b>'; window.NG.mountBonus(sub); }
+        else { const m = window.NG.meta(entry.mode); if (tb) tb.innerHTML = `${m.emoji} Reto: <b>${m.name}</b>`; window.NG.mount(entry.mode, sub, false); }
+      }
+      return;
+    }
     if (entry.mode === 'over') {
       if (tb) tb.innerHTML = '🏁 <b>¡Se acabó el Mundial!</b>';
       setTimerVisible(false); setHud(''); Game = null;
@@ -549,7 +604,7 @@ const MG_ROTATION = [
       if (token !== startToken) return; // se reabrió/cambió de día mientras cargaba
       reconcileDone(); // si su partida se borró del servidor, limpia el candado local
       reconcileBest(); // "tu mejor de hoy" = tu puntuación registrada en el ranking
-      if (isDone() || playedTodayServer()) { showLocked(); return; }
+      if (!IS_ADMIN && (isDone() || playedTodayServer())) { showLocked(); return; } // admin: sin candado (modo prueba)
       setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // llevan cuenta atrás
       Game.start();
     });
