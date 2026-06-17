@@ -203,6 +203,7 @@ const MG_WORDLE_POOL = [
   { sol: 'GAVI',     n: 'Gavi',               iso: 'es',     pais: 'España',     pos: 'Centrocampista' },
   { sol: 'DEMBELE',  n: 'Ousmane Dembélé',    iso: 'fr',     pais: 'Francia',    pos: 'Delantero' },
   { sol: 'LEAO',     n: 'Rafael Leão',        iso: 'pt',     pais: 'Portugal',   pos: 'Delantero' },
+  { sol: 'COSTA',    n: 'Diogo Costa',        iso: 'pt',     pais: 'Portugal',   pos: 'Portero' },
 ];
 
 // ── Datos de «¿Quién es este jugador?» (foto ampliada) ──
@@ -371,7 +372,7 @@ const MG_ROTATION = [
     { mode: 'foto', list: [0, 3, 5, 11, 8, 6] },        // Messi, Haaland, Vinícius, Bellingham, Modrić, Salah (Mbappé→Messi)
     { mode: 'punteria', list: [0] },
     { mode: 'pistas', list: [21, 15, 19, 22, 27] },      // Valverde (Madrid, menos conocido) 1º; no Mbappé/Pedri
-    { mode: 'wordle', list: [13, 2, 4, 18, 15] },         // Musiala, Haaland, Modric, Valverde, Osimhen (Wirtz→Haaland, más fácil; no Messi/Kane)
+    { mode: 'wordle', list: [13, 23, 4, 18, 15] },        // Musiala, Diogo Costa (7 jul; Haaland→Costa), Modric, Valverde, Osimhen
     { mode: 'porteria', list: [[1, 3], [4, 2]] },        // PARES fijados (media de 2 distancias): 1ª aparición (24 jun) = Iniesta+Mbappé · 2ª (8 jul) = Pavard+Puyol
     { mode: 'sudoku', list: [1, 4, 8, 5, 2] },
     { mode: 'memory', list: [0, 1, 2, 3] },
@@ -382,10 +383,18 @@ const MG_ROTATION = [
     { mode: 'dorsales', list: [0, 1, 2, 3] },
   ];
   const MG_SIM_START = ordOf('2026-06-18'), MG_SIM_END = ordOf('2026-07-19'); // el 19-jul = bonus (final)
+  // El ciclo 1 (los 8 ANTIGUOS) ya se jugó esta semana (10–17 jun). Por eso la
+  // rotación EMPIEZA mañana (18 jun) con los 6 juegos NUEVOS, para completar ese
+  // primer ciclo; del 24 jun en adelante se cicla el calendario completo de 14
+  // (8 antiguos + 6 nuevos) en el orden de MG_CYCLE.
+  function cycleGameAt(off) {
+    if (off < 6) return MG_CYCLE[8 + off];          // 18–23 jun: los 6 nuevos
+    return MG_CYCLE[(off - 6) % MG_CYCLE.length];   // 24 jun en adelante: ciclo de 14
+  }
   const MG_TEST_SEQ = (function () {
     const seq = [], used = {};
     for (let d = MG_SIM_START; d < MG_SIM_END; d++) {
-      const g = MG_CYCLE[(d - MG_SIM_START) % MG_CYCLE.length];
+      const g = cycleGameAt(d - MG_SIM_START);
       const n = used[g.mode] || 0;
       const e = { mode: g.mode, dateOrd: d };
       const v = g.list[n % g.list.length];
