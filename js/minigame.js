@@ -241,7 +241,7 @@ const MG_FOTO_POOL = [
 const MG_PORTERIA_POOL = [
   { desc: 'Maradona · «el gol del siglo» vs Inglaterra (1986)',  x: 0.38, y: 0.80 },
   { desc: 'Iniesta · gol de la final vs Países Bajos (2010)',    x: 0.22, y: 0.64 },
-  { desc: 'Puyol · cabezazo en la semifinal vs Alemania (2010)', x: 0.55, y: 0.52 },
+  { desc: 'Puyol · cabezazo en la semifinal vs Alemania (2010)', x: 0.57, y: 0.50 },
   { desc: 'Mbappé · volea del 2-2 en la final vs Argentina (2022)', x: 0.84, y: 0.78 },
   { desc: 'Pavard · volea vs Argentina (2018)',                  x: 0.04, y: 0.16 },
   // reserva (también de Mundiales)
