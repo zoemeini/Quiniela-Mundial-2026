@@ -241,7 +241,7 @@ const MG_FOTO_POOL = [
 const MG_PORTERIA_POOL = [
   { desc: 'Maradona · «el gol del siglo» vs Inglaterra (1986)',  x: 0.38, y: 0.80 },
   { desc: 'Iniesta · gol de la final vs Países Bajos (2010)',    x: 0.78, y: 0.64 },
-  { desc: 'Puyol · cabezazo en la semifinal vs Alemania (2010)', x: 0.44, y: 0.66 },
+  { desc: 'Puyol · cabezazo en la semifinal vs Alemania (2010)', x: 0.55, y: 0.52 },
   { desc: 'Mbappé · volea del 2-2 en la final vs Argentina (2022)', x: 0.84, y: 0.78 },
   { desc: 'Pavard · volea vs Argentina (2018)',                  x: 0.16, y: 0.16 },
   // reserva (también de Mundiales)
@@ -328,7 +328,7 @@ const MG_ROTATION = [
   { mode: 'mm', theme: 'goles' }, { mode: 'nat', i: 1 }, { mode: 'foto', i: 21 }, { mode: 'punteria' },
   { mode: 'pistas', i: 2 }, { mode: 'wordle', i: 7 }, { mode: 'porteria', i: 1 }, { mode: 'sudoku', i: 4 },
   // Ciclo 3 (26 jun – 3 jul)
-  { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 2 }, { mode: 'punteria' },
+  { mode: 'mm', theme: 'edad' }, { mode: 'nat', i: 2 }, { mode: 'foto', i: 0 }, { mode: 'punteria' },
   { mode: 'pistas', i: 23 }, { mode: 'wordle', i: 4 }, { mode: 'porteria', i: 2 }, { mode: 'sudoku', i: 8 },
   // Ciclo 4 (4–11 jul)
   { mode: 'mm', theme: 'champions' }, { mode: 'nat', i: 3 }, { mode: 'foto', i: 3 }, { mode: 'punteria' },
@@ -368,11 +368,11 @@ const MG_ROTATION = [
   const MG_CYCLE = [
     { mode: 'mm', key: 'theme', list: ['goles', 'edad', 'champions', 'caps', 'selecciones', 'altura', 'fichaje', 'instagram'] },
     { mode: 'nat', list: [1, 2, 3, 4] },
-    { mode: 'foto', list: [3, 5, 11, 8, 6, 1] },        // Haaland, Vinícius, Bellingham, Modrić, Salah, CR7 (no 20)
+    { mode: 'foto', list: [0, 3, 5, 11, 8, 6] },        // Messi, Haaland, Vinícius, Bellingham, Modrić, Salah (Mbappé→Messi)
     { mode: 'punteria', list: [0] },
     { mode: 'pistas', list: [21, 15, 19, 22, 27] },      // Valverde (Madrid, menos conocido) 1º; no Mbappé/Pedri
-    { mode: 'wordle', list: [13, 14, 4, 18, 15] },        // Musiala, Wirtz, Modric, Valverde, Osimhen (no Messi/Kane)
-    { mode: 'porteria', list: [1, 2, 6, 3, 7] },          // Iniesta, Puyol, Zidane, Mbappé, James (no Maradona)
+    { mode: 'wordle', list: [13, 2, 4, 18, 15] },         // Musiala, Haaland, Modric, Valverde, Osimhen (Wirtz→Haaland, más fácil; no Messi/Kane)
+    { mode: 'porteria', list: [[3, 4], [1, 6], [2, 7]] }, // PARES (media de 2 distancias): Mbappé+Pavard, Iniesta+Zidane, Puyol+James (no Maradona)
     { mode: 'sudoku', list: [1, 4, 8, 5, 2] },
     { mode: 'memory', list: [0, 1, 2, 3] },
     { mode: 'keepie', list: [0, 1, 2] },
@@ -389,7 +389,9 @@ const MG_ROTATION = [
       const n = used[g.mode] || 0;
       const e = { mode: g.mode, dateOrd: d };
       const v = g.list[n % g.list.length];
-      if (g.key === 'theme') e.theme = v; else e.i = v;
+      if (g.key === 'theme') e.theme = v;
+      else if (Array.isArray(v)) { e.i = v[0]; e.i2 = v[1]; } // goles míticos: par (media de distancias)
+      else e.i = v;
       used[g.mode] = n + 1;
       seq.push(e);
     }
@@ -408,7 +410,7 @@ const MG_ROTATION = [
     if (mode === 'foto') return { i: r(MG_FOTO_POOL.length) };
     if (mode === 'pistas') return { i: r(MG_PISTAS_POOL.length) };
     if (mode === 'wordle') return { i: r(MG_WORDLE_POOL.length) };
-    if (mode === 'porteria') return { i: r(MG_PORTERIA_POOL.length) };
+    if (mode === 'porteria') { const n = MG_PORTERIA_POOL.length, a = r(n); let b = r(n); if (b === a) b = (b + 1) % n; return { i: a, i2: b }; } // par para la media
     if (mode === 'sudoku') return { i: r(MG_SUDOKU.length) };
     return { i: 3 }; // nuevos: variante "final" (window.NG hace % length)
   }
@@ -564,7 +566,7 @@ const MG_ROTATION = [
     punteria: 'Marca goles: <b>toca la portería</b> cuando el balón esté lejos del portero. ¡Aguanta el máximo!',
     pistas: 'Adivina el jugador con el <b>mínimo de pistas</b>. Cada fallo revela una pista nueva.',
     wordle: 'Adivina el <b>apellido</b> del jugador (estilo Wordle). Cuantos menos intentos, mejor.',
-    porteria: 'Te decimos un <b>gol mítico</b> de un Mundial. Toca en la portería <b>por dónde entró</b>; gana quien menos se aleje.',
+    porteria: 'Te decimos un <b>gol mítico</b> de un Mundial (a veces <b>dos</b>). Toca en la portería <b>por dónde entró</b> cada uno; gana quien menos se aleje (si son dos, cuenta la <b>media</b> de las distancias).',
     sudoku: '<b>Sudoku de fútbol</b> 6×6: complétalo lo más rápido que puedas.',
   };
   function showOrigIntro(mode, onStart) {
@@ -1198,16 +1200,24 @@ const MG_ROTATION = [
   //  MODO 5 — Goles míticos: ¿por dónde entró? (puntería)
   // ===========================================================
   const PorteriaMode = {
-    goal: null, guess: null, done: false,
+    goals: [], idx: 0, guess: null, dists: [], done: false, locked: false,
     start() {
-      this.goal = MG_PORTERIA_POOL[(currentEntry().i || 0) % MG_PORTERIA_POOL.length];
-      this.guess = null; this.done = false; gameOver = false; busy = false;
+      const e = currentEntry(), pool = MG_PORTERIA_POOL;
+      this.goals = [pool[(e.i || 0) % pool.length]];
+      if (e.i2 != null) this.goals.push(pool[e.i2 % pool.length]); // 2 goles → media de distancias
+      this.idx = 0; this.guess = null; this.dists = []; this.done = false; this.locked = false;
+      gameOver = false; busy = false;
       this.render();
     },
+    goal() { return this.goals[this.idx]; },
     render() {
       const wrap = el('mg-board'); if (!wrap) return;
+      this.locked = false; this.guess = null;
+      const multi = this.goals.length > 1;
+      const step = multi ? `<div class="mg-net-step">⚽ Gol <b>${this.idx + 1}</b> de ${this.goals.length}</div>` : '';
       wrap.innerHTML = `
-        <div class="mg-net-desc">⚽ <b>${this.goal.desc}</b></div>
+        ${step}
+        <div class="mg-net-desc">⚽ <b>${this.goal().desc}</b></div>
         <div class="mg-net" id="mg-net"><div class="mg-net-ov" id="mg-net-ov"></div></div>
         <div class="mg-net-hint" id="mg-net-hint">👆 Toca en la portería por dónde crees que entró el balón</div>
         <div class="mg-net-actions" id="mg-net-actions"><button class="btn-primary" id="mg-net-confirm" disabled>Confirmar</button></div>`;
@@ -1216,7 +1226,7 @@ const MG_ROTATION = [
       setHud(`Goles míticos · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
     },
     place(e) {
-      if (this.done) return;
+      if (this.done || this.locked) return;
       const net = el('mg-net'), r = net.getBoundingClientRect();
       this.guess = {
         x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
@@ -1228,23 +1238,45 @@ const MG_ROTATION = [
     },
     draw(reveal) {
       const ov = el('mg-net-ov'); if (!ov) return;
+      const g = this.goal();
       let html = '';
-      if (reveal && this.guess) html += `<svg class="mg-net-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="${(this.guess.x * 100).toFixed(1)}" y1="${(this.guess.y * 100).toFixed(1)}" x2="${(this.goal.x * 100).toFixed(1)}" y2="${(this.goal.y * 100).toFixed(1)}"/></svg>`;
+      if (reveal && this.guess) html += `<svg class="mg-net-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="${(this.guess.x * 100).toFixed(1)}" y1="${(this.guess.y * 100).toFixed(1)}" x2="${(g.x * 100).toFixed(1)}" y2="${(g.y * 100).toFixed(1)}"/></svg>`;
       if (this.guess) html += `<div class="mg-net-mark you" style="left:${(this.guess.x * 100).toFixed(1)}%;top:${(this.guess.y * 100).toFixed(1)}%"></div>`;
-      if (reveal) html += `<div class="mg-net-mark real" style="left:${(this.goal.x * 100).toFixed(1)}%;top:${(this.goal.y * 100).toFixed(1)}%">⚽</div>`;
+      if (reveal) html += `<div class="mg-net-mark real" style="left:${(g.x * 100).toFixed(1)}%;top:${(g.y * 100).toFixed(1)}%">⚽</div>`;
       ov.innerHTML = html;
     },
+    distOf(guess, goal) {
+      const dx = (guess.x - goal.x) * 7.32; // ancho real de la portería (m)
+      const dy = (guess.y - goal.y) * 2.44; // alto real (m)
+      return Math.sqrt(dx * dx + dy * dy);
+    },
     confirm() {
-      if (this.done || !this.guess) return;
-      this.done = true; gameOver = true;
+      if (this.done || this.locked || !this.guess) return;
+      this.locked = true;
       this.draw(true);
-      const dx = (this.guess.x - this.goal.x) * 7.32; // ancho real de la portería (m)
-      const dy = (this.guess.y - this.goal.y) * 2.44; // alto real (m)
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const score = Math.round(dist * 10) / 10; // distancia en metros · gana la MENOR
+      const dist = this.distOf(this.guess, this.goal());
+      this.dists.push(dist);
+      const em = d => d <= 0.3 ? '🎯' : d <= 0.9 ? '🔥' : d <= 2 ? '👏' : '😬';
+      const last = this.idx >= this.goals.length - 1;
+      if (!last) {
+        const h = el('mg-net-hint'); if (h) h.innerHTML = `${em(dist)} A <b>${dist.toFixed(1)} m</b> · ahora el <b>segundo gol</b>`;
+        const a = el('mg-net-actions'); if (a) a.innerHTML = '<button class="btn-primary" id="mg-next">Siguiente gol →</button>';
+        const nx = el('mg-next'); if (nx) nx.addEventListener('click', () => { this.idx++; this.render(); });
+        return;
+      }
+      this.done = true; gameOver = true;
+      const avg = this.dists.reduce((a, b) => a + b, 0) / this.dists.length;
+      const score = Math.round(avg * 10) / 10; // distancia (media) en metros · gana la MENOR
       setBest(score);
-      const emoji = dist <= 0.3 ? '🎯' : dist <= 0.9 ? '🔥' : dist <= 2 ? '👏' : '😬';
-      const h = el('mg-net-hint'); if (h) h.innerHTML = `${emoji} A <b>${dist.toFixed(1)} m</b> del punto real · ¡cuanto más cerca, mejor!`;
+      const h = el('mg-net-hint');
+      if (h) {
+        if (this.goals.length > 1) {
+          const parts = this.dists.map((d, i) => `Gol ${i + 1}: <b>${d.toFixed(1)} m</b>`).join(' · ');
+          h.innerHTML = `${em(avg)} ${parts} → media <b>${score.toFixed(1)} m</b> · ¡cuanto más cerca, mejor!`;
+        } else {
+          h.innerHTML = `${em(avg)} A <b>${score.toFixed(1)} m</b> del punto real · ¡cuanto más cerca, mejor!`;
+        }
+      }
       const a = el('mg-net-actions'); if (a) a.innerHTML = '<button class="btn-primary" id="mg-again">Jugar otra vez</button>';
       const ag = el('mg-again'); if (ag) ag.addEventListener('click', () => this.start());
       setHud(`Goles míticos · Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);

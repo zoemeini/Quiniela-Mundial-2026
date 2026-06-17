@@ -1369,6 +1369,8 @@ select.fb-sel { width: 100%; }            /* el desplegable rellena su hueco (si
 }
 
 /* Modo «Goles míticos: ¿por dónde entró?» */
+.mg-net-step { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .03em; margin-bottom: 4px; }
+.mg-net-step b { color: var(--green); font-family: 'Sora', sans-serif; }
 .mg-net-desc { text-align: center; font-size: 13px; margin-bottom: 10px; }
 .mg-net-desc b { color: var(--green); font-family: 'Sora', sans-serif; }
 .mg-net {

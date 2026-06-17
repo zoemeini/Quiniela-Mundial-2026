@@ -367,7 +367,7 @@
 
   // ── 5) CÁLCULO MENTAL con incógnitas ──────────────────────────────────
   function mountMath(root, content) {
-    const DUR = 25000, lvl = content.level;
+    const DUR = 90000, lvl = content.level;
     let phase = 'intro', score = 0, cur = null, deadline = 0, timer = null, typed = '';
     function genPuzzle() {
       const cap = lvl === 1 ? 12 : 15;
@@ -420,19 +420,19 @@
       clearInterval(timer); deadline = performance.now() + DUR;
       timer = setInterval(() => {
         const rem = Math.max(0, deadline - performance.now());
-        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / DUR * 100) + '%'; bar.classList.toggle('low', rem <= 7000); }
+        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / DUR * 100) + '%'; bar.classList.toggle('low', rem <= 10000); }
         if (rem <= 0) { clearInterval(timer); finish(); }
       }, 100);
     }
     function finish() {
       clearInterval(timer);
-      root.innerHTML = `<div class="ng-controls"><div class="ng-result">${score} ${score === 1 ? 'acierto' : 'aciertos'} en 25 s ${score >= 6 ? '🏆' : score >= 3 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
+      root.innerHTML = `<div class="ng-controls"><div class="ng-result">${score} ${score === 1 ? 'acierto' : 'aciertos'} en 90 s ${score >= 12 ? '🏆' : score >= 6 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
     }
     function paintIntro() {
       phase = 'intro'; clearInterval(timer);
       root.innerHTML = intro('🧮', `<p class="ng-intro-rules"><b>Cálculo con incógnitas.</b> Con las dos primeras pistas descubres cuánto vale el <b>⚽ balón</b> y la <b>🥅 portería</b>; luego resuelve la operación final lo más rápido que puedas. <b>Escribe el resultado</b> con el teclado y pulsa <b>✓</b>.</p>
         <div class="ng-intro-example"><b>Ejemplo:</b> 52 + ⚽ = 70 → ⚽ vale 18 · 9 + 🥅 = 13 → 🥅 vale 4 · ⚽ + 2·🥅 + 2 = <b>28</b></div>
-        <p class="ng-intro-note">Resuelve el máximo en 25 s · gana quien más acierte.</p>`, '▶️ Empezar');
+        <p class="ng-intro-note">Resuelve el máximo en <b>90 s</b> · gana quien más cálculos acierte.</p>`, '▶️ Empezar');
     }
     root.addEventListener('click', e => {
       const act = e.target.closest('[data-act]');
@@ -629,8 +629,8 @@
     const s4 = section('🟨', 'Gol o tarjeta', '¿País y posición correctos? ⚽ gol · 🟨 uno mal · 🟥 los dos mal. 10 s × 10 jugadores.');
     CARD_SETS.forEach(cs => { const c = card(cs.label, '10 jugadores'); s4.appendChild(c); mountCard(c.querySelector('.ng-game-body'), cs); });
 
-    const s5 = section('🧮', 'Cálculo con incógnitas', 'Descubre cuánto vale el ⚽ y la 🥅, y resuelve la operación final. 25 s.');
-    MATH.forEach(m => { const c = card(m.label, '25 s'); s5.appendChild(c); mountMath(c.querySelector('.ng-game-body'), m); });
+    const s5 = section('🧮', 'Cálculo con incógnitas', 'Descubre cuánto vale el ⚽ y la 🥅, y resuelve la operación final. 90 s.');
+    MATH.forEach(m => { const c = card(m.label, '90 s'); s5.appendChild(c); mountMath(c.querySelector('.ng-game-body'), m); });
 
     const s6 = section('🎽', 'Mastermind de equipaciones', 'Adivina el código de 5 equipaciones (de 8) con pistas de aciertos y posición.');
     CODE.forEach(cd => { const c = card(cd.label, '10 intentos'); s6.appendChild(c); mountKits(c.querySelector('.ng-game-body')); });
