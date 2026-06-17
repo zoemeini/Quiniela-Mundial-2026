@@ -158,7 +158,7 @@
   function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 
   // ── 1) MEMORY ─────────────────────────────────────────────────────────
-  function mountMemory(root, content) {
+  function mountMemory(root, content, onDone) {
     const players = content.players;
     let phase = 'intro', secs = 20, typed = {}, cd = null;
     function pitch(inner) { return `<div class="ng-pitch ng-phase-${phase}">${inner}</div>`; }
@@ -186,14 +186,14 @@
     root.addEventListener('click', e => {
       const act = e.target.closest('[data-act]'); if (!act) return;
       if (act.dataset.act === 'start') { phase = 'memo'; secs = 20; typed = {}; paint(); clearInterval(cd); cd = setInterval(() => { secs--; if (secs <= 0) { clearInterval(cd); phase = 'recall'; paint(); } else paint(); }, 1000); }
-      else if (act.dataset.act === 'check') { root.querySelectorAll('.ng-input').forEach(inp => { typed[+inp.dataset.chip] = inp.value; }); phase = 'done'; paint(); }
+      else if (act.dataset.act === 'check') { root.querySelectorAll('.ng-input').forEach(inp => { typed[+inp.dataset.chip] = inp.value; }); phase = 'done'; paint(); if (typeof onDone === 'function') { let ok = 0; players.forEach((p, i) => { if (nameMatch(typed[i] || '', p.n)) ok++; }); onDone(ok); } }
       else if (act.dataset.act === 'reset') { phase = 'intro'; paint(); }
     });
     paint();
   }
 
   // ── 2) DORSALES ───────────────────────────────────────────────────────
-  function mountDorsales(root, content) {
+  function mountDorsales(root, content, onDone) {
     const players = content.pairs.map((p, i) => ({ idx: i, name: p[0], iso: p[1], num: p[2] }));
     const numbers = shuffle(players.map(p => p.num));
     let phase = 'intro', assign = {}, selPlayer = null;
@@ -224,7 +224,7 @@
     }
     root.addEventListener('click', e => {
       const act = e.target.closest('[data-act]'), pl = e.target.closest('[data-pl]'), num = e.target.closest('[data-num]');
-      if (act) { if (act.dataset.act === 'start') phase = 'play'; else if (act.dataset.act === 'check') phase = 'done'; else if (act.dataset.act === 'reset') { phase = 'intro'; assign = {}; selPlayer = null; } paint(); return; }
+      if (act) { const a = act.dataset.act; if (a === 'start') phase = 'play'; else if (a === 'check') phase = 'done'; else if (a === 'reset') { phase = 'intro'; assign = {}; selPlayer = null; } paint(); if (a === 'check' && typeof onDone === 'function') { let ok = 0; players.forEach(p => { if (numOf(p.idx) === p.num) ok++; }); onDone(ok); } return; }
       if (phase !== 'play') return;
       if (pl) { const i = +pl.dataset.pl; selPlayer = (selPlayer === i) ? null : i; paint(); return; }
       if (num) { const v = +num.dataset.num; if (selPlayer == null) return; const prev = playerOfNum(v); if (prev != null) delete assign[prev]; assign[selPlayer] = v; selPlayer = null; paint(); }
@@ -233,7 +233,7 @@
   }
 
   // ── 3) KEEPIE (que no caiga la pelota) — 3 intentos, cuenta el mejor ──
-  function mountKeepie(root, content) {
+  function mountKeepie(root, content, onDone) {
     let raf = null, last = 0, running = false, startT = 0, touches = 0;
     let attempt = 0, best = 0, b = null, w = 0, h = 0;
     function shell(controls, msg) {
@@ -283,7 +283,7 @@
       const ball = root.querySelector('[data-ball]'); if (ball) ball.style.display = 'none';
       const hud = root.querySelector('[data-hud]'); if (hud) hud.innerHTML = `💥 ¡Cayó!${bestLine()}`;
       if (attempt < 3) ctrls.innerHTML = `<div class="ng-result">Intento ${attempt}: <b>${secs.toFixed(1)} s</b></div><button type="button" class="btn-primary ng-btn" data-act="next">▶️ Intento ${attempt + 1}/3</button>`;
-      else ctrls.innerHTML = `<div class="ng-result">¡Terminado! Tu mejor: <b>${best.toFixed(1)} s</b> ${best >= 20 ? '🏆' : best >= 10 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez (3 intentos)</button>`;
+      else { ctrls.innerHTML = `<div class="ng-result">¡Terminado! Tu mejor: <b>${best.toFixed(1)} s</b> ${best >= 20 ? '🏆' : best >= 10 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez (3 intentos)</button>`; if (typeof onDone === 'function') onDone(Math.round(best * 10) / 10); }
     }
     function stop() { running = false; cancelAnimationFrame(raf); raf = null; }
     root.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (!a) return; if (a.dataset.act === 'start' || a.dataset.act === 'next') start(); else if (a.dataset.act === 'reset') introScreen(); });
@@ -292,7 +292,7 @@
   }
 
   // ── 4) GOL O TARJETA ──────────────────────────────────────────────────
-  function mountCard(root, content) {
+  function mountCard(root, content, onDone) {
     const pool = content.players;
     let phase = 'intro', rounds = [], idx = 0, score = 0, answered = false, timer = null, deadline = 0;
     function wrongCountry(p) { const opts = COUNTRIES.filter(c => c.name !== p.c); return opts[Math.floor(Math.random() * opts.length)]; }
@@ -345,6 +345,7 @@
     }
     function finish() {
       root.innerHTML = `<div class="ng-controls"><div class="ng-result">Acertaste <b>${score}/10</b> ${score >= 8 ? '🏆' : score >= 5 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
+      if (typeof onDone === 'function') onDone(score);
     }
     function paintIntro() {
       phase = 'intro'; clearT();
@@ -366,7 +367,7 @@
   }
 
   // ── 5) CÁLCULO MENTAL con incógnitas ──────────────────────────────────
-  function mountMath(root, content) {
+  function mountMath(root, content, onDone) {
     const DUR = 90000, lvl = content.level;
     let phase = 'intro', score = 0, cur = null, deadline = 0, timer = null, typed = '';
     function genPuzzle() {
@@ -427,6 +428,7 @@
     function finish() {
       clearInterval(timer);
       root.innerHTML = `<div class="ng-controls"><div class="ng-result">${score} ${score === 1 ? 'acierto' : 'aciertos'} en 90 s ${score >= 12 ? '🏆' : score >= 6 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
+      if (typeof onDone === 'function') onDone(score);
     }
     function paintIntro() {
       phase = 'intro'; clearInterval(timer);
@@ -448,7 +450,7 @@
   }
 
   // ── 6) MASTERMIND DE EQUIPACIONES ─────────────────────────────────────
-  function mountKits(root) {
+  function mountKits(root, onDone) {
     const LEN = 5, MAX = 10;
     let phase = 'intro', secret = [], guess = [], history = [], done = false;
     function newSecret() { return Array.from({ length: LEN }, () => ri(0, KITS.length - 1)); } // con repeticiones
@@ -499,6 +501,7 @@
           const m = evalGuess(guess); history.push({ g: guess.slice(), exact: m.exact, white: m.white });
           if (m.exact === LEN || history.length >= MAX) done = true;
           guess = []; paint();
+          if (done && typeof onDone === 'function') { const win = history.length && history[history.length - 1].exact === LEN; onDone(win ? history.length : 999); }
         }
         return;
       }
@@ -512,12 +515,12 @@
   // ── ROTACIÓN COMPLETA (test) + BONUS TRACK de la final ────────────────
   // Los 6 juegos nuevos jugables. mount(el, bonus): bonus=true usa CONTENIDO NUEVO.
   const NEW_GAMES = [
-    { key: 'memory', emoji: '🧠', name: 'Memory', mount: (el, i) => mountMemory(el, LINEUPS[(i || 0) % LINEUPS.length]) },
-    { key: 'keepie', emoji: '⚽', name: 'Que no caiga', mount: (el, i) => mountKeepie(el, KEEPIE[(i || 0) % KEEPIE.length]) },
-    { key: 'card', emoji: '🟨', name: 'Gol o tarjeta', mount: (el, i) => mountCard(el, CARD_SETS[(i || 0) % CARD_SETS.length]) },
-    { key: 'math', emoji: '🧮', name: 'Cálculo', mount: (el, i) => mountMath(el, MATH[(i || 0) % MATH.length]) },
-    { key: 'mastermind', emoji: '🎽', name: 'Mastermind', mount: (el) => mountKits(el) },
-    { key: 'dorsales', emoji: '🔢', name: 'Dorsales', mount: (el, i) => mountDorsales(el, DORSAL_SETS[(i || 0) % DORSAL_SETS.length]) },
+    { key: 'memory', emoji: '🧠', name: 'Memory', mount: (el, i, onDone) => mountMemory(el, LINEUPS[(i || 0) % LINEUPS.length], onDone) },
+    { key: 'keepie', emoji: '⚽', name: 'Que no caiga', mount: (el, i, onDone) => mountKeepie(el, KEEPIE[(i || 0) % KEEPIE.length], onDone) },
+    { key: 'card', emoji: '🟨', name: 'Gol o tarjeta', mount: (el, i, onDone) => mountCard(el, CARD_SETS[(i || 0) % CARD_SETS.length], onDone) },
+    { key: 'math', emoji: '🧮', name: 'Cálculo', mount: (el, i, onDone) => mountMath(el, MATH[(i || 0) % MATH.length], onDone) },
+    { key: 'mastermind', emoji: '🎽', name: 'Mastermind', mount: (el, i, onDone) => mountKits(el, onDone) },
+    { key: 'dorsales', emoji: '🔢', name: 'Dorsales', mount: (el, i, onDone) => mountDorsales(el, DORSAL_SETS[(i || 0) % DORSAL_SETS.length], onDone) },
   ];
   const ROT_ORIG = [['🎯', '¿Más o menos?'], ['🌍', '¿De qué selección es?'], ['📸', '¿Quién es este jugador?'], ['🥅', 'Puntería'], ['🕵️', 'Adivina con pistas'], ['🔤', 'Wordle de jugadores'], ['⚽', 'Goles míticos'], ['🧩', 'Sudoku de fútbol']];
   function watchDone(body, cb) { const o = new MutationObserver(() => { if (body.querySelector('.ng-result')) { o.disconnect(); cb(); } }); o.observe(body, { childList: true, subtree: true }); return o; }
@@ -675,7 +678,7 @@
     has: k => NEW_GAMES.some(g => g.key === k),
     list: NEW_GAMES.map(g => ({ key: g.key, emoji: g.emoji, name: g.name })),
     meta: k => { const g = NEW_GAMES.find(g => g.key === k) || {}; return { emoji: g.emoji || '🎮', name: g.name || k }; },
-    mount: (k, el, idx) => { const g = NEW_GAMES.find(g => g.key === k); if (g) g.mount(el, idx || 0); },
+    mount: (k, el, idx, onDone) => { const g = NEW_GAMES.find(g => g.key === k); if (g) g.mount(el, idx || 0, onDone); },
     mountBonus: mountBonus,
   };
 

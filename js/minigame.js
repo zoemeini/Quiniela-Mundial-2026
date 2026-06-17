@@ -356,11 +356,9 @@ const MG_ROTATION = [
   // El calendario va del 10-jun-2026 al 19-jul-2026 (40 retos, uno por día). Después: «fin».
   const MG_START_ORD = (function () { const p = '2026-06-10'.split('-'); return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); })();
   function scheduleIdx() { return dayOrdinal() - MG_START_ORD; }
-  // ── MODO PRUEBA (solo en la página admin) ──────────────────────────────
-  // En admin, el pop-up recorre TODA la rotación (8 originales + 6 nuevos +
-  // bonus) con flechas ‹ ›, jugando cada juego de verdad. NO afecta al resto de
-  // páginas (allí la rotación sigue siendo la normal por fecha).
-  const IS_ADMIN = !!document.getElementById('admin-panel');
+  // Tester (Zoesita): puede previsualizar los retos de los días siguientes y
+  // volver a jugar (sin candado), en CUALQUIER página, para revisarlos en directo.
+  const isTester = () => isHidden(mgUser());
   function ordOf(s) { const p = s.split('-'); return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
   function ordLabel(o) { return cap(new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(o * 86400000))); }
   // Ciclo de 14 (8 originales + 6 nuevos, Dorsales el último) con LISTAS de
@@ -409,7 +407,6 @@ const MG_ROTATION = [
   })();
   const MG_NEW = ['memory', 'keepie', 'card', 'math', 'mastermind', 'dorsales'];
   const MG_ORIG_META = { mm: ['🎯', '¿Más o menos?'], nat: ['🌍', '¿De qué selección?'], foto: ['📸', '¿Quién es?'], punteria: ['🥅', 'Puntería'], pistas: ['🕵️', 'Adivina con pistas'], wordle: ['🔤', 'Wordle'], porteria: ['⚽', 'Goles míticos'], sudoku: ['🧩', 'Sudoku'] };
-  let testIdx = 0;
   // BONUS de la final: elegir 3 de los 14 y jugarlos seguidos (contenido nuevo).
   let bonusSeq = null, bonusPos = 0, bonusPicks = [], bonusMode = false;
   function freshContent(mode) {
@@ -424,11 +421,14 @@ const MG_ROTATION = [
     return { i: 3 }; // nuevos: variante "final" (window.NG hace % length)
   }
   function currentEntry() {
-    if (IS_ADMIN) {
-      if (bonusSeq) return bonusSeq[bonusPos] || { mode: 'bonusdone' };
-      return MG_TEST_SEQ[testIdx] || { mode: 'over' };
+    if (bonusSeq) return bonusSeq[bonusPos] || { mode: 'bonusdone' }; // bonus de la final en curso
+    // dayOrdinal() ya incluye previewOffset (Zoesita previsualiza días siguientes).
+    const off = dayOrdinal() - MG_SIM_START;
+    if (off < 0) { // 17-jun (hoy) y antes: rotación ANTIGUA — el reto de hoy NO cambia
+      let i = scheduleIdx(); if (i < 0) i = 0; if (i >= MG_ROTATION.length) return { mode: 'over' }; return MG_ROTATION[i];
     }
-    let i = scheduleIdx(); if (i < 0) i = 0; if (i >= MG_ROTATION.length) return { mode: 'over' }; return MG_ROTATION[i];
+    if (off >= MG_TEST_SEQ.length) return { mode: 'over' }; // tras el 19-jul (bonus): fin
+    return MG_TEST_SEQ[off]; // 18-jun en adelante: rotación nueva (6 nuevos + ciclo de 14 + bonus)
   }
   function themeByKey(k) { return MG_THEMES.find(t => t.key === k) || MG_THEMES[0]; }
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -452,6 +452,13 @@ const MG_ROTATION = [
     foto:     { lower: true,  fmt: v => v >= MG_DNF ? '❌ no acertó' : v + (v === 1 ? ' intento' : ' intentos') },
     porteria: { lower: true,  fmt: v => v.toFixed(1) + ' m' },
     sudoku:   { lower: true,  fmt: v => fmtMMSS(v) },
+    // Juegos nuevos (gana MÁS salvo Mastermind, que es MENOS intentos).
+    memory:     { lower: false, fmt: v => v + '/11' },
+    dorsales:   { lower: false, fmt: v => v + '/10' },
+    card:       { lower: false, fmt: v => v + '/10' },
+    math:       { lower: false, fmt: v => v + (v === 1 ? ' acierto' : ' aciertos') },
+    keepie:     { lower: false, fmt: v => Number(v).toFixed(1) + ' s' },
+    mastermind: { lower: true,  fmt: v => v >= MG_DNF ? '❌ no lo sacó' : v + (v === 1 ? ' intento' : ' intentos') },
   };
   const scoringFor = m => MODE_SCORING[m] || { lower: false, fmt: v => String(v) };
   const dayMode = () => (currentEntry() || {}).mode || 'mm';
@@ -536,36 +543,44 @@ const MG_ROTATION = [
   document.body.appendChild(panel);
   document.body.appendChild(fab);
 
-  // ── Navegador de días (SOLO admin): recorre toda la rotación + bonus ──
-  if (IS_ADMIN) {
+  // ── Navegador: bonus de la final (para todos) o vista previa de los días
+  //    siguientes (SOLO testers / Zoesita). Oculto para el resto. ──
+  (function () {
     const step = document.createElement('div');
-    step.className = 'mg-teststep';
+    step.className = 'mg-teststep'; step.style.display = 'none';
     step.innerHTML = '<button type="button" class="mg-day-arrow" data-st="prev" aria-label="Anterior">‹</button>' +
-      '<span class="mg-teststep-lbl" id="mg-teststep-lbl">Prueba</span>' +
+      '<span class="mg-teststep-lbl" id="mg-teststep-lbl"></span>' +
       '<button type="button" class="mg-day-arrow" data-st="next" aria-label="Siguiente">›</button>';
     const pv = el('mg-play-view'); if (pv) pv.insertBefore(step, pv.firstChild);
     step.addEventListener('click', function (e) {
       const b = e.target.closest('[data-st]'); if (!b) return;
       const dir = b.dataset.st === 'next' ? 1 : -1;
       if (bonusSeq) { // navegando dentro del bonus (los 3 elegidos)
-        if (dir > 0) { bonusPos++; if (bonusPos >= bonusSeq.length) { bonusSeq = null; bonusMode = false; bonusPos = 0; renderBonusSummary(); updateTestStep(); return; } }
+        if (dir > 0) { bonusPos++; if (bonusPos >= bonusSeq.length) { bonusSeq = null; bonusMode = false; bonusPos = 0; renderBonusSummary(); updateNav(); return; } }
         else { if (bonusPos === 0) { bonusSeq = null; bonusMode = false; } else bonusPos--; }
         started = false; gameOver = false; startDay(); return;
       }
-      testIdx = Math.min(MG_TEST_SEQ.length - 1, Math.max(0, testIdx + dir));
-      started = false; gameOver = false; startDay();
+      if (!isTester()) return; // solo Zoesita puede previsualizar otros días
+      const realToday = dayOrdinal() - previewOffset, np = previewOffset + dir;
+      if (np < 0) return;                                                  // no ir al pasado
+      if (realToday + np - MG_SIM_START > MG_TEST_SEQ.length - 1) return;  // no pasar del bonus (19-jul)
+      previewOffset = np; started = false; gameOver = false; startDay();
     });
-  }
+  })();
   function gmeta(mode) {
     if (mode === 'bonus' || mode === 'bonusdone') return ['🏆', 'Bonus de la final'];
     if (window.NG && window.NG.has(mode)) { const m = window.NG.meta(mode); return [m.emoji, m.name]; }
     return MG_ORIG_META[mode] || ['🎮', mode];
   }
-  function updateTestStep() {
-    const l = el('mg-teststep-lbl'); if (!l) return;
+  function updateNav() {
+    const step = document.querySelector('.mg-teststep'); if (!step) return;
+    const show = !!bonusSeq || isTester();
+    step.style.display = show ? '' : 'none';
+    const l = el('mg-teststep-lbl'); if (!show || !l) return;
     if (bonusSeq) { const m = gmeta(bonusSeq[bonusPos].mode); l.innerHTML = `🏆 Bonus ${bonusPos + 1}/${bonusSeq.length} · ${m[0]} ${esc(m[1])}`; return; }
-    const e = MG_TEST_SEQ[testIdx] || {}; const m = gmeta(e.mode);
-    l.innerHTML = `${e.dateOrd ? ordLabel(e.dateOrd) + ' · ' : ''}${m[0]} ${esc(m[1])}`;
+    const e = currentEntry(), m = gmeta(e.mode);
+    const when = previewOffset === 0 ? 'Hoy' : ordLabel(dayOrdinal());
+    l.innerHTML = `🧪 ${when} · ${m[0]} ${esc(m[1])}`;
   }
   // Intro corta para TODOS los juegos (también los 8 originales).
   const MG_INTROS = {
@@ -681,37 +696,31 @@ const MG_ROTATION = [
     const entry = currentEntry();
     gameOver = false; busy = false; started = true;
     const tb = el('mg-theme');
-    if (IS_ADMIN) {
-      updateTestStep();
-      if (entry.mode === 'bonus') { renderBonusPick(); return; }
-      if (entry.mode === 'bonusdone') { renderBonusSummary(); return; }
-      // Juegos NUEVOS → delegados a newgames.js, jugados en el pop-up real.
-      if (window.NG && window.NG.has(entry.mode)) {
-        setTimerVisible(false); setHud(''); Game = null;
-        const board = el('mg-board');
-        if (board) { board.innerHTML = ''; const sub = document.createElement('div'); board.appendChild(sub); const m = window.NG.meta(entry.mode); if (tb) tb.innerHTML = `${m.emoji} Reto: <b>${m.name}</b>`; window.NG.mount(entry.mode, sub, entry.i || 0); }
-        return;
-      }
-    }
+    updateNav();
+    if (entry.mode === 'bonus') { renderBonusPick(); return; }
+    if (entry.mode === 'bonusdone') { renderBonusSummary(); return; }
     if (entry.mode === 'over') {
       if (tb) tb.innerHTML = '🏁 <b>¡Se acabó el Mundial!</b>';
       setTimerVisible(false); setHud(''); Game = null;
       const wrap = el('mg-board'); if (wrap) wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🏆</div><h3>No hay más retos</h3><p>Los retos diarios fueron hasta el 19 de julio. ¡Gracias por jugar!</p></div>`;
       return;
     }
-    if (entry.mode === 'pistas') { if (tb) tb.innerHTML = '🕵️ Reto de hoy: <b>Adivina con pistas</b>'; Game = PistasMode; }
-    else if (entry.mode === 'wordle') { if (tb) tb.innerHTML = '🔤 Reto de hoy: <b>Wordle de jugadores</b>'; Game = WordleMode; }
-    else if (entry.mode === 'foto') { if (tb) tb.innerHTML = '📸 Reto de hoy: <b>¿Quién es este jugador?</b>'; Game = FotoMode; }
-    else if (entry.mode === 'porteria') { if (tb) tb.innerHTML = '🥅 Reto de hoy: <b>Goles míticos: ¿por dónde entró?</b>'; Game = PorteriaMode; }
-    else if (entry.mode === 'sudoku') { if (tb) tb.innerHTML = '🧩 Reto de hoy: <b>Sudoku de fútbol</b>'; Game = SudokuMode; }
-    else if (entry.mode === 'nat') { if (tb) tb.innerHTML = '🌍 Reto de hoy: <b>¿De qué selección es?</b>'; Game = NatMode; }
-    else if (entry.mode === 'punteria') { if (tb) tb.innerHTML = '🎯 Reto de hoy: <b>Puntería: marca goles</b>'; Game = PunteriaMode; }
-    else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
     if (!mgUser()) { // sin sesión: no se puede jugar/guardar
-      gameOver = true; setTimerVisible(false); setHud('');
+      gameOver = true; setTimerVisible(false); setHud(''); Game = null;
       const w = el('mg-board');
       if (w) w.innerHTML = '<div class="mg-end"><div class="mg-end-emoji">👋</div><h3>Entra con tu nombre</h3><p>Entra arriba con tu <b>nombre y PIN</b> para jugar el reto de hoy y aparecer en la clasificación.</p></div>';
       return;
+    }
+    const isNew = !!(window.NG && window.NG.has(entry.mode));
+    if (!isNew) {
+      if (entry.mode === 'pistas') { if (tb) tb.innerHTML = '🕵️ Reto de hoy: <b>Adivina con pistas</b>'; Game = PistasMode; }
+      else if (entry.mode === 'wordle') { if (tb) tb.innerHTML = '🔤 Reto de hoy: <b>Wordle de jugadores</b>'; Game = WordleMode; }
+      else if (entry.mode === 'foto') { if (tb) tb.innerHTML = '📸 Reto de hoy: <b>¿Quién es este jugador?</b>'; Game = FotoMode; }
+      else if (entry.mode === 'porteria') { if (tb) tb.innerHTML = '🥅 Reto de hoy: <b>Goles míticos: ¿por dónde entró?</b>'; Game = PorteriaMode; }
+      else if (entry.mode === 'sudoku') { if (tb) tb.innerHTML = '🧩 Reto de hoy: <b>Sudoku de fútbol</b>'; Game = SudokuMode; }
+      else if (entry.mode === 'nat') { if (tb) tb.innerHTML = '🌍 Reto de hoy: <b>¿De qué selección es?</b>'; Game = NatMode; }
+      else if (entry.mode === 'punteria') { if (tb) tb.innerHTML = '🎯 Reto de hoy: <b>Puntería: marca goles</b>'; Game = PunteriaMode; }
+      else { const t = themeByKey(entry.theme); if (tb) tb.innerHTML = `🎯 ¿Más o menos? · <b>${t.emoji} ${t.label}</b>`; Game = MasMenosMode; }
     }
     setTimerVisible(false);
     const w = el('mg-board');
@@ -721,13 +730,34 @@ const MG_ROTATION = [
       if (token !== startToken) return; // se reabrió/cambió de día mientras cargaba
       reconcileDone(); // si su partida se borró del servidor, limpia el candado local
       reconcileBest(); // "tu mejor de hoy" = tu puntuación registrada en el ranking
-      if (!IS_ADMIN && (isDone() || playedTodayServer())) { showLocked(); return; } // admin: sin candado (modo prueba)
+      // 1 partida al día (salvo Zoesita, que prueba, y el bonus, que se juega seguido).
+      if (!isTester() && !bonusMode && (isDone() || playedTodayServer())) { showLocked(); return; }
       setTimerVisible(false);
-      // Tarjeta de intro (todos los juegos) → al pulsar Empezar arranca el juego.
+      if (isNew) { mountNewGame(entry); return; } // juego nuevo (newgames.js)
+      // Tarjeta de intro (8 originales) → al pulsar Empezar arranca el juego.
       showOrigIntro(entry.mode, function () {
         setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat');
         Game.start();
       });
+    });
+  }
+  // Monta un juego nuevo (newgames.js) en el pop-up real, con su propia intro.
+  // Al terminar reporta la nota → se guarda, bloquea (1/día) y muestra el ranking,
+  // igual que los 8 originales. En el bonus solo se juega (sin guardar/ranking).
+  function mountNewGame(entry) {
+    setTimerVisible(false); setHud(''); Game = null;
+    const tb = el('mg-theme'), board = el('mg-board'); if (!board) return;
+    board.innerHTML = '';
+    const sub = document.createElement('div'); board.appendChild(sub);
+    const m = window.NG.meta(entry.mode);
+    if (tb) tb.innerHTML = `${m.emoji} Reto de hoy: <b>${m.name}</b>`;
+    let reported = false;
+    window.NG.mount(entry.mode, sub, entry.i || 0, function (score) {
+      if (bonusMode) return;          // bonus: solo se juega; se avanza con ›
+      if (reported) return; reported = true;
+      setBest(score);                 // mejor del día (según MODE_SCORING del modo)
+      if (!isTester()) sub.querySelectorAll('[data-act="reset"]').forEach(b => b.style.display = 'none'); // sin repetir (los testers sí pueden)
+      revealRanking();                // setDone + saveMyScore + clasificación de hoy
     });
   }
   function showLocked() {
