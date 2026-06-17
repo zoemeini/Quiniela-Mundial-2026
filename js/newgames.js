@@ -119,6 +119,16 @@
     ] },
   ];
 
+  // 5) CÁLCULO RELÁMPAGO — 3 niveles de dificultad (60 s, gana quien más acierte).
+  const MATH = [
+    { label: 'Fácil', ops: ['add', 'sub'] },
+    { label: 'Medio', ops: ['add', 'sub', 'mul'] },
+    { label: 'Difícil', ops: ['add', 'sub', 'mul', 'chain'] },
+  ];
+  // 6) MASTERMIND DEL MARCADOR — 3 códigos (3 cifras distintas, 8 intentos).
+  const CODE = [{ label: 'Código 1' }, { label: 'Código 2' }, { label: 'Código 3' }];
+  function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+
   // ── 1) MEMORY ─────────────────────────────────────────────────────────
   function mountMemory(root, content) {
     const players = content.players;
@@ -327,6 +337,109 @@
     paintIntro();
   }
 
+  // ── 5) CÁLCULO RELÁMPAGO ──────────────────────────────────────────────
+  function mountMath(root, content) {
+    const DUR = 60000;
+    let phase = 'intro', score = 0, cur = null, deadline = 0, timer = null;
+    function genOp() {
+      const op = content.ops[ri(0, content.ops.length - 1)];
+      let a, b, c, text, ans;
+      if (op === 'add') { a = ri(8, 49); b = ri(8, 49); ans = a + b; text = `${a} + ${b}`; }
+      else if (op === 'sub') { a = ri(20, 60); b = ri(5, a - 1); ans = a - b; text = `${a} − ${b}`; }
+      else if (op === 'mul') { a = ri(2, 12); b = ri(2, 9); ans = a * b; text = `${a} × ${b}`; }
+      else { a = ri(2, 9); b = ri(2, 9); c = ri(1, 20); const plus = Math.random() < 0.6; ans = plus ? a * b + c : a * b - c; if (ans < 0) { ans = a * b + c; text = `${a} × ${b} + ${c}`; } else text = `${a} × ${b} ${plus ? '+' : '−'} ${c}`; }
+      const opts = new Set([ans]); const list = [ans];
+      while (list.length < 3) { let d = ans + (Math.random() < 0.5 ? -1 : 1) * ri(1, 6); if (d < 0) d = ans + ri(1, 6); if (!opts.has(d)) { opts.add(d); list.push(d); } }
+      return { text, ans, opts: shuffle(list) };
+    }
+    function paintRound() {
+      cur = genOp();
+      root.innerHTML = `<div class="ng-math">
+        <div class="ng-card-meta">Aciertos: <b>${score}</b></div>
+        <div class="ng-card-bar"><div class="ng-card-bar-fill" data-bar style="width:100%"></div></div>
+        <div class="ng-math-op">⚽ ${cur.text} <span class="ng-math-eq">=</span> <b>?</b></div>
+        <div class="ng-math-opts">${cur.opts.map(v => `<button type="button" class="ng-math-opt" data-v="${v}">${v}</button>`).join('')}</div>
+      </div>`;
+    }
+    function startTimer() {
+      clearInterval(timer); deadline = performance.now() + DUR;
+      timer = setInterval(() => {
+        const rem = Math.max(0, deadline - performance.now());
+        const bar = root.querySelector('[data-bar]'); if (bar) { bar.style.width = (rem / DUR * 100) + '%'; bar.classList.toggle('low', rem <= 10000); }
+        if (rem <= 0) { clearInterval(timer); finish(); }
+      }, 100);
+    }
+    function finish() {
+      clearInterval(timer);
+      root.innerHTML = `<div class="ng-controls"><div class="ng-result">${score} ${score === 1 ? 'acierto' : 'aciertos'} en 60 s ${score >= 20 ? '🏆' : score >= 12 ? '👏' : '💪'}</div><button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button></div>`;
+    }
+    function paintIntro() { phase = 'intro'; clearInterval(timer); root.innerHTML = intro('⚡', `<p class="ng-intro-rules"><b>Cálculo relámpago.</b> Resuelve el máximo de operaciones en <b>60 segundos</b>. Toca el resultado correcto; si fallas, esa opción se descarta y sigues.</p><p class="ng-intro-note">Gana quien más acierte.</p>`, '▶️ Empezar'); }
+    root.addEventListener('click', e => {
+      const act = e.target.closest('[data-act]'), opt = e.target.closest('[data-v]');
+      if (act) { if (act.dataset.act === 'start') { score = 0; phase = 'play'; paintRound(); startTimer(); } else if (act.dataset.act === 'reset') paintIntro(); return; }
+      if (opt && phase === 'play') {
+        if (+opt.dataset.v === cur.ans) { score++; paintRound(); }
+        else { opt.disabled = true; opt.classList.add('bad'); }
+      }
+    });
+    paintIntro();
+  }
+
+  // ── 6) MASTERMIND DEL MARCADOR ────────────────────────────────────────
+  function mountCode(root, content) {
+    const LEN = 3, MAX = 8;
+    let phase = 'intro', secret = [], guess = [], history = [], done = false;
+    function newSecret() { const pool = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); return pool.slice(0, LEN); }
+    function evalGuess(g) { return g.map((d, i) => secret[i] === d ? 'g' : (secret.indexOf(d) >= 0 ? 'y' : 'n')); }
+    function rowHTML(g, marks) { return `<div class="ng-code-row">${g.map((d, i) => `<span class="ng-code-cell ${marks[i]}">${d}</span>`).join('')}</div>`; }
+    function paint() {
+      if (phase === 'intro') {
+        root.innerHTML = intro('🔢', `<p class="ng-intro-rules"><b>Adivina el código de 3 cifras distintas (0-9).</b> Tras cada intento verás:</p>
+          <ul class="ng-intro-list">
+            <li><span class="ng-code-cell g">7</span> cifra correcta <b>y en su sitio</b>.</li>
+            <li><span class="ng-code-cell y">4</span> cifra correcta pero <b>mal colocada</b>.</li>
+            <li><span class="ng-code-cell n">1</span> esa cifra <b>no está</b>.</li>
+          </ul>
+          <p class="ng-intro-note">Tienes <b>${MAX} intentos</b> · gana quien lo saque en menos.</p>`, '▶️ Empezar');
+        return;
+      }
+      const slots = `<div class="ng-code-guess">${[0, 1, 2].map(i => `<span class="ng-code-slot${guess[i] != null ? ' filled' : ''}">${guess[i] != null ? guess[i] : ''}</span>`).join('')}</div>`;
+      const pad = `<div class="ng-keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(d => `<button type="button" class="ng-key" data-d="${d}"${(guess.indexOf(d) >= 0 || guess.length >= LEN || done) ? ' disabled' : ''}>${d}</button>`).join('')}
+        <button type="button" class="ng-key wide" data-act="del"${guess.length === 0 || done ? ' disabled' : ''}>⌫</button>
+        <button type="button" class="ng-key go" data-act="try"${guess.length < LEN || done ? ' disabled' : ''}>Probar</button></div>`;
+      let foot = '';
+      if (done) {
+        const win = history.length && history[history.length - 1].marks.every(m => m === 'g');
+        foot = win ? `<div class="ng-result">¡Lo sacaste en <b>${history.length}</b> ${history.length === 1 ? 'intento' : 'intentos'}! ${history.length <= 3 ? '🏆' : history.length <= 5 ? '👏' : '💪'}</div>`
+                   : `<div class="ng-result">No lo sacaste. Era <b>${secret.join(' ')}</b> 😅</div>`;
+        foot += `<button type="button" class="btn-outline ng-btn" data-act="reset">🔄 Otra vez</button>`;
+      }
+      root.innerHTML = `<div class="ng-code">
+        <div class="ng-card-meta">Intento <b>${history.length}</b>/${MAX}</div>
+        <div class="ng-code-history">${history.map(h => rowHTML(h.g, h.marks)).join('') || '<div class="ng-hint">Escribe 3 cifras distintas y pulsa Probar.</div>'}</div>
+        ${done ? '' : slots + pad}
+        <div class="ng-controls">${foot}</div>
+      </div>`;
+    }
+    root.addEventListener('click', e => {
+      const act = e.target.closest('[data-act]'), key = e.target.closest('[data-d]');
+      if (act) {
+        if (act.dataset.act === 'start') { secret = newSecret(); guess = []; history = []; done = false; phase = 'play'; paint(); }
+        else if (act.dataset.act === 'reset') { phase = 'intro'; paint(); }
+        else if (act.dataset.act === 'del') { guess.pop(); paint(); }
+        else if (act.dataset.act === 'try' && guess.length === LEN) {
+          const marks = evalGuess(guess); history.push({ g: guess.slice(), marks });
+          const win = marks.every(m => m === 'g');
+          if (win || history.length >= MAX) done = true;
+          guess = []; paint();
+        }
+        return;
+      }
+      if (key && phase === 'play' && !done && guess.length < LEN && guess.indexOf(+key.dataset.d) < 0) { guess.push(+key.dataset.d); paint(); }
+    });
+    paint();
+  }
+
   // ── Montaje en la página admin ────────────────────────────────────────
   function card(title, sub) {
     const el = document.createElement('div'); el.className = 'ng-game';
@@ -354,7 +467,13 @@
     const s4 = section('🟨', 'Gol o tarjeta', '¿País y posición correctos? ⚽ gol · 🟨 uno mal · 🟥 los dos mal. 10 s × 10 jugadores.');
     CARD_SETS.forEach(cs => { const c = card(cs.label, '10 jugadores'); s4.appendChild(c); mountCard(c.querySelector('.ng-game-body'), cs); });
 
-    host.appendChild(s1); host.appendChild(s2); host.appendChild(s3); host.appendChild(s4);
+    const s5 = section('⚡', 'Cálculo relámpago', 'Resuelve el máximo de operaciones en 60 s. Cálculo mental puro.');
+    MATH.forEach(m => { const c = card(m.label, '60 s'); s5.appendChild(c); mountMath(c.querySelector('.ng-game-body'), m); });
+
+    const s6 = section('🔢', 'Mastermind del marcador', 'Adivina el código de 3 cifras distintas con pistas. Deducción/lógica.');
+    CODE.forEach(cd => { const c = card(cd.label, '8 intentos'); s6.appendChild(c); mountCode(c.querySelector('.ng-game-body'), cd); });
+
+    host.appendChild(s1); host.appendChild(s2); host.appendChild(s3); host.appendChild(s4); host.appendChild(s5); host.appendChild(s6);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
