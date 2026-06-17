@@ -240,12 +240,12 @@ const MG_FOTO_POOL = [
 //       desde la vista del público/portero. Valores APROXIMADOS, fáciles de editar.
 const MG_PORTERIA_POOL = [
   { desc: 'Maradona · «el gol del siglo» vs Inglaterra (1986)',  x: 0.38, y: 0.80 },
-  { desc: 'Iniesta · gol de la final vs Países Bajos (2010)',    x: 0.78, y: 0.64 },
+  { desc: 'Iniesta · gol de la final vs Países Bajos (2010)',    x: 0.22, y: 0.64 },
   { desc: 'Puyol · cabezazo en la semifinal vs Alemania (2010)', x: 0.55, y: 0.52 },
   { desc: 'Mbappé · volea del 2-2 en la final vs Argentina (2022)', x: 0.84, y: 0.78 },
-  { desc: 'Pavard · volea vs Argentina (2018)',                  x: 0.16, y: 0.16 },
+  { desc: 'Pavard · volea vs Argentina (2018)',                  x: 0.04, y: 0.16 },
   // reserva (también de Mundiales)
-  { desc: 'Messi · gol vs México (2022)',                        x: 0.20, y: 0.72 },
+  { desc: 'Messi · gol vs México (2022)',                        x: 0.86, y: 0.78 },
   { desc: 'Zidane · cabezazo en la final vs Brasil (1998)',      x: 0.32, y: 0.58 },
   { desc: 'James Rodríguez · volea vs Uruguay (2014)',           x: 0.15, y: 0.14 },
 ];
