@@ -1146,10 +1146,12 @@ a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weig
 .ng-math-puzzle { margin: 16px 0; display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .ng-math-eq { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 19px; color: var(--muted); }
 .ng-math-final { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 25px; margin-top: 6px; }
-.ng-math-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.ng-math-opt { padding: 16px 4px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg2); color: var(--text); font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; cursor: pointer; transition: background .1s, border-color .1s; }
-.ng-math-opt:hover { border-color: var(--green); }
-.ng-math-opt.bad { border-color: var(--red); background: rgba(248,113,113,.15); opacity: .5; animation: ngShake .25s; }
+.ng-math-ans { display: inline-block; min-width: 44px; border-bottom: 3px solid var(--green); color: var(--green); padding: 0 8px; }
+.ng-math-ans.bad { color: var(--red); border-color: var(--red); animation: ngShake .3s; }
+.ng-math-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; max-width: 240px; margin: 0 auto; }
+.ng-mk { padding: 13px 0; border-radius: 10px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); font-family: 'Sora', sans-serif; font-weight: 700; font-size: 19px; cursor: pointer; }
+.ng-mk:hover { border-color: var(--green); }
+.ng-mk.ok { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 @keyframes ngShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
 /* Mastermind de equipaciones */
@@ -1159,9 +1161,11 @@ a.mpred-row .mpred-name::after { content: ' ›'; color: var(--muted); font-weig
 .ng-kit-history { display: flex; flex-direction: column; gap: 6px; align-items: center; min-height: 24px; margin-bottom: 12px; }
 .ng-kit-row { display: flex; align-items: center; gap: 10px; background: var(--bg3); border-radius: 10px; padding: 5px 10px; }
 .ng-kit-row-kits { display: flex; gap: 4px; }
-.ng-kit-fb { display: flex; gap: 8px; font-size: 13px; font-weight: 800; white-space: nowrap; }
-.ng-kit-fb-ok { color: var(--green); }
-.ng-kit-fb-pos { color: var(--gold); }
+.ng-pegs { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; max-width: 76px; }
+.ng-peg { width: 13px; height: 13px; border-radius: 50%; display: inline-block; vertical-align: middle; flex: 0 0 auto; }
+.ng-peg.black { background: radial-gradient(circle at 34% 30%, #6b7180, #07090e 72%); box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+.ng-peg.white { background: radial-gradient(circle at 34% 30%, #ffffff, #c4cad6 78%); box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.ng-peg.empty { background: rgba(0,0,0,.28); box-shadow: inset 0 0 3px rgba(0,0,0,.6), 0 0 0 1px var(--border); }
 .ng-kit-slots { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
 .ng-kit-slot { width: 46px; height: 50px; border-radius: 10px; border: 2px dashed var(--border); background: var(--bg2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .ng-kit-slot.filled { border-style: solid; border-color: var(--green); }
