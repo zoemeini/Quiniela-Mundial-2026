@@ -512,12 +512,12 @@
   // ── ROTACIÓN COMPLETA (test) + BONUS TRACK de la final ────────────────
   // Los 6 juegos nuevos jugables. mount(el, bonus): bonus=true usa CONTENIDO NUEVO.
   const NEW_GAMES = [
-    { key: 'memory', emoji: '🧠', name: 'Memory', mount: (el, b) => mountMemory(el, LINEUPS[b ? 3 : 0]) },
-    { key: 'keepie', emoji: '⚽', name: 'Que no caiga', mount: (el, b) => mountKeepie(el, KEEPIE[b ? 1 : 0]) },
-    { key: 'card', emoji: '🟨', name: 'Gol o tarjeta', mount: (el, b) => mountCard(el, CARD_SETS[b ? 3 : 0]) },
-    { key: 'math', emoji: '🧮', name: 'Cálculo', mount: (el, b) => mountMath(el, MATH[b ? 2 : 1]) },
+    { key: 'memory', emoji: '🧠', name: 'Memory', mount: (el, i) => mountMemory(el, LINEUPS[(i || 0) % LINEUPS.length]) },
+    { key: 'keepie', emoji: '⚽', name: 'Que no caiga', mount: (el, i) => mountKeepie(el, KEEPIE[(i || 0) % KEEPIE.length]) },
+    { key: 'card', emoji: '🟨', name: 'Gol o tarjeta', mount: (el, i) => mountCard(el, CARD_SETS[(i || 0) % CARD_SETS.length]) },
+    { key: 'math', emoji: '🧮', name: 'Cálculo', mount: (el, i) => mountMath(el, MATH[(i || 0) % MATH.length]) },
     { key: 'mastermind', emoji: '🎽', name: 'Mastermind', mount: (el) => mountKits(el) },
-    { key: 'dorsales', emoji: '🔢', name: 'Dorsales', mount: (el, b) => mountDorsales(el, DORSAL_SETS[b ? 3 : 0]) },
+    { key: 'dorsales', emoji: '🔢', name: 'Dorsales', mount: (el, i) => mountDorsales(el, DORSAL_SETS[(i || 0) % DORSAL_SETS.length]) },
   ];
   const ROT_ORIG = [['🎯', '¿Más o menos?'], ['🌍', '¿De qué selección es?'], ['📸', '¿Quién es este jugador?'], ['🥅', 'Puntería'], ['🕵️', 'Adivina con pistas'], ['🔤', 'Wordle de jugadores'], ['⚽', 'Goles míticos'], ['🧩', 'Sudoku de fútbol']];
   function watchDone(body, cb) { const o = new MutationObserver(() => { if (body.querySelector('.ng-result')) { o.disconnect(); cb(); } }); o.observe(body, { childList: true, subtree: true }); return o; }
@@ -673,8 +673,9 @@
   // Librería pública para que el pop-up real (minigame.js) juegue los juegos nuevos.
   window.NG = {
     has: k => NEW_GAMES.some(g => g.key === k),
+    list: NEW_GAMES.map(g => ({ key: g.key, emoji: g.emoji, name: g.name })),
     meta: k => { const g = NEW_GAMES.find(g => g.key === k) || {}; return { emoji: g.emoji || '🎮', name: g.name || k }; },
-    mount: (k, el, bonus) => { const g = NEW_GAMES.find(g => g.key === k); if (g) g.mount(el, !!bonus); },
+    mount: (k, el, idx) => { const g = NEW_GAMES.find(g => g.key === k); if (g) g.mount(el, idx || 0); },
     mountBonus: mountBonus,
   };
 

@@ -360,16 +360,63 @@ const MG_ROTATION = [
   // bonus) con flechas ‹ ›, jugando cada juego de verdad. NO afecta al resto de
   // páginas (allí la rotación sigue siendo la normal por fecha).
   const IS_ADMIN = !!document.getElementById('admin-panel');
-  const MG_TEST_SEQ = [
-    { mode: 'mm', theme: 'valor' }, { mode: 'nat', i: 0 }, { mode: 'foto', i: 0 }, { mode: 'punteria' },
-    { mode: 'pistas', i: 0 }, { mode: 'wordle', i: 0 }, { mode: 'porteria', i: 0 }, { mode: 'sudoku', i: 0 },
-    { mode: 'memory' }, { mode: 'keepie' }, { mode: 'card' }, { mode: 'math' }, { mode: 'mastermind' }, { mode: 'dorsales' },
-    { mode: 'bonus' },
+  function ordOf(s) { const p = s.split('-'); return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
+  function ordLabel(o) { return cap(new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(o * 86400000))); }
+  // Ciclo de 14 (8 originales + 6 nuevos, Dorsales el último) con LISTAS de
+  // contenido, evitando lo ya usado esta semana en vivo (mm valor, nat0, foto20,
+  // pistas5, wordle3=Kane, porteria0=Maradona, sudoku0).
+  const MG_CYCLE = [
+    { mode: 'mm', key: 'theme', list: ['goles', 'edad', 'champions', 'caps', 'selecciones', 'altura', 'fichaje', 'instagram'] },
+    { mode: 'nat', list: [1, 2, 3, 4] },
+    { mode: 'foto', list: [3, 5, 11, 8, 6, 1] },        // Haaland, Vinícius, Bellingham, Modrić, Salah, CR7 (no 20)
+    { mode: 'punteria', list: [0] },
+    { mode: 'pistas', list: [21, 15, 19, 22, 27] },      // Valverde (Madrid, menos conocido) 1º; no Mbappé/Pedri
+    { mode: 'wordle', list: [13, 14, 4, 18, 15] },        // Musiala, Wirtz, Modric, Valverde, Osimhen (no Messi/Kane)
+    { mode: 'porteria', list: [1, 2, 6, 3, 7] },          // Iniesta, Puyol, Zidane, Mbappé, James (no Maradona)
+    { mode: 'sudoku', list: [1, 4, 8, 5, 2] },
+    { mode: 'memory', list: [0, 1, 2, 3] },
+    { mode: 'keepie', list: [0, 1, 2] },
+    { mode: 'card', list: [0, 1, 2, 3] },
+    { mode: 'math', list: [1, 0, 2] },
+    { mode: 'mastermind', list: [0] },
+    { mode: 'dorsales', list: [0, 1, 2, 3] },
   ];
+  const MG_SIM_START = ordOf('2026-06-18'), MG_SIM_END = ordOf('2026-07-19'); // el 19-jul = bonus (final)
+  const MG_TEST_SEQ = (function () {
+    const seq = [], used = {};
+    for (let d = MG_SIM_START; d < MG_SIM_END; d++) {
+      const g = MG_CYCLE[(d - MG_SIM_START) % MG_CYCLE.length];
+      const n = used[g.mode] || 0;
+      const e = { mode: g.mode, dateOrd: d };
+      const v = g.list[n % g.list.length];
+      if (g.key === 'theme') e.theme = v; else e.i = v;
+      used[g.mode] = n + 1;
+      seq.push(e);
+    }
+    seq.push({ mode: 'bonus', dateOrd: MG_SIM_END });
+    return seq;
+  })();
   const MG_NEW = ['memory', 'keepie', 'card', 'math', 'mastermind', 'dorsales'];
+  const MG_ORIG_META = { mm: ['🎯', '¿Más o menos?'], nat: ['🌍', '¿De qué selección?'], foto: ['📸', '¿Quién es?'], punteria: ['🥅', 'Puntería'], pistas: ['🕵️', 'Adivina con pistas'], wordle: ['🔤', 'Wordle'], porteria: ['⚽', 'Goles míticos'], sudoku: ['🧩', 'Sudoku'] };
   let testIdx = 0;
+  // BONUS de la final: elegir 3 de los 14 y jugarlos seguidos (contenido nuevo).
+  let bonusSeq = null, bonusPos = 0, bonusPicks = [], bonusMode = false;
+  function freshContent(mode) {
+    const r = n => Math.floor(Math.random() * n);
+    if (mode === 'mm') return { theme: MG_THEMES[r(MG_THEMES.length)].key };
+    if (mode === 'nat') return { i: r(Math.max(1, Math.floor(MG_NAT_POOL.length / 5))) };
+    if (mode === 'foto') return { i: r(MG_FOTO_POOL.length) };
+    if (mode === 'pistas') return { i: r(MG_PISTAS_POOL.length) };
+    if (mode === 'wordle') return { i: r(MG_WORDLE_POOL.length) };
+    if (mode === 'porteria') return { i: r(MG_PORTERIA_POOL.length) };
+    if (mode === 'sudoku') return { i: r(MG_SUDOKU.length) };
+    return { i: 3 }; // nuevos: variante "final" (window.NG hace % length)
+  }
   function currentEntry() {
-    if (IS_ADMIN) return MG_TEST_SEQ[testIdx] || { mode: 'over' };
+    if (IS_ADMIN) {
+      if (bonusSeq) return bonusSeq[bonusPos] || { mode: 'bonusdone' };
+      return MG_TEST_SEQ[testIdx] || { mode: 'over' };
+    }
     let i = scheduleIdx(); if (i < 0) i = 0; if (i >= MG_ROTATION.length) return { mode: 'over' }; return MG_ROTATION[i];
   }
   function themeByKey(k) { return MG_THEMES.find(t => t.key === k) || MG_THEMES[0]; }
@@ -488,21 +535,80 @@ const MG_ROTATION = [
     const pv = el('mg-play-view'); if (pv) pv.insertBefore(step, pv.firstChild);
     step.addEventListener('click', function (e) {
       const b = e.target.closest('[data-st]'); if (!b) return;
-      testIdx = b.dataset.st === 'next' ? Math.min(MG_TEST_SEQ.length - 1, testIdx + 1) : Math.max(0, testIdx - 1);
+      const dir = b.dataset.st === 'next' ? 1 : -1;
+      if (bonusSeq) { // navegando dentro del bonus (los 3 elegidos)
+        if (dir > 0) { bonusPos++; if (bonusPos >= bonusSeq.length) { bonusSeq = null; bonusMode = false; bonusPos = 0; renderBonusSummary(); updateTestStep(); return; } }
+        else { if (bonusPos === 0) { bonusSeq = null; bonusMode = false; } else bonusPos--; }
+        started = false; gameOver = false; startDay(); return;
+      }
+      testIdx = Math.min(MG_TEST_SEQ.length - 1, Math.max(0, testIdx + dir));
       started = false; gameOver = false; startDay();
     });
   }
-  function origName(e) {
-    const map = { mm: '🎯 ¿Más o menos?', nat: '🌍 ¿De qué selección?', foto: '📸 ¿Quién es?', punteria: '🥅 Puntería', pistas: '🕵️ Pistas', wordle: '🔤 Wordle', porteria: '⚽ Goles míticos', sudoku: '🧩 Sudoku' };
-    return map[(e || {}).mode] || (e || {}).mode || '';
+  function gmeta(mode) {
+    if (mode === 'bonus' || mode === 'bonusdone') return ['🏆', 'Bonus de la final'];
+    if (window.NG && window.NG.has(mode)) { const m = window.NG.meta(mode); return [m.emoji, m.name]; }
+    return MG_ORIG_META[mode] || ['🎮', mode];
   }
   function updateTestStep() {
     const l = el('mg-teststep-lbl'); if (!l) return;
-    const e = MG_TEST_SEQ[testIdx] || {}; let name;
-    if (e.mode === 'bonus') name = '🏆 Bonus final';
-    else if (window.NG && window.NG.has(e.mode)) { const m = window.NG.meta(e.mode); name = m.emoji + ' ' + m.name; }
-    else name = origName(e);
-    l.innerHTML = `Prueba ${testIdx + 1}/${MG_TEST_SEQ.length} · ${esc(name)}`;
+    if (bonusSeq) { const m = gmeta(bonusSeq[bonusPos].mode); l.innerHTML = `🏆 Bonus ${bonusPos + 1}/${bonusSeq.length} · ${m[0]} ${esc(m[1])}`; return; }
+    const e = MG_TEST_SEQ[testIdx] || {}; const m = gmeta(e.mode);
+    l.innerHTML = `${e.dateOrd ? ordLabel(e.dateOrd) + ' · ' : ''}${m[0]} ${esc(m[1])}`;
+  }
+  // Intro corta para TODOS los juegos (también los 8 originales).
+  const MG_INTROS = {
+    mm: 'Te enseñamos dos jugadores. Adivina si el segundo tiene <b>MÁS o MENOS</b> que el primero en el dato del día. Encadena aciertos sin fallar.',
+    nat: 'Mira el jugador y acierta <b>de qué selección</b> es. 5 jugadores; suma aciertos.',
+    foto: 'Adivina el <b>jugador de la foto</b>. Cada intento la ves un poco mejor; acierta con los <b>menos intentos</b>.',
+    punteria: 'Marca goles: <b>toca la portería</b> cuando el balón esté lejos del portero. ¡Aguanta el máximo!',
+    pistas: 'Adivina el jugador con el <b>mínimo de pistas</b>. Cada fallo revela una pista nueva.',
+    wordle: 'Adivina el <b>apellido</b> del jugador (estilo Wordle). Cuantos menos intentos, mejor.',
+    porteria: 'Te decimos un <b>gol mítico</b> de un Mundial. Toca en la portería <b>por dónde entró</b>; gana quien menos se aleje.',
+    sudoku: '<b>Sudoku de fútbol</b> 6×6: complétalo lo más rápido que puedas.',
+  };
+  function showOrigIntro(mode, onStart) {
+    const rules = MG_INTROS[mode], b = el('mg-board');
+    if (!rules || !b) { onStart(); return; }
+    const m = gmeta(mode);
+    b.innerHTML = `<div class="ng-intro"><div class="ng-intro-emoji">${m[0]}</div><div class="ng-intro-title" style="font-family:'Sora',sans-serif;font-weight:800;font-size:16px;margin-bottom:6px">${esc(m[1])}</div><p class="ng-intro-rules">${rules}</p><button type="button" class="btn-primary ng-btn" id="mg-intro-go">▶️ Empezar</button></div>`;
+    const go = el('mg-intro-go'); if (go) go.addEventListener('click', onStart);
+  }
+  function allGames() {
+    const orig = Object.keys(MG_ORIG_META).map(k => ({ key: k, emoji: MG_ORIG_META[k][0], name: MG_ORIG_META[k][1] }));
+    return orig.concat((window.NG && window.NG.list) ? window.NG.list : []);
+  }
+  function renderBonusPick() {
+    setTimerVisible(false); setHud(''); if (Game && Game.teardown) Game.teardown(); Game = null;
+    const tb = el('mg-theme'); if (tb) tb.innerHTML = '🏆 <b>Bonus track de la final</b>';
+    const b = el('mg-board'); if (!b) return;
+    b.innerHTML = `<div class="ng-intro"><div class="ng-intro-emoji">🏆</div>
+      <p class="ng-intro-rules">¡Día de la final! Elige tus <b>3 minijuegos</b> favoritos y juégalos seguidos (con <b>contenido nuevo</b>). Tus 3 notas se normalizan (0–100) y se suman → ranking del bonus.</p>
+      <div class="ng-bonus-pick">${allGames().map(g => `<button type="button" class="ng-bonus-opt" data-bk="${g.key}">${g.emoji}<span>${esc(g.name)}</span></button>`).join('')}</div>
+      <button type="button" class="btn-primary ng-btn" id="mg-bonus-go" disabled>▶️ Jugar los 3</button></div>`;
+    bonusPicks = [];
+    b.querySelectorAll('[data-bk]').forEach(btn => btn.addEventListener('click', () => {
+      const k = btn.dataset.bk, at = bonusPicks.indexOf(k);
+      if (at >= 0) { bonusPicks.splice(at, 1); btn.classList.remove('on'); }
+      else { if (bonusPicks.length >= 3) return; bonusPicks.push(k); btn.classList.add('on'); }
+      const go = el('mg-bonus-go'); if (go) go.disabled = bonusPicks.length !== 3;
+    }));
+    const go = el('mg-bonus-go'); if (go) go.addEventListener('click', () => {
+      if (bonusPicks.length !== 3) return;
+      bonusSeq = bonusPicks.map(k => Object.assign({ mode: k, bonus: true }, freshContent(k)));
+      bonusPos = 0; bonusMode = true; started = false; gameOver = false; startDay();
+    });
+  }
+  function renderBonusSummary() {
+    setTimerVisible(false); setHud(''); Game = null;
+    const tb = el('mg-theme'); if (tb) tb.innerHTML = '🏆 <b>Bonus completado</b>';
+    const b = el('mg-board'); if (!b) return;
+    const names = bonusPicks.map(k => { const m = gmeta(k); return `${m[0]} ${esc(m[1])}`; });
+    b.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">🎉</div><h3>¡Bonus completado!</h3>
+      <p>Jugaste: <b>${names.join(' · ')}</b></p>
+      <p class="mg-note">En la final real, cada resultado pasa a una nota 0–100 (según tu posición frente al resto) y se suman las 3 → ranking del bonus.</p>
+      <button type="button" class="btn-primary" id="mg-bonus-again">🔄 Otra vez</button></div>`;
+    const ag = el('mg-bonus-again'); if (ag) ag.addEventListener('click', () => { bonusSeq = null; bonusMode = false; bonusPos = 0; bonusPicks = []; started = false; startDay(); });
   }
 
   fab.addEventListener('click', function () {
@@ -564,17 +670,17 @@ const MG_ROTATION = [
     const entry = currentEntry();
     gameOver = false; busy = false; started = true;
     const tb = el('mg-theme');
-    if (IS_ADMIN) updateTestStep();
-    // Admin: juegos NUEVOS y bonus → delegados a newgames.js, jugados en el pop-up real.
-    if (IS_ADMIN && window.NG && (entry.mode === 'bonus' || window.NG.has(entry.mode))) {
-      setTimerVisible(false); setHud(''); Game = null;
-      const board = el('mg-board');
-      if (board) {
-        board.innerHTML = ''; const sub = document.createElement('div'); board.appendChild(sub);
-        if (entry.mode === 'bonus') { if (tb) tb.innerHTML = '🏆 <b>Bonus track de la final</b>'; window.NG.mountBonus(sub); }
-        else { const m = window.NG.meta(entry.mode); if (tb) tb.innerHTML = `${m.emoji} Reto: <b>${m.name}</b>`; window.NG.mount(entry.mode, sub, false); }
+    if (IS_ADMIN) {
+      updateTestStep();
+      if (entry.mode === 'bonus') { renderBonusPick(); return; }
+      if (entry.mode === 'bonusdone') { renderBonusSummary(); return; }
+      // Juegos NUEVOS → delegados a newgames.js, jugados en el pop-up real.
+      if (window.NG && window.NG.has(entry.mode)) {
+        setTimerVisible(false); setHud(''); Game = null;
+        const board = el('mg-board');
+        if (board) { board.innerHTML = ''; const sub = document.createElement('div'); board.appendChild(sub); const m = window.NG.meta(entry.mode); if (tb) tb.innerHTML = `${m.emoji} Reto: <b>${m.name}</b>`; window.NG.mount(entry.mode, sub, entry.i || 0); }
+        return;
       }
-      return;
     }
     if (entry.mode === 'over') {
       if (tb) tb.innerHTML = '🏁 <b>¡Se acabó el Mundial!</b>';
@@ -605,8 +711,12 @@ const MG_ROTATION = [
       reconcileDone(); // si su partida se borró del servidor, limpia el candado local
       reconcileBest(); // "tu mejor de hoy" = tu puntuación registrada en el ranking
       if (!IS_ADMIN && (isDone() || playedTodayServer())) { showLocked(); return; } // admin: sin candado (modo prueba)
-      setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat'); // llevan cuenta atrás
-      Game.start();
+      setTimerVisible(false);
+      // Tarjeta de intro (todos los juegos) → al pulsar Empezar arranca el juego.
+      showOrigIntro(entry.mode, function () {
+        setTimerVisible(entry.mode === 'mm' || entry.mode === 'pistas' || entry.mode === 'foto' || entry.mode === 'nat');
+        Game.start();
+      });
     });
   }
   function showLocked() {
@@ -1461,6 +1571,7 @@ const MG_ROTATION = [
       '</div>';
   }
   function revealRanking() {
+    if (bonusMode) return; // en el bonus: el original solo se juega; avanzas con › (sin ranking ni guardar)
     setFabDone(true); // reto completado → el icono deja de moverse
     const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
     setDone();       // 1 partida al día (caché local)
