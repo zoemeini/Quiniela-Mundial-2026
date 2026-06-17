@@ -372,7 +372,7 @@ const MG_ROTATION = [
     { mode: 'punteria', list: [0] },
     { mode: 'pistas', list: [21, 15, 19, 22, 27] },      // Valverde (Madrid, menos conocido) 1º; no Mbappé/Pedri
     { mode: 'wordle', list: [13, 2, 4, 18, 15] },         // Musiala, Haaland, Modric, Valverde, Osimhen (Wirtz→Haaland, más fácil; no Messi/Kane)
-    { mode: 'porteria', list: [[1, 3], [5, 2]] },        // PARES fijados (media de 2 distancias): 1ª aparición (24 jun) = Iniesta+Mbappé · 2ª (8 jul) = Messi+Puyol
+    { mode: 'porteria', list: [[1, 3], [4, 2]] },        // PARES fijados (media de 2 distancias): 1ª aparición (24 jun) = Iniesta+Mbappé · 2ª (8 jul) = Pavard+Puyol
     { mode: 'sudoku', list: [1, 4, 8, 5, 2] },
     { mode: 'memory', list: [0, 1, 2, 3] },
     { mode: 'keepie', list: [0, 1, 2] },
@@ -410,7 +410,7 @@ const MG_ROTATION = [
     if (mode === 'foto') return { i: r(MG_FOTO_POOL.length) };
     if (mode === 'pistas') return { i: r(MG_PISTAS_POOL.length) };
     if (mode === 'wordle') return { i: r(MG_WORDLE_POOL.length) };
-    if (mode === 'porteria') return { i: 4, i2: 5 }; // bonus 19 jul: Pavard + Messi (par fijado)
+    if (mode === 'porteria') return { i: 6, i2: 5 }; // bonus 19 jul: Zidane + Messi (par fijado)
     if (mode === 'sudoku') return { i: r(MG_SUDOKU.length) };
     return { i: 3 }; // nuevos: variante "final" (window.NG hace % length)
   }
