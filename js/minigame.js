@@ -730,8 +730,10 @@ const MG_ROTATION = [
       if (token !== startToken) return; // se reabrió/cambió de día mientras cargaba
       reconcileDone(); // si su partida se borró del servidor, limpia el candado local
       reconcileBest(); // "tu mejor de hoy" = tu puntuación registrada en el ranking
-      // 1 partida al día (salvo Zoesita, que prueba, y el bonus, que se juega seguido).
-      if (!isTester() && !bonusMode && (isDone() || playedTodayServer())) { showLocked(); return; }
+      // 1 partida al día para TODOS (incluida Zoesita); el bonus se juega seguido.
+      // Zoesita conserva el navegador de días siguientes, pero el reto que ya jugó
+      // queda bloqueado y ve el ranking, igual que cualquier jugador.
+      if (!bonusMode && (isDone() || playedTodayServer())) { showLocked(); return; }
       setTimerVisible(false);
       if (isNew) { mountNewGame(entry); return; } // juego nuevo (newgames.js)
       // Tarjeta de intro (8 originales) → al pulsar Empezar arranca el juego.
@@ -756,7 +758,7 @@ const MG_ROTATION = [
       if (bonusMode) return;          // bonus: solo se juega; se avanza con ›
       if (reported) return; reported = true;
       setBest(score);                 // mejor del día (según MODE_SCORING del modo)
-      if (!isTester()) sub.querySelectorAll('[data-act="reset"]').forEach(b => b.style.display = 'none'); // sin repetir (los testers sí pueden)
+      sub.querySelectorAll('[data-act="reset"]').forEach(b => b.style.display = 'none'); // sin repetir el reto de hoy
       revealRanking();                // setDone + saveMyScore + clasificación de hoy
     });
   }
