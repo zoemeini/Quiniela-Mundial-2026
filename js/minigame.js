@@ -730,10 +730,9 @@ const MG_ROTATION = [
       if (token !== startToken) return; // se reabrió/cambió de día mientras cargaba
       reconcileDone(); // si su partida se borró del servidor, limpia el candado local
       reconcileBest(); // "tu mejor de hoy" = tu puntuación registrada en el ranking
-      // 1 partida al día para TODOS (incluida Zoesita); el bonus se juega seguido.
-      // Zoesita conserva el navegador de días siguientes, pero el reto que ya jugó
-      // queda bloqueado y ve el ranking, igual que cualquier jugador.
-      if (!bonusMode && (isDone() || playedTodayServer())) { showLocked(); return; }
+      // 1 partida al día SOLO para el reto de HOY (previewOffset 0). En la vista
+      // previa de días siguientes (solo Zoesita) puede jugar/repetir para testear.
+      if (!bonusMode && previewOffset === 0 && (isDone() || playedTodayServer())) { showLocked(); return; }
       setTimerVisible(false);
       if (isNew) { mountNewGame(entry); return; } // juego nuevo (newgames.js)
       // Tarjeta de intro (8 originales) → al pulsar Empezar arranca el juego.
@@ -755,7 +754,8 @@ const MG_ROTATION = [
     if (tb) tb.innerHTML = `${m.emoji} Reto de hoy: <b>${m.name}</b>`;
     let reported = false;
     window.NG.mount(entry.mode, sub, entry.i || 0, function (score) {
-      if (bonusMode) return;          // bonus: solo se juega; se avanza con ›
+      // bonus o vista previa de días futuros (testing) → solo se juega, sin guardar/bloquear.
+      if (bonusMode || previewOffset !== 0) return;
       if (reported) return; reported = true;
       setBest(score);                 // mejor del día (según MODE_SCORING del modo)
       sub.querySelectorAll('[data-act="reset"]').forEach(b => b.style.display = 'none'); // sin repetir el reto de hoy
@@ -1645,6 +1645,7 @@ const MG_ROTATION = [
   }
   function revealRanking() {
     if (bonusMode) return; // en el bonus: el original solo se juega; avanzas con › (sin ranking ni guardar)
+    if (previewOffset !== 0) return; // vista previa de días futuros (Zoesita testea): sin guardar/bloquear, puede repetir
     setFabDone(true); // reto completado → el icono deja de moverse
     const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
     setDone();       // 1 partida al día (caché local)
