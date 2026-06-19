@@ -6,7 +6,10 @@ const WC_FRIENDS = ['Zoesita', 'cacota', 'Real Bertis', 'Nai', 'Vicky', 'EricYam
 function normName(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
 const FRIEND_SET = new Set(WC_FRIENDS.map(normName));
 const isFriend = u => FRIEND_SET.has(normName(u));
-let lbTab = 'friends';   // pestaña activa: 'friends' | 'others'
+// SOLO Zoesita (organizadora) ve las dos pestañas. El resto ve únicamente su
+// propio ranking: los amigos → "Mis amigos"; quien se unió después → "Los demás".
+const isZoe = normName(me) === 'zoesita';
+let lbTab = (isZoe || isFriend(me)) ? 'friends' : 'others';  // pestaña/grupo activo
 let lastRows = null;     // últimas filas calculadas (para repintar al cambiar de pestaña)
 
 let lbRendered = false;
@@ -175,9 +178,11 @@ function escHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// Cambio de pestaña (Mis amigos / Los demás): repinta al instante sin recargar.
+// Las pestañas solo se muestran a Zoesita; el resto ve solo su ranking.
+if (!isZoe) { const tc = document.querySelector('.tabs-container'); if (tc) tc.style.display = 'none'; }
+// Cambio de pestaña (solo Zoesita): repinta al instante sin recargar.
 const lbTabsEl = document.getElementById('lb-tabs');
-if (lbTabsEl) lbTabsEl.addEventListener('click', e => {
+if (isZoe && lbTabsEl) lbTabsEl.addEventListener('click', e => {
   const b = e.target.closest('[data-lbtab]'); if (!b) return;
   lbTab = b.dataset.lbtab; paintTab();
 });
