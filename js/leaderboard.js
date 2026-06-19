@@ -13,6 +13,7 @@ const BOTH_SET = new Set(WC_BOTH.map(normName));
 const isBoth = u => BOTH_SET.has(normName(u));
 let lbTab = 'friends';   // pestaña activa: 'friends' (OG) | 'others' (invitados)
 let lastRows = null;     // últimas filas calculadas (para repintar al cambiar de pestaña)
+let lbDelta = {};        // cambio de puesto por jugador y pestaña: 'f:'/'o:'+nombre → +sube / −baja
 
 let lbRendered = false;
 function applyLeaderboard(data) {
@@ -110,6 +111,44 @@ async function loadLeaderboard() {
   }
 }
 
+// Asigna puesto (1..N) a una lista ya ordenada; empata solo si coinciden puntos y ⭐.
+function ranked(list) {
+  let rank = 0, prevKey = null;
+  return list.map(row => {
+    const key = row.total + '|' + row.exact;
+    if (prevKey === null || key !== prevKey) { rank++; prevKey = key; }
+    return { row, rank };
+  });
+}
+// Posiciones actuales de cada jugador en su pestaña: 'f:'+nombre y 'o:'+nombre.
+function posMap(rows) {
+  const friends = rows.filter(r => isFriend(r.user) || isBoth(r.user));
+  const others = rows.filter(r => !isFriend(r.user) || isBoth(r.user));
+  const pos = {};
+  ranked(friends).forEach(({ row, rank }) => { pos['f:' + normName(row.user)] = rank; });
+  ranked(others).forEach(({ row, rank }) => { pos['o:' + normName(row.user)] = rank; });
+  return pos;
+}
+// Calcula cuántos puestos sube/baja cada uno respecto a ANTES del último resultado.
+// Guarda una "foto" en el dispositivo que solo avanza cuando hay un partido nuevo,
+// así las flechas se mantienen hasta que cambie el marcador (no en cada recarga).
+function computeDeltas(rows, played) {
+  const cur = posMap(rows);
+  lbDelta = {};
+  let snap = null;
+  try { snap = JSON.parse(localStorage.getItem('wc2026_lb_snap') || 'null'); } catch (_) {}
+  if (!snap || typeof snap.played !== 'number') {
+    localStorage.setItem('wc2026_lb_snap', JSON.stringify({ played, pos: cur, prevPos: cur }));
+    return; // primera vez en este dispositivo: aún sin flechas
+  }
+  let base = snap.prevPos || {};        // foto justo antes del último resultado
+  if (played > snap.played) {           // ha entrado un resultado nuevo → avanza la foto
+    base = snap.pos || {};
+    localStorage.setItem('wc2026_lb_snap', JSON.stringify({ played, pos: cur, prevPos: base }));
+  }
+  for (const k in cur) if (base[k] != null) lbDelta[k] = base[k] - cur[k]; // + = sube puestos
+}
+
 function renderLeaderboard(rows, playedGroup, playedKo) {
   lastRows = rows;
   const subtitle = document.getElementById('lb-subtitle');
@@ -120,6 +159,7 @@ function renderLeaderboard(rows, playedGroup, playedKo) {
     subtitle.textContent = `${playedGroup} de ${MATCHES.length} partidos de grupos`
       + (playedKo > 0 ? ` · ${playedKo} de ${KO_MATCHES.length} de eliminatorias` : '') + ' jugados';
   }
+  computeDeltas(rows, total); // flechas de subida/bajada respecto al último resultado
   paintTab();
 }
 
@@ -145,12 +185,10 @@ function renderRows(rows) {
       : '<div class="lb-loading">Todavía no se ha unido ningún invitado. 🌱</div>';
     return;
   }
-  // Empates: misma posición solo si coinciden PUNTOS y ESTRELLAS (las estrellas
-  // desempatan los puntos). Numeración correlativa, sin saltos.
-  let rank = 0, prevKey = null;
-  rows.forEach((row) => {
-    const key = row.total + '|' + row.exact;
-    if (prevKey === null || key !== prevKey) { rank++; prevKey = key; }
+  // Numeración correlativa (empata solo si coinciden puntos y ⭐), con flecha de
+  // subida/bajada de puestos respecto a antes del último resultado.
+  const prefix = lbTab === 'friends' ? 'f:' : 'o:';
+  ranked(rows).forEach(({ row, rank }) => {
     const isMe = row.user === me;
     const div = document.createElement('div');
     div.className = 'lb-row clickable' + (isMe ? ' me' : '');
@@ -160,9 +198,15 @@ function renderRows(rows) {
     });
     const rankClass = rank <= 3 ? `top-${rank}` : '';
     const rankLabel = rank <= 3 ? rankIcons[rank - 1] : rank;
+    const mv = lbDelta[prefix + normName(row.user)];
+    const move = (mv > 0)
+      ? ` <span style="color:var(--green);font-weight:700;font-size:11px;white-space:nowrap" title="Sube ${mv} ${mv === 1 ? 'puesto' : 'puestos'}">▲${mv}</span>`
+      : (mv < 0)
+        ? ` <span style="color:var(--red);font-weight:700;font-size:11px;white-space:nowrap" title="Baja ${-mv} ${-mv === 1 ? 'puesto' : 'puestos'}">▼${-mv}</span>`
+        : '';
     div.innerHTML = `
       <div class="lb-rank ${rankClass}">${rankLabel}</div>
-      <div class="lb-name">${escHtml(row.user)}${isMe ? ' <span style="font-size:11px;color:var(--muted)">(tú)</span>' : ''}</div>
+      <div class="lb-name">${escHtml(row.user)}${isMe ? ' <span style="font-size:11px;color:var(--muted)">(tú)</span>' : ''}${move}</div>
       <div class="lb-pts">${row.total}</div>
       <div class="lb-num">${row.group}</div>
       <div class="lb-num">${row.ko}</div>
