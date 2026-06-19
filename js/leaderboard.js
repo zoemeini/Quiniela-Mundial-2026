@@ -1,15 +1,12 @@
 const me = localStorage.getItem('wc2026_username');
 if (me) document.getElementById('username-display').textContent = me;
 
-// ── Mis amigos (la porra original). Quien se una después va a "Los demás". ──
+// ── OG = la porra original (lista fija). Quien se una después = "invitados". ──
 const WC_FRIENDS = ['Zoesita', 'cacota', 'Real Bertis', 'Nai', 'Vicky', 'EricYamal', 'oscar', 'Mariona', 'Joan', 'Guillem', 'Jon Aritz', 'saracarbonero', 'TontoAQuienLeGaneElDummy', 'Cacu', 'Alex Martos', 'Piti Alonso', 'ikerxu', 'Jontxu', 'erikaso', 'Clara', 'Belenchu', 'Jordi Alba', 'Roger'];
 function normName(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
 const FRIEND_SET = new Set(WC_FRIENDS.map(normName));
 const isFriend = u => FRIEND_SET.has(normName(u));
-// SOLO Zoesita (organizadora) ve las dos pestañas. El resto ve únicamente su
-// propio ranking: los amigos → "Mis amigos"; quien se unió después → "Los demás".
-const isZoe = normName(me) === 'zoesita';
-let lbTab = (isZoe || isFriend(me)) ? 'friends' : 'others';  // pestaña/grupo activo
+let lbTab = 'friends';   // pestaña activa: 'friends' (OG) | 'others' (invitados)
 let lastRows = null;     // últimas filas calculadas (para repintar al cambiar de pestaña)
 
 let lbRendered = false;
@@ -127,8 +124,8 @@ function paintTab() {
   const friends = rows.filter(r => isFriend(r.user));
   const others = rows.filter(r => !isFriend(r.user));
   const fb = document.querySelector('[data-lbtab="friends"]'), ob = document.querySelector('[data-lbtab="others"]');
-  if (fb) { fb.innerHTML = `👑 Mis amigos <span class="tab-check">${friends.length}</span>`; fb.classList.toggle('active', lbTab === 'friends'); }
-  if (ob) { ob.innerHTML = `🌍 Los demás <span class="tab-check">${others.length}</span>`; ob.classList.toggle('active', lbTab === 'others'); }
+  if (fb) { fb.innerHTML = `👑 Ranking de los OG <span class="tab-check">${friends.length}</span>`; fb.classList.toggle('active', lbTab === 'friends'); }
+  if (ob) { ob.innerHTML = `🎟️ Ranking de los invitados <span class="tab-check">${others.length}</span>`; ob.classList.toggle('active', lbTab === 'others'); }
   renderRows(lbTab === 'friends' ? friends : others);
 }
 
@@ -138,8 +135,8 @@ function renderRows(rows) {
   body.innerHTML = '';
   if (rows.length === 0) {
     body.innerHTML = lbTab === 'friends'
-      ? '<div class="lb-loading">Ninguno de tus amigos ha pronosticado todavía.</div>'
-      : '<div class="lb-loading">Todavía no se ha unido nadie más. 🌱</div>';
+      ? '<div class="lb-loading">Todavía ningún OG ha pronosticado.</div>'
+      : '<div class="lb-loading">Todavía no se ha unido ningún invitado. 🌱</div>';
     return;
   }
   // Empates: misma posición solo si coinciden PUNTOS y ESTRELLAS (las estrellas
@@ -178,11 +175,9 @@ function escHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// Las pestañas solo se muestran a Zoesita; el resto ve solo su ranking.
-if (!isZoe) { const tc = document.querySelector('.tabs-container'); if (tc) tc.style.display = 'none'; }
-// Cambio de pestaña (solo Zoesita): repinta al instante sin recargar.
+// Cambio de pestaña (Ranking de los OG / invitados): repinta al instante sin recargar.
 const lbTabsEl = document.getElementById('lb-tabs');
-if (isZoe && lbTabsEl) lbTabsEl.addEventListener('click', e => {
+if (lbTabsEl) lbTabsEl.addEventListener('click', e => {
   const b = e.target.closest('[data-lbtab]'); if (!b) return;
   lbTab = b.dataset.lbtab; paintTab();
 });
