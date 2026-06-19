@@ -6,6 +6,11 @@ const WC_FRIENDS = ['Zoesita', 'cacota', 'Real Bertis', 'Nai', 'Vicky', 'EricYam
 function normName(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
 const FRIEND_SET = new Set(WC_FRIENDS.map(normName));
 const isFriend = u => FRIEND_SET.has(normName(u));
+// Estos OG también quieren salir en el ranking de invitados (tienen amigos allí):
+// aparecen en AMBAS pestañas. (Incluyo las dos grafías de ikerxu/ikertxu por si acaso.)
+const WC_BOTH = ['EricYamal', 'Jon Aritz', 'ikerxu', 'ikertxu'];
+const BOTH_SET = new Set(WC_BOTH.map(normName));
+const isBoth = u => BOTH_SET.has(normName(u));
 let lbTab = 'friends';   // pestaña activa: 'friends' (OG) | 'others' (invitados)
 let lastRows = null;     // últimas filas calculadas (para repintar al cambiar de pestaña)
 
@@ -121,8 +126,9 @@ function renderLeaderboard(rows, playedGroup, playedKo) {
 // Pinta la pestaña activa (Mis amigos / Los demás), con su propio ranking.
 function paintTab() {
   const rows = lastRows || [];
-  const friends = rows.filter(r => isFriend(r.user));
-  const others = rows.filter(r => !isFriend(r.user));
+  // Los OG marcados en WC_BOTH salen también en invitados (y al revés).
+  const friends = rows.filter(r => isFriend(r.user) || isBoth(r.user));
+  const others = rows.filter(r => !isFriend(r.user) || isBoth(r.user));
   const fb = document.querySelector('[data-lbtab="friends"]'), ob = document.querySelector('[data-lbtab="others"]');
   if (fb) { fb.innerHTML = `👑 Ranking de los OG <span class="tab-check">${friends.length}</span>`; fb.classList.toggle('active', lbTab === 'friends'); }
   if (ob) { ob.innerHTML = `🎟️ Ranking de los invitados <span class="tab-check">${others.length}</span>`; ob.classList.toggle('active', lbTab === 'others'); }
