@@ -174,7 +174,7 @@ const MG_PISTAS_POOL = [
   { n: 'Thibaut Courtois', iso: 'be', pais: 'Bélgica', pos: 'Portero', club: 'Real Madrid', age: 33, num: 1 },
   { n: 'Gianluigi Donnarumma', iso: 'it', pais: 'Italia', pos: 'Portero', club: 'Manchester City', age: 27, num: 1 },
   { n: 'Alisson Becker', iso: 'br', pais: 'Brasil', pos: 'Portero', club: 'Liverpool', age: 33, num: 1 },
-  { n: 'Son Heung-min', iso: 'kr', pais: 'Corea del Sur', pos: 'Delantero', club: 'LAFC', age: 33, num: 7 },
+  { n: 'Son Heung-min', iso: 'kr', pais: 'Corea del Sur', pos: 'Delantero', club: 'LAFC', age: 33, num: 7, paisLast: true },
 ];
 
 // ── Datos de «Wordle de jugadores» ──
@@ -871,6 +871,8 @@ const MG_ROTATION = [
       // Baraja el orden de las pistas con la semilla del día: no siempre se
       // empieza por la misma, pero el orden es igual para todos cada día.
       for (let i = clues.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = clues[i]; clues[i] = clues[j]; clues[j] = t; }
+      // Para jugadores cuyo país los delata (p. ej. Son), el País va de ÚLTIMA pista.
+      if (p.paisLast) { const ix = clues.findIndex(c => c.k === 'País'); if (ix >= 0) clues.push(clues.splice(ix, 1)[0]); }
       this.clues = clues;
       this.shown = 1; this.attempts = 0; this.solved = false; this._tries = []; gameOver = false; busy = false;
       this.render();
