@@ -88,8 +88,9 @@
       ['Gvardiol', 'hr', 20], ['Theo Hernández', 'fr', 22], ['Maignan', 'fr', 16], ['Gündoğan', 'de', 21], ['Cucurella', 'es', 14],
     ] },
     { label: 'Cracks 4 (final)', pairs: [
-      ['Modrić', 'hr', 10], ['Harry Kane', 'gb-eng', 9], ['De Bruyne', 'be', 7], ['Gakpo', 'nl', 8], ['Camavinga', 'fr', 6],
-      ['Cancelo', 'pt', 20], ['Enzo Fernández', 'ar', 24], ['Dani Olmo', 'es', 21], ['Donnarumma', 'it', 1], ['Griezmann', 'fr', 11],
+      // Dorsales del Mundial 2026 (verificados); jugadores convocados que NO salieron en Cracks 1-3.
+      ['Alisson', 'br', 1], ['Declan Rice', 'gb-eng', 4], ['Mikel Merino', 'es', 6], ['Dembélé', 'fr', 7], ['Bruno Fernandes', 'pt', 8],
+      ['Gavi', 'es', 9], ['Musiala', 'de', 10], ['Raphinha', 'br', 11], ['F. de Jong', 'nl', 21], ['Enzo Fernández', 'ar', 24],
     ] },
   ];
 
