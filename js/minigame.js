@@ -416,7 +416,7 @@ const MG_ROTATION = [
     if (mode === 'mm') return { theme: 'selecciones' };   // 🏆 Victorias en Mundiales (temático para la final)
     if (mode === 'nat') return { i: 4 };                  // Quiz 5 (McKennie, Caicedo, Taremi, Endo, Hwang)
     if (mode === 'foto') return { i: 7 };                 // Lewandowski
-    if (mode === 'pistas') return { i: 18 };              // Phil Foden (menos obvio que Yamal)
+    if (mode === 'pistas') return { i: 32 };              // Son Heung-min
     if (mode === 'wordle') return { i: 16 };              // COURTOIS (más difícil que Pedri)
     if (mode === 'porteria') return { i: 6, i2: 5 };      // Zidane + Messi (media de distancias)
     if (mode === 'sudoku') return { i: 9 };               // Difícil (puzzle fijo)
