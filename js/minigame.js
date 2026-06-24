@@ -415,9 +415,9 @@ const MG_ROTATION = [
   function freshContent(mode) {
     if (mode === 'mm') return { theme: 'selecciones' };   // 🏆 Victorias en Mundiales (temático para la final)
     if (mode === 'nat') return { i: 4 };                  // Quiz 5 (McKennie, Caicedo, Taremi, Endo, Hwang)
-    if (mode === 'foto') return { i: 2 };                 // Mbappé
-    if (mode === 'pistas') return { i: 4 };               // Lamine Yamal
-    if (mode === 'wordle') return { i: 5 };               // PEDRI
+    if (mode === 'foto') return { i: 7 };                 // Lewandowski
+    if (mode === 'pistas') return { i: 18 };              // Phil Foden (menos obvio que Yamal)
+    if (mode === 'wordle') return { i: 16 };              // COURTOIS (más difícil que Pedri)
     if (mode === 'porteria') return { i: 6, i2: 5 };      // Zidane + Messi (media de distancias)
     if (mode === 'sudoku') return { i: 9 };               // Difícil (puzzle fijo)
     return { i: 3 };                                      // juegos nuevos: variante "final" (window.NG hace % length)
@@ -762,7 +762,7 @@ const MG_ROTATION = [
       setBest(score);                 // mejor del día (según MODE_SCORING del modo)
       sub.querySelectorAll('[data-act="reset"]').forEach(b => b.style.display = 'none'); // sin repetir el reto de hoy
       revealRanking();                // setDone + saveMyScore + clasificación de hoy
-    }, bonusMode ? MG_BONUS_SEED : undefined); // bonus: contenido FIJO; resto: aleatorio como siempre
+    }, bonusMode ? MG_BONUS_SEED : seedInt()); // bonus: semilla fija · diario: semilla POR FECHA → mismo contenido para todos ese día
   }
   function showLocked() {
     gameOver = true; setTimerVisible(false);
