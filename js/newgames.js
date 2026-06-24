@@ -8,6 +8,9 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function flag(iso) { return iso ? `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">` : ''; }
   function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  // RNG sembrable: si se pasa una semilla, el contenido sale FIJO (igual siempre y
+  // para todos). Se usa en el bonus de la final para que la competición sea justa.
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').trim().replace(/\s+/g, ' '); }
   // Distancia de edición (para aceptar erratas/faltas).
   function lev(a, b) {
@@ -193,7 +196,9 @@
   }
 
   // ── 2) DORSALES ───────────────────────────────────────────────────────
-  function mountDorsales(root, content, onDone) {
+  function mountDorsales(root, content, onDone, seed) {
+    const _rand = (typeof seed === 'number') ? mulberry32(seed) : Math.random;
+    const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(_rand() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
     const players = content.pairs.map((p, i) => ({ idx: i, name: p[0], iso: p[1], num: p[2] }));
     const numbers = shuffle(players.map(p => p.num));
     let phase = 'intro', assign = {}, selPlayer = null;
@@ -292,17 +297,19 @@
   }
 
   // ── 4) GOL O TARJETA ──────────────────────────────────────────────────
-  function mountCard(root, content, onDone) {
+  function mountCard(root, content, onDone, seed) {
+    const _rand = (typeof seed === 'number') ? mulberry32(seed) : Math.random;
+    const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(_rand() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
     const pool = content.players;
     let phase = 'intro', rounds = [], idx = 0, score = 0, answered = false, timer = null, deadline = 0;
-    function wrongCountry(p) { const opts = COUNTRIES.filter(c => c.name !== p.c); return opts[Math.floor(Math.random() * opts.length)]; }
-    function wrongPos(pos) { const opts = POSITIONS.filter(x => x !== pos); return opts[Math.floor(Math.random() * opts.length)]; }
+    function wrongCountry(p) { const opts = COUNTRIES.filter(c => c.name !== p.c); return opts[Math.floor(_rand() * opts.length)]; }
+    function wrongPos(pos) { const opts = POSITIONS.filter(x => x !== pos); return opts[Math.floor(_rand() * opts.length)]; }
     function build() {
       const cats = shuffle(['gol', 'gol', 'gol', 'yellow', 'yellow', 'yellow', 'yellow', 'red', 'red', 'red']);
       rounds = shuffle(pool).map((p, i) => {
         const cat = cats[i]; let okC = true, okP = true;
         if (cat === 'red') { okC = okP = false; }
-        else if (cat === 'yellow') { if (Math.random() < 0.5) okC = false; else okP = false; }
+        else if (cat === 'yellow') { if (_rand() < 0.5) okC = false; else okP = false; }
         return { p, country: okC ? { name: p.c, iso: p.iso } : wrongCountry(p), pos: okP ? p.p : wrongPos(p.p), ans: cat };
       });
       idx = 0; score = 0;
@@ -367,7 +374,9 @@
   }
 
   // ── 5) CÁLCULO MENTAL con incógnitas ──────────────────────────────────
-  function mountMath(root, content, onDone) {
+  function mountMath(root, content, onDone, seed) {
+    const _rand = (typeof seed === 'number') ? mulberry32(seed) : Math.random;
+    const ri = (a, b) => a + Math.floor(_rand() * (b - a + 1));
     const DUR = 90000, lvl = content.level;
     let phase = 'intro', score = 0, cur = null, deadline = 0, timer = null, typed = '';
     function genPuzzle() {
@@ -450,7 +459,9 @@
   }
 
   // ── 6) MASTERMIND DE EQUIPACIONES ─────────────────────────────────────
-  function mountKits(root, onDone) {
+  function mountKits(root, onDone, seed) {
+    const _rand = (typeof seed === 'number') ? mulberry32(seed) : Math.random;
+    const ri = (a, b) => a + Math.floor(_rand() * (b - a + 1));
     const LEN = 5, MAX = 10;
     let phase = 'intro', secret = [], guess = [], history = [], done = false;
     function newSecret() { return Array.from({ length: LEN }, () => ri(0, KITS.length - 1)); } // con repeticiones
@@ -517,10 +528,10 @@
   const NEW_GAMES = [
     { key: 'memory', emoji: '🧠', name: 'Memory', mount: (el, i, onDone) => mountMemory(el, LINEUPS[(i || 0) % LINEUPS.length], onDone) },
     { key: 'keepie', emoji: '⚽', name: 'Que no caiga', mount: (el, i, onDone) => mountKeepie(el, KEEPIE[(i || 0) % KEEPIE.length], onDone) },
-    { key: 'card', emoji: '🟨', name: 'Gol o tarjeta', mount: (el, i, onDone) => mountCard(el, CARD_SETS[(i || 0) % CARD_SETS.length], onDone) },
-    { key: 'math', emoji: '🧮', name: 'Cálculo', mount: (el, i, onDone) => mountMath(el, MATH[(i || 0) % MATH.length], onDone) },
-    { key: 'mastermind', emoji: '🎽', name: 'Mastermind', mount: (el, i, onDone) => mountKits(el, onDone) },
-    { key: 'dorsales', emoji: '🔢', name: 'Dorsales', mount: (el, i, onDone) => mountDorsales(el, DORSAL_SETS[(i || 0) % DORSAL_SETS.length], onDone) },
+    { key: 'card', emoji: '🟨', name: 'Gol o tarjeta', mount: (el, i, onDone, seed) => mountCard(el, CARD_SETS[(i || 0) % CARD_SETS.length], onDone, seed) },
+    { key: 'math', emoji: '🧮', name: 'Cálculo', mount: (el, i, onDone, seed) => mountMath(el, MATH[(i || 0) % MATH.length], onDone, seed) },
+    { key: 'mastermind', emoji: '🎽', name: 'Mastermind', mount: (el, i, onDone, seed) => mountKits(el, onDone, seed) },
+    { key: 'dorsales', emoji: '🔢', name: 'Dorsales', mount: (el, i, onDone, seed) => mountDorsales(el, DORSAL_SETS[(i || 0) % DORSAL_SETS.length], onDone, seed) },
   ];
   const ROT_ORIG = [['🎯', '¿Más o menos?'], ['🌍', '¿De qué selección es?'], ['📸', '¿Quién es este jugador?'], ['🥅', 'Puntería'], ['🕵️', 'Adivina con pistas'], ['🔤', 'Wordle de jugadores'], ['⚽', 'Goles míticos'], ['🧩', 'Sudoku de fútbol']];
   function watchDone(body, cb) { const o = new MutationObserver(() => { if (body.querySelector('.ng-result')) { o.disconnect(); cb(); } }); o.observe(body, { childList: true, subtree: true }); return o; }
@@ -678,7 +689,7 @@
     has: k => NEW_GAMES.some(g => g.key === k),
     list: NEW_GAMES.map(g => ({ key: g.key, emoji: g.emoji, name: g.name })),
     meta: k => { const g = NEW_GAMES.find(g => g.key === k) || {}; return { emoji: g.emoji || '🎮', name: g.name || k }; },
-    mount: (k, el, idx, onDone) => { const g = NEW_GAMES.find(g => g.key === k); if (g) g.mount(el, idx || 0, onDone); },
+    mount: (k, el, idx, onDone, seed) => { const g = NEW_GAMES.find(g => g.key === k); if (g) g.mount(el, idx || 0, onDone, seed); },
     mountBonus: mountBonus,
   };
 

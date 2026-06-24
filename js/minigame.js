@@ -407,18 +407,20 @@ const MG_ROTATION = [
   })();
   const MG_NEW = ['memory', 'keepie', 'card', 'math', 'mastermind', 'dorsales'];
   const MG_ORIG_META = { mm: ['🎯', '¿Más o menos?'], nat: ['🌍', '¿De qué selección?'], foto: ['📸', '¿Quién es?'], punteria: ['🥅', 'Puntería'], pistas: ['🕵️', 'Adivina con pistas'], wordle: ['🔤', 'Wordle'], porteria: ['⚽', 'Goles míticos'], sudoku: ['🧩', 'Sudoku'] };
-  // BONUS de la final: elegir 3 de los 14 y jugarlos seguidos (contenido nuevo).
+  // BONUS de la final: elegir 3 de los 14 y jugarlos seguidos.
   let bonusSeq = null, bonusPos = 0, bonusPicks = [], bonusMode = false;
+  const MG_BONUS_SEED = 20260719; // semilla FIJA → los juegos nuevos del bonus salen iguales siempre y para todos
+  // Contenido FIJO del bonus de la final (igual siempre y para todos, competición
+  // justa). Se eligió contenido que no sale en la rotación normal.
   function freshContent(mode) {
-    const r = n => Math.floor(Math.random() * n);
-    if (mode === 'mm') return { theme: MG_THEMES[r(MG_THEMES.length)].key };
-    if (mode === 'nat') return { i: r(Math.max(1, Math.floor(MG_NAT_POOL.length / 5))) };
-    if (mode === 'foto') return { i: r(MG_FOTO_POOL.length) };
-    if (mode === 'pistas') return { i: r(MG_PISTAS_POOL.length) };
-    if (mode === 'wordle') return { i: r(MG_WORDLE_POOL.length) };
-    if (mode === 'porteria') return { i: 6, i2: 5 }; // bonus 19 jul: Zidane + Messi (par fijado)
-    if (mode === 'sudoku') return { i: r(MG_SUDOKU.length) };
-    return { i: 3 }; // nuevos: variante "final" (window.NG hace % length)
+    if (mode === 'mm') return { theme: 'selecciones' };   // 🏆 Victorias en Mundiales (temático para la final)
+    if (mode === 'nat') return { i: 4 };                  // Quiz 5 (McKennie, Caicedo, Taremi, Endo, Hwang)
+    if (mode === 'foto') return { i: 2 };                 // Mbappé
+    if (mode === 'pistas') return { i: 4 };               // Lamine Yamal
+    if (mode === 'wordle') return { i: 5 };               // PEDRI
+    if (mode === 'porteria') return { i: 6, i2: 5 };      // Zidane + Messi (media de distancias)
+    if (mode === 'sudoku') return { i: 9 };               // Difícil (puzzle fijo)
+    return { i: 3 };                                      // juegos nuevos: variante "final" (window.NG hace % length)
   }
   function currentEntry() {
     if (bonusSeq) return bonusSeq[bonusPos] || { mode: 'bonusdone' }; // bonus de la final en curso
@@ -760,7 +762,7 @@ const MG_ROTATION = [
       setBest(score);                 // mejor del día (según MODE_SCORING del modo)
       sub.querySelectorAll('[data-act="reset"]').forEach(b => b.style.display = 'none'); // sin repetir el reto de hoy
       revealRanking();                // setDone + saveMyScore + clasificación de hoy
-    });
+    }, bonusMode ? MG_BONUS_SEED : undefined); // bonus: contenido FIJO; resto: aleatorio como siempre
   }
   function showLocked() {
     gameOver = true; setTimerVisible(false);
