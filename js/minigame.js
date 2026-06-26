@@ -232,8 +232,9 @@ const MG_FOTO_POOL = [
   { n: 'Sergio Ramos',       wiki: 'Sergio Ramos',       iso: 'es',     pais: 'España',        pos: 'Defensa',       fy: 28 },
   { n: 'Manuel Neuer',       wiki: 'Manuel Neuer',       iso: 'de',     pais: 'Alemania',      pos: 'Portero',       fy: 13 },
   // Fotos LOCALES (carpeta Fotos_mini_juego). Usan `src` en vez de Wikipedia.
-  { n: 'Joan García', src: 'Fotos_mini_juego/Joan_Garcia_4.jpg', iso: 'es', pais: 'España',        pos: 'Portero', fy: 36 },
-  { n: 'Tim Payne',   src: 'Fotos_mini_juego/Tim_Payne_4.png',   iso: 'nz', pais: 'Nueva Zelanda', pos: 'Defensa', fy: 40 },
+  { n: 'Joan García', src: 'Fotos_mini_juego/Joan_Garcia_4.jpg', iso: 'es', pais: 'España',        pos: 'Portero', fy: 36 }, // 20
+  { n: 'Tim Payne',   src: 'Fotos_mini_juego/Tim_Payne_4.png',   iso: 'nz', pais: 'Nueva Zelanda', pos: 'Defensa', fy: 40 }, // 21
+  { n: 'Marc Cucurella', src: 'Fotos_mini_juego/Cucurella.png',  iso: 'es', pais: 'España',        pos: 'Defensa', fy: 50 }, // 22 (recorte muy cercano)
 ];
 
 // ── Datos de «Goles míticos: ¿por dónde entró?» — SOLO goles de Mundiales ──
@@ -431,6 +432,17 @@ const MG_ROTATION = [
     }
     if (off >= MG_TEST_SEQ.length) return { mode: 'over' }; // tras el 19-jul (bonus): fin
     return MG_TEST_SEQ[off]; // 18-jun en adelante: rotación nueva (6 nuevos + ciclo de 14 + bonus)
+  }
+  // ── Nivel Bonus solo de HOY (27-jun-2026) en «Puntería: marca goles» ──
+  //   Al terminar de marcar goles, se juega una foto («¿Quién es?» de Cucurella):
+  //   si la aciertan suman goles según el intento (1º +6, 2º +5 … 6º +1; fallo +0).
+  //   Esos goles se SUMAN a los marcados y esa suma es la que cuenta para el ranking.
+  const MG_PN_BONUS_ORD = ordOf('2026-06-27');
+  const MG_PN_BONUS_FOTO = 22; // Cucurella (índice en MG_FOTO_POOL)
+  function isPnBonusDay() {
+    if (bonusMode) return false;
+    const e = currentEntry();
+    return !!e && e.mode === 'punteria' && dayOrdinal() === MG_PN_BONUS_ORD;
   }
   function themeByKey(k) { return MG_THEMES.find(t => t.key === k) || MG_THEMES[0]; }
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -1111,14 +1123,33 @@ const MG_ROTATION = [
   }
 
   const FotoMode = {
-    secret: null, attempts: 0, max: 6, level: 0, _tries: [], _req: 0,
+    secret: null, attempts: 0, max: 6, level: 0, _tries: [], _req: 0, bonusCb: null,
     zooms: [6.5, 4.6, 3.3, 2.3, 1.5, 1.0],
     zlabels: ['🔍 Solo un detalle', '🔍 Muy de cerca', '🔍 De cerca', '👀 Se va viendo', '🙂 Casi entera', '🖼️ Foto completa'],
     start() {
+      this.bonusCb = null;
       this.secret = MG_FOTO_POOL[(currentEntry().i || 0) % MG_FOTO_POOL.length];
       this.attempts = 0; this.level = 0; this._tries = []; gameOver = false; busy = false;
       this.render();
       startTimer(120000, () => this.timeUp()); // 2 minutos (la foto se va abriendo con cada fallo)
+      this._loadImg();
+    },
+    // ── Nivel Bonus de Puntería ──
+    // Una foto concreta; al acertar se suman goles según el intento (1º +6, 2º +5,
+    // …, 6º +1; fallo +0). El resultado se devuelve por callback (no toca ranking).
+    playBonus(idx, cb) {
+      this.bonusCb = cb;
+      this.secret = MG_FOTO_POOL[idx % MG_FOTO_POOL.length];
+      this.attempts = 0; this.level = 0; this._tries = []; gameOver = false; busy = false;
+      const tb = el('mg-theme'); if (tb) tb.innerHTML = '🎁 <b>Nivel Bonus · ¿Quién es?</b>';
+      this.render();
+      const help = document.querySelector('.mg-foto-help');
+      if (help) help.innerHTML = '🎁 <b>Nivel Bonus</b> · adivina al jugador. Cada fallo aleja la foto, pero <b>cuanto antes aciertes, más goles sumas</b>. ⏱️ 2 min';
+      setHud('🎁 Nivel Bonus · ¿Quién es?');
+      startTimer(120000, () => this.timeUp());
+      this._loadImg();
+    },
+    _loadImg() {
       const req = ++this._req;
       const setImg = url => {
         if (req !== this._req) return; // cambió de día/modo: descarta
@@ -1222,16 +1253,25 @@ const MG_ROTATION = [
       stopTimer(); resetTimerBar();
       const wrap = el('mg-board'); if (!wrap) return;
       const tries = this.attempts;         // intentos usados
-      const score = win ? tries : MG_DNF;  // gana quien acierte en MENOS intentos
-      setBest(score);
-      const head = win ? { e: '🎉', t: `¡Acertaste en ${tries} ${tries === 1 ? 'intento' : 'intentos'}!` }
-                       : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡No era!' };
       const url = this.secret.src || MG_FOTO_CACHE[this.secret.wiki];
       const fy = this.secret.fy != null ? this.secret.fy : 22;
       const photo = (url && url !== 'FAIL') ? `<div class="mg-foto-reveal" style="background-image:url('${url}');background-position:50% ${fy}%"></div>` : '';
+      const reveal = `<div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pais} · ${this.secret.pos}</span></div>`;
+      const head = win ? { e: '🎉', t: `¡Acertaste en ${tries} ${tries === 1 ? 'intento' : 'intentos'}!` }
+                       : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡No era!' };
+      if (this.bonusCb) { // ── Nivel Bonus de Puntería: suma goles según el intento ──
+        const cb = this.bonusCb; this.bonusCb = null;
+        const bonus = win ? Math.max(0, 7 - tries) : 0; // 1º +6, 2º +5 … 6º +1 · fallo +0
+        wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
+          ${photo}${reveal}
+          <p style="font-size:18px;margin:10px 0">${bonus > 0 ? `<b>+${bonus} ${bonus === 1 ? 'gol' : 'goles'}</b> de bonus 🎁` : '<b>+0 goles</b> de bonus'}</p>
+          <button class="btn-primary" id="mg-bonus-cont">Ver mi resultado →</button></div>`;
+        el('mg-bonus-cont').addEventListener('click', () => cb(bonus));
+        return;
+      }
+      setBest(win ? tries : MG_DNF);  // gana quien acierte en MENOS intentos
       wrap.innerHTML = `<div class="mg-end"><div class="mg-end-emoji">${head.e}</div><h3>${head.t}</h3>
-        ${photo}
-        <div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pais} · ${this.secret.pos}</span></div>
+        ${photo}${reveal}
         ${win ? `<p>Acertado en <b>${tries}</b> ${tries === 1 ? 'intento' : 'intentos'}. ¡Cuantos menos, mejor!</p>` : ''}
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
@@ -1566,6 +1606,9 @@ const MG_ROTATION = [
     },
     end(won) {
       gameOver = true; this.teardown();
+      // HOY (27-jun): tras marcar goles se desbloquea el Nivel Bonus (foto de
+      // Cucurella) que SUMA goles según el intento en que se acierte.
+      if (isPnBonusDay()) { this.baseGoals = this.goals; setBest(this.goals); this.showBonusIntro(); return; }
       setBest(this.goals);
       const wrap = el('mg-board'); if (!wrap) return;
       const head = won
@@ -1575,6 +1618,43 @@ const MG_ROTATION = [
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p>
         <button class="btn-primary" id="mg-again">Jugar otra vez</button></div>`;
       el('mg-again').addEventListener('click', () => this.start());
+      setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
+      revealRanking();
+    },
+    // Nivel Bonus: explica el premio y, al pulsar, lanza la foto (FotoMode.playBonus).
+    showBonusIntro() {
+      stopTimer(); setTimerVisible(false);
+      const tb = el('mg-theme'); if (tb) tb.innerHTML = '🎁 <b>Nivel Bonus · ¿Quién es?</b>';
+      const g = this.baseGoals;
+      setHud(`⚽ Llevas <b>${g}</b> ${g === 1 ? 'gol' : 'goles'} · ¡suma más en el bonus!`);
+      const wrap = el('mg-board'); if (!wrap) return;
+      const pill = 'display:inline-block;background:var(--accent-soft);border:1px solid var(--border);border-radius:999px;padding:3px 10px;margin:3px;font-size:13px';
+      wrap.innerHTML = `<div class="mg-end">
+        <div class="mg-end-emoji">🎁</div>
+        <h3>¡Nivel Bonus desbloqueado!</h3>
+        <p>Marcaste <b>${g}</b> ${g === 1 ? 'gol' : 'goles'}. Ahora adivina al jugador de la foto y <b>suma goles extra</b> según lo rápido que aciertes:</p>
+        <div style="margin:10px 0;line-height:1.9">
+          <span style="${pill}">1.ª <b>+6</b></span><span style="${pill}">2.ª <b>+5</b></span><span style="${pill}">3.ª <b>+4</b></span>
+          <span style="${pill}">4.ª <b>+3</b></span><span style="${pill}">5.ª <b>+2</b></span><span style="${pill}">6.ª <b>+1</b></span>
+        </div>
+        <p class="mg-note">Si no lo adivinas, <b>+0</b> goles · pero no pierdes los que ya marcaste 💪</p>
+        <button class="btn-primary" id="mg-pn-bonus-go">Jugar el bonus →</button></div>`;
+      el('mg-pn-bonus-go').addEventListener('click', () => { Game = FotoMode; setTimerVisible(true); FotoMode.playBonus(MG_PN_BONUS_FOTO, b => this.finishBonus(b)); });
+    },
+    // Vuelta del bonus: suma los goles extra y muestra el resultado final + ranking.
+    finishBonus(bonus) {
+      Game = PunteriaMode; gameOver = true;
+      stopTimer(); setTimerVisible(false); resetTimerBar();
+      this.goals = this.baseGoals + bonus;
+      setBest(this.goals);
+      const tb = el('mg-theme'); if (tb) tb.innerHTML = '🎯 Reto de hoy: <b>Puntería: marca goles</b>';
+      const wrap = el('mg-board'); if (!wrap) return;
+      const g = this.baseGoals;
+      wrap.innerHTML = `<div class="mg-end">
+        <div class="mg-end-emoji">${bonus > 0 ? '🎉' : '🥅'}</div>
+        <h3>${g}${bonus > 0 ? ` + ${bonus} bonus = <b>${this.goals}</b>` : ` <b>${this.goals}</b>`} ${this.goals === 1 ? 'gol' : 'goles'}</h3>
+        ${bonus > 0 ? `<p>¡La foto te dio <b>+${bonus}</b> ${bonus === 1 ? 'gol' : 'goles'} de bonus! 🔥</p>` : `<p>Sin bonus esta vez, pero tus <b>${g}</b> ${g === 1 ? 'gol' : 'goles'} cuentan 💪</p>`}
+        <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p></div>`;
       setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking();
     },
