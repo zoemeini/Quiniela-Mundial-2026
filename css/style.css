@@ -390,7 +390,7 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 }
 .lb-header, .lb-row {
   display: grid;
-  grid-template-columns: 48px 1fr 64px 64px 64px 64px;
+  grid-template-columns: 48px 1fr 64px 64px 64px 64px 64px;
   align-items: center;
   padding: 12px 16px;
   gap: 8px;
@@ -919,8 +919,8 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   .header-right .btn-outline { padding: 5px 11px; }
 
   .lb-header, .lb-row {
-    grid-template-columns: 26px minmax(0, 1fr) 40px 34px 34px 32px;
-    padding: 9px 8px;
+    grid-template-columns: 22px minmax(0, 1fr) 38px 36px 30px 30px 28px;
+    padding: 9px 7px;
     font-size: 13px;
     gap: 5px;
   }

@@ -77,18 +77,21 @@ function applyLeaderboard(data) {
     if (players.length === 0) { renderEmpty(); lbRendered = true; return; }
 
     const rows = players.map(user => {
-      let g = 0, ko = 0, exact = 0;
+      let g = 0, ko = 0, exact = 0, hits = 0, played = 0;
       allMatches().forEach(m => {
         const res = realResults[m.id];
         if (!res) return;
+        played++;
         const result = { home: res.home, away: res.away, status: 'finished' };
         const pred = byUser[user][m.id] || { home: 0, away: 0 }; // no enviado = 0–0
         const pts = calculatePoints(pred, result);
         if (m.id[0] === 'M') ko += pts; else g += pts;
         if (pts === 5) exact++;
+        if (pts > 0) hits++; // acertó el resultado (1X2), aunque no el marcador exacto
       });
       const spPts = finalPoints(byUser[user]); // apuesta de la final (0 hasta que se juegue)
-      return { user, group: g, ko, total: g + ko + spPts, exact };
+      const acc = played > 0 ? Math.round(hits / played * 100) : null; // % de aciertos (1X2) sobre partidos jugados
+      return { user, group: g, ko, total: g + ko + spPts, exact, acc };
     });
 
     rows.sort((a, b) => b.total - a.total || b.exact - a.exact || a.user.localeCompare(b.user));
@@ -208,6 +211,7 @@ function renderRows(rows) {
       <div class="lb-rank ${rankClass}">${rankLabel}</div>
       <div class="lb-name">${escHtml(row.user)}${isMe ? ' <span style="font-size:11px;color:var(--muted)">(tú)</span>' : ''}${move}</div>
       <div class="lb-pts">${row.total}</div>
+      <div class="lb-num">${row.acc == null ? '—' : row.acc + '%'}</div>
       <div class="lb-num">${row.group}</div>
       <div class="lb-num">${row.ko}</div>
       <div class="lb-num">${row.exact}</div>`;
