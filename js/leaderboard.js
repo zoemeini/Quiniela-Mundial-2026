@@ -211,10 +211,10 @@ function renderRows(rows) {
       <div class="lb-rank ${rankClass}">${rankLabel}</div>
       <div class="lb-name">${escHtml(row.user)}${isMe ? ' <span style="font-size:11px;color:var(--muted)">(tú)</span>' : ''}${move}</div>
       <div class="lb-pts">${row.total}</div>
-      <div class="lb-num">${row.acc == null ? '—' : row.acc + '%'}</div>
       <div class="lb-num">${row.group}</div>
       <div class="lb-num">${row.ko}</div>
-      <div class="lb-num">${row.exact}</div>`;
+      <div class="lb-num">${row.exact}</div>
+      <div class="lb-num">${row.acc == null ? '—' : row.acc + '%'}</div>`;
     body.appendChild(div);
   });
 }

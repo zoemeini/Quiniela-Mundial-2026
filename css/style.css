@@ -919,7 +919,7 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   .header-right .btn-outline { padding: 5px 11px; }
 
   .lb-header, .lb-row {
-    grid-template-columns: 22px minmax(0, 1fr) 38px 36px 30px 30px 28px;
+    grid-template-columns: 22px minmax(0, 1fr) 38px 30px 30px 28px 36px;
     padding: 9px 7px;
     font-size: 13px;
     gap: 5px;
