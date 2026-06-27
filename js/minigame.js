@@ -808,6 +808,32 @@ const MG_ROTATION = [
       <p>Tu resultado: <b>${sc}</b></p>
       <p class="mg-note">Solo se juega una vez al día. Vuelve mañana para el próximo reto 🔥</p></div>`;
     revealRanking();
+    appendTesterReset();
+  }
+  // Botón SOLO para testers (Zoesita): reinicia el reto de hoy (borra su fila del
+  // servidor + el estado local) para poder volver a jugarlo. El borrado en servidor
+  // necesita el Apps Script con mgDelete (si no, el reinicio vale para esta sesión).
+  function appendTesterReset() {
+    if (!isTester() || previewOffset !== 0 || bonusMode) return;
+    const b = el('mg-board'); if (!b || el('mg-tester-reset')) return;
+    const btn = document.createElement('button');
+    btn.className = 'btn-outline'; btn.id = 'mg-tester-reset';
+    btn.style.cssText = 'display:block;margin:12px auto 0;font-size:13px';
+    btn.textContent = '🔄 Reiniciar mi reto de hoy (test)';
+    btn.addEventListener('click', testerResetToday);
+    b.appendChild(btn);
+  }
+  function testerResetToday() {
+    if (!isTester()) return;
+    const u = mgUser(), d = dayKey();
+    if (typeof api !== 'undefined' && api.mgDelete) api.mgDelete({ user: u, day: d }).catch(() => {});
+    if (mgRows) mgRows = mgRows.filter(r => !(r.user === u && r.day === d));
+    localStorage.removeItem(doneKey());
+    localStorage.removeItem(bestKey());
+    localStorage.removeItem(pnBonusKey());
+    setFabDone(false);
+    bonusSeq = null; bonusMode = false; bonusPos = 0; started = false; gameOver = false;
+    startDay(); // re-arranca el reto de hoy desde cero
   }
   // Solo HOY: ya jugó Puntería (cuenta esa nota) pero aún no el Nivel Bonus →
   // le dejamos jugar el bonus (¿Quién es?) para sumar goles a su resultado.
@@ -1690,6 +1716,7 @@ const MG_ROTATION = [
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p></div>`;
       setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
       revealRanking(true); // force: reescribe la fila para SUMAR el bonus a la nota ya guardada
+      appendTesterReset(); // Zoesita: botón para reiniciar y volver a probar
     },
   };
 

@@ -177,6 +177,7 @@ function doGet(e) {
     if (action === 'deleteUser')       return json(deleteUser(e.parameter));
     if (action === 'mgGet')            return json(mgGet());
     if (action === 'mgSave')           return json(mgSave(e.parameter));
+    if (action === 'mgDelete')         return json(mgDelete(e.parameter));
     return json({ ok: false, error: 'Acción desconocida. Prueba ?action=getAll' });
   } catch (err) {
     return json({ ok: false, error: String(err) });
@@ -370,6 +371,30 @@ function mgSave(p) {
     }
     s.appendRow([day, user, score, mode, new Date()]);
     return { ok: true, already: false };
+  } finally {
+    lock.releaseLock();
+  }
+}
+// Borra la fila del minijuego de un (usuario, día) — para reiniciar un reto (testing).
+function mgDelete(p) {
+  var user = (p.user || '').toString().trim();
+  var day  = (p.day  || '').toString().trim();
+  if (!user || !day) return { ok: false, error: 'falta user o day' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var s = minigameSheet();
+    var last = s.getLastRow();
+    var n = 0;
+    if (last > 1) {
+      var keys = s.getRange(2, 1, last - 1, 2).getValues(); // Fecha, Jugador
+      for (var i = keys.length - 1; i >= 0; i--) {          // de abajo arriba (por si hay duplicados)
+        if (mgToDay(keys[i][0]) === day && String(keys[i][1]).trim() === user) {
+          s.deleteRow(i + 2); n++;
+        }
+      }
+    }
+    return { ok: true, deleted: n };
   } finally {
     lock.releaseLock();
   }

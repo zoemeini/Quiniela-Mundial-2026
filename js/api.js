@@ -48,4 +48,5 @@ const api = {
   deleteUser:      (p) => apiCall('deleteUser', p),        // borra un jugador y sus pronósticos
   mgGet:           ()  => apiCall('mgGet'),                // puntuaciones del minijuego (ranking + rachas)
   mgSave:          (p) => apiCall('mgSave', p),            // guarda la puntuación del reto de hoy (1/día)
+  mgDelete:        (p) => apiCall('mgDelete', p),          // borra la fila de un (usuario, día) — reinicio (testing)
 };
