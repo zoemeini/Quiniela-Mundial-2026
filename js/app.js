@@ -872,7 +872,7 @@ function applyData(data) {
     (data.results || []).forEach(r => { results[r.matchId] = r; });
     koReal = {};
     (data.knockoutReal || []).forEach(k => {
-      koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga };
+      koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga, home: k.home || '', away: k.away || '' };
     });
     // Equipos reales del cuadro a partir de resultados reales de grupos + ganadores reales.
     const groupResults = {};

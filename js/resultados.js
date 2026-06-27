@@ -25,7 +25,7 @@ function applyRes(data) {
     byUser = {};
     (data.predictions || []).forEach(p => { (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
     results = {}; (data.results || []).forEach(r => { results[r.matchId] = r; });
-    koReal = {}; (data.knockoutReal || []).forEach(k => { koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga }; });
+    koReal = {}; (data.knockoutReal || []).forEach(k => { koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga, home: k.home || '', away: k.away || '' }; });
     const gr = {}; MATCHES.forEach(m => { const r = resultFor(m.id); if (r) gr[m.id] = { home: r.home, away: r.away }; });
     realBr = realKnockout(gr, koReal);
 

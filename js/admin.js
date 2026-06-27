@@ -48,7 +48,7 @@ async function initAdmin() {
     (data.results || []).forEach(r => { results[r.matchId] = r; });
     koReal = {};
     (data.knockoutReal || []).forEach(k => {
-      koReal[k.matchId] = { gh: k.gh, ga: k.ga, winner: k.winner };
+      koReal[k.matchId] = { gh: k.gh, ga: k.ga, winner: k.winner, home: k.home || '', away: k.away || '' };
     });
   } catch (err) {
     console.error('initAdmin', err);
@@ -248,29 +248,32 @@ function buildAdminKoUI() {
   });
 }
 
+// Opciones de equipo para los desplegables del cuadro (todas las selecciones).
+function koTeamOptions(sel) {
+  return '<option value="">— equipo —</option>' + allTeams().map(t =>
+    `<option value="${t.replace(/"/g, '&quot;')}"${t === sel ? ' selected' : ''}>${teamName(t)}</option>`).join('');
+}
 function buildAdminKoRow(m) {
   const data = koReal[m.id] || { gh: '', ga: '', winner: '' };
   const r = realBr.resolved[m.id] || {};
+  const round = KO_ROUNDS.find(x => x.key === m.round);
   const row = document.createElement('div');
   row.className = 'admin-match';
   row.id = `admin-ko-row-${m.id}`;
-
-  // Equipos aún por determinar (faltan resultados de rondas anteriores).
-  if (!r.home || !r.away) {
-    row.innerHTML = `
-      <div class="admin-match-info" style="min-width:120px">
-        <div class="teams">${m.id} · <span class="tbd-text">Por determinar</span></div>
-        <div class="date">${KO_ROUNDS.find(x => x.key === m.round).short}</div>
-      </div>
-      <div class="admin-status pending">Esperando</div>`;
-    return row;
-  }
-
-  const winnerSel = data.winner === r.home ? 'home' : data.winner === r.away ? 'away' : '';
+  // Equipos actuales = override del admin o auto-derivados (1.º/2.º de grupo).
+  // Los TERCEROS y los partidos que dependen de rondas posteriores se asignan a
+  // mano aquí con los desplegables (la web no puede calcular los terceros sola).
+  const homeT = r.home || '', awayT = r.away || '';
+  const winnerSel = data.winner && data.winner === homeT ? 'home' : (data.winner && data.winner === awayT ? 'away' : '');
+  const both = homeT && awayT;
   row.innerHTML = `
-    <div class="admin-match-info" style="min-width:160px">
-      <div class="teams">${teamFlag(r.home)} ${teamName(r.home)} vs ${teamName(r.away)} ${teamFlag(r.away)}</div>
-      <div class="date">${m.id} · ${KO_ROUNDS.find(x => x.key === m.round).short}</div>
+    <div class="admin-match-info" style="min-width:170px">
+      <div class="admin-ko-teams">
+        <select class="admin-select admin-ko-team" id="ko-h-${m.id}">${koTeamOptions(homeT)}</select>
+        <span class="score-separator">vs</span>
+        <select class="admin-select admin-ko-team" id="ko-a-${m.id}">${koTeamOptions(awayT)}</select>
+      </div>
+      <div class="date">${m.id} · ${round.short}${m.home && m.home.third || m.away && m.away.third ? ' · 🟡 tercero a mano' : ''}</div>
     </div>
     <div class="admin-ko-form">
       <input class="admin-score-input" type="number" min="0" max="20" id="ko-gh-${m.id}" value="${data.gh === '' || data.gh == null ? '' : data.gh}" placeholder="–">
@@ -278,13 +281,13 @@ function buildAdminKoRow(m) {
       <input class="admin-score-input" type="number" min="0" max="20" id="ko-ga-${m.id}" value="${data.ga === '' || data.ga == null ? '' : data.ga}" placeholder="–">
       <select class="admin-select" id="ko-win-${m.id}" title="Solo si hay empate (penaltis)">
         <option value="">pasa (si empate)</option>
-        <option value="home"${winnerSel === 'home' ? ' selected' : ''}>← ${teamName(r.home)}</option>
-        <option value="away"${winnerSel === 'away' ? ' selected' : ''}>${teamName(r.away)} →</option>
+        <option value="home"${winnerSel === 'home' ? ' selected' : ''}>← local</option>
+        <option value="away"${winnerSel === 'away' ? ' selected' : ''}>visitante →</option>
       </select>
       <button class="admin-save-btn" onclick="saveKoReal('${m.id}')">Guardar</button>
     </div>
     <div class="admin-status ${data.winner ? 'finished' : 'pending'}" id="ko-status-${m.id}">
-      ${data.winner ? '✓ ' + teamName(data.winner) : 'Pendiente'}
+      ${data.winner ? '✓ ' + teamName(data.winner) : (both ? 'Pendiente' : 'Asigna equipos')}
     </div>`;
   return row;
 }
@@ -320,28 +323,32 @@ function focusNextAdminInput(el) {
 })();
 
 async function saveKoReal(matchId) {
-  const r = realBr.resolved[matchId] || {};
-  if (!r.home || !r.away) { alert('Los equipos de este partido aún no están determinados.'); return; }
+  const home = (document.getElementById(`ko-h-${matchId}`).value || '').trim();
+  const away = (document.getElementById(`ko-a-${matchId}`).value || '').trim();
   const ghVal = document.getElementById(`ko-gh-${matchId}`).value;
   const gaVal = document.getElementById(`ko-ga-${matchId}`).value;
   const winSel = document.getElementById(`ko-win-${matchId}`).value;
 
-  if (ghVal === '' || gaVal === '') { alert('Introduce el marcador.'); return; }
-  const gh = parseInt(ghVal, 10), ga = parseInt(gaVal, 10);
-  if (isNaN(gh) || isNaN(ga) || gh < 0 || ga < 0) { alert('Marcador inválido.'); return; }
+  if (home && away && home === away) { alert('Los dos equipos no pueden ser el mismo.'); return; }
 
-  // Si no es empate, el ganador se deduce del marcador. Si es empate, hace falta el selector.
-  let winner = '';
-  if (gh !== ga) winner = gh > ga ? r.home : r.away;
-  else if (winSel === 'home') winner = r.home;
-  else if (winSel === 'away') winner = r.away;
-  if (gh === ga && !winner) { alert('Empate: elige quién pasa en penaltis.'); return; }
+  // El marcador es opcional: si está vacío, solo se fijan los equipos del cruce.
+  let gh = '', ga = '', winner = '';
+  if (ghVal !== '' || gaVal !== '') {
+    if (!home || !away) { alert('Asigna los dos equipos antes de poner el resultado.'); return; }
+    if (ghVal === '' || gaVal === '') { alert('Introduce el marcador completo (o déjalo vacío para solo fijar los equipos).'); return; }
+    gh = parseInt(ghVal, 10); ga = parseInt(gaVal, 10);
+    if (isNaN(gh) || isNaN(ga) || gh < 0 || ga < 0) { alert('Marcador inválido.'); return; }
+    if (gh !== ga) winner = gh > ga ? home : away;
+    else if (winSel === 'home') winner = home;
+    else if (winSel === 'away') winner = away;
+    if (gh === ga && !winner) { alert('Empate: elige quién pasa en penaltis.'); return; }
+  }
 
   try {
-    await api.saveKnockoutReal({ matchId, home: r.home, away: r.away, gh, ga, winner });
-    koReal[matchId] = { gh, ga, winner };
-    recomputeRealBr();   // el ganador define la siguiente ronda
-    buildAdminKoUI();    // refresca para mostrar los nuevos equipos
+    await api.saveKnockoutReal({ matchId, home, away, gh, ga, winner });
+    koReal[matchId] = { home, away, gh, ga, winner };
+    recomputeRealBr();   // los equipos fijados (y el ganador) actualizan el cuadro
+    buildAdminKoUI();    // refresca para mostrar los cambios
   } catch (err) {
     alert('Error al guardar: ' + err.message);
     console.error(err);

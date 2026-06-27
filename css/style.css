@@ -712,6 +712,8 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 
 /* ── Admin knockout form ───────────────────────────────── */
 .admin-ko-form { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.admin-ko-teams { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.admin-ko-team { max-width: 130px; font-size: 12px; padding: 5px 6px; }
 .admin-select {
   background: var(--bg3);
   border: 1px solid var(--border);

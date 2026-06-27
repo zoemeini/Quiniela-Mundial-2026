@@ -32,7 +32,7 @@ function applyLeaderboard(data) {
 
     // Apuesta de la final: equipos reales del cuadro + marcador real de la final.
     const koReal = {};
-    (data.knockoutReal || []).forEach(k => { koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga }; });
+    (data.knockoutReal || []).forEach(k => { koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga, home: k.home || '', away: k.away || '' }; });
     const grp = {}; MATCHES.forEach(m => { if (realResults[m.id]) grp[m.id] = realResults[m.id]; });
     const realBr = (typeof realKnockout === 'function') ? realKnockout(grp, koReal) : { resolved: {} };
     const realFinal = realBr.resolved['M104'] || {};        // finalistas reales (cuando se sepan)

@@ -140,32 +140,32 @@ function buildUserBracket(preds, picks, winnerFn) {
 // Returns { complete, resolved } where resolved[matchId] = {home,away,winner,loser}
 // with real teams filled in as far as they are known.
 function realKnockout(groupResults, koReal) {
+  koReal = koReal || {};
   const cs = computeStandings(groupResults);
   const gc = cs.groupComplete || {};
   const allComplete = cs.complete;
-  // Los slots de "mejor tercero" solo se pueden asignar cuando TODOS los grupos
-  // están hechos (hace falta rankear los 12 terceros para elegir 8). Hasta
-  // entonces, esos cruces quedan sin rival ("Por determinar").
-  const thirdAssign = allComplete ? assignThirds(bestEightThirds(cs.thirds)) : {};
   const resolved = {};
   // Devuelve el equipo de un grupo en la posición idx SOLO si ese grupo ya terminó.
   const teamAt = (g, idx, ready) => (ready && cs.standings[g]) ? (cs.standings[g][idx] || null) : null;
+  // Ganador (1.º) y segundo (2.º) de grupo se sacan solos de los resultados. Los
+  // TERCEROS los fija el admin a mano (FIFA usa una tabla oficial de 495 combos
+  // que no se puede calcular solo); por eso `third` no se auto-asigna: viene del
+  // override `koReal[id].home/away` que guarda el admin en saveKnockoutReal.
   const side = ref => {
     if (ref.w)      return teamAt(ref.w, 0, gc[ref.w]);
     if (ref.ru)     return teamAt(ref.ru, 1, gc[ref.ru]);
-    if (ref.third)  { const g = thirdAssign[ref.third]; return (allComplete && g) ? teamAt(g, 2, true) : null; }
+    if (ref.third)  return null;
     if (ref.winOf)  return resolved[ref.winOf] ? resolved[ref.winOf].winner : null;
     if (ref.loseOf) return resolved[ref.loseOf] ? resolved[ref.loseOf].loser : null;
     return null;
   };
   KO_MATCHES.forEach(m => {
-    const home = side(m.home);
-    const away = side(m.away);
+    let home = side(m.home), away = side(m.away);
+    const ov = koReal[m.id] || {};
+    if (ov.home) home = ov.home; // equipos fijados por el admin (override) — p.ej. los terceros
+    if (ov.away) away = ov.away;
     let winner = null;
-    if (home && away && koReal[m.id] && koReal[m.id].winner) {
-      const w = koReal[m.id].winner;
-      winner = (w === home || w === away) ? w : null;
-    }
+    if (home && away && ov.winner) { const w = ov.winner; winner = (w === home || w === away) ? w : null; }
     const loser = winner ? (winner === home ? away : home) : null;
     resolved[m.id] = { home, away, winner, loser };
   });
