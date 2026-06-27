@@ -967,10 +967,29 @@ function renderKnockout() {
   renderKoTab(currentKoTab || defaultKoTab());
   renderKoBracketDiagram(); // el cuadro completo va al FINAL (#ko-bracket está al final del DOM)
 }
-// Cuadro visual (solo lectura): una columna por ronda, ganador real resaltado.
+// Orden de ÁRBOL por ronda: recorre el cuadro desde la final (post-orden) para
+// que los DOS partidos que alimentan al siguiente queden ADYACENTES en su columna
+// (en el cuadro 2026 no van seguidos: M89 sale de M74+M77). Así los conectores
+// (par → siguiente) cuadran con un layout de bracket estándar.
+function koTreeOrder() {
+  if (koTreeOrder._c) return koTreeOrder._c;
+  const byId = {}; KO_MATCHES.forEach(m => byId[m.id] = m);
+  const rounds = { R32: [], R16: [], QF: [], SF: [], F: [] };
+  (function visit(id) {
+    const m = byId[id]; if (!m) return;
+    const hc = m.home && m.home.winOf, ac = m.away && m.away.winOf;
+    if (hc) visit(hc);
+    if (ac) visit(ac);
+    if (rounds[m.round]) rounds[m.round].push(m.id);
+  })('M104');
+  return (koTreeOrder._c = rounds);
+}
+// Cuadro visual (solo lectura) con conectores: una columna por ronda, ganador
+// real resaltado; las líneas muestran de qué dos partidos sale cada siguiente.
 function renderKoBracketDiagram() {
   const host = document.getElementById('ko-bracket');
   if (!host) return;
+  const order = koTreeOrder();
   const cols = [['R32', '16avos'], ['R16', 'Octavos'], ['QF', 'Cuartos'], ['SF', 'Semis'], ['F', 'Final']];
   const teamCell = (name, isWin) => name
     ? `<div class="kbk-team${isWin ? ' win' : ''}">${teamFlag(name)}<span>${teamName(name)}</span></div>`
@@ -978,10 +997,10 @@ function renderKoBracketDiagram() {
   let html = '<div class="kbk">';
   cols.forEach(([rk, label]) => {
     html += `<div class="kbk-col"><div class="kbk-col-title">${label}</div><div class="kbk-col-body">`;
-    getKoMatchesByRound(rk).forEach(m => {
-      const r = realBr.resolved[m.id] || {};
+    (order[rk] || []).forEach(id => {
+      const r = realBr.resolved[id] || {};
       const w = r.winner || null;
-      html += `<div class="kbk-match">${teamCell(r.home, w && w === r.home)}${teamCell(r.away, w && w === r.away)}</div>`;
+      html += `<div class="kbk-match"><div class="kbk-card">${teamCell(r.home, w && w === r.home)}${teamCell(r.away, w && w === r.away)}</div></div>`;
     });
     html += '</div></div>';
   });
