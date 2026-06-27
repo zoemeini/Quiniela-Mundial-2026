@@ -234,7 +234,7 @@ const MG_FOTO_POOL = [
   // Fotos LOCALES (carpeta Fotos_mini_juego). Usan `src` en vez de Wikipedia.
   { n: 'Joan García', src: 'Fotos_mini_juego/Joan_Garcia_4.jpg', iso: 'es', pais: 'España',        pos: 'Portero', fy: 36 }, // 20
   { n: 'Tim Payne',   src: 'Fotos_mini_juego/Tim_Payne_4.png',   iso: 'nz', pais: 'Nueva Zelanda', pos: 'Defensa', fy: 40 }, // 21
-  { n: 'Marc Cucurella', wiki: 'Marc Cucurella',  iso: 'es', pais: 'España',        pos: 'Defensa', fy: 16 }, // 22 (foto de Wikipedia)
+  { n: 'Marc Cucurella', wiki: 'Marc Cucurella',  iso: 'es', pais: 'España',        pos: 'Defensa', fy: 16, fx: 58, zMul: 0.85 }, // 22 (Wikipedia; algo menos zoom y centrado un pelín a la derecha)
 ];
 
 // ── Datos de «Goles míticos: ¿por dónde entró?» — SOLO goles de Mundiales ──
@@ -1180,9 +1180,10 @@ const MG_ROTATION = [
       const im = el('mg-foto-img');
       if (im) {
         const fy = (this.secret && this.secret.fy != null) ? this.secret.fy : 22;
+        const fx = (this.secret && this.secret.fx != null) ? this.secret.fx : 50; // horizontal (def. centrado)
         const zMul = (this.secret && this.secret.zMul) || 1; // zoom extra para algunas fotos
-        im.style.backgroundPosition = '50% ' + fy + '%'; // recorta a la altura de la CARA
-        im.style.transformOrigin = '50% ' + fy + '%';    // y hace zoom justo sobre ese punto
+        im.style.backgroundPosition = fx + '% ' + fy + '%'; // recorta a la cara (x, y)
+        im.style.transformOrigin = fx + '% ' + fy + '%';    // y hace zoom justo sobre ese punto
         if (!im.classList.contains('loading') && !im.classList.contains('failed')) {
           const sc = 'scale(' + (this.zooms[Math.min(this.level, this.zooms.length - 1)] * zMul) + ')';
           if (instant) { // al aparecer, aplicar el zoom SIN animación (si no, se ve la foto entera ~1s y ayuda)
@@ -1270,7 +1271,8 @@ const MG_ROTATION = [
       const tries = this.attempts;         // intentos usados
       const url = this.secret.src || MG_FOTO_CACHE[this.secret.wiki];
       const fy = this.secret.fy != null ? this.secret.fy : 22;
-      const photo = (url && url !== 'FAIL') ? `<div class="mg-foto-reveal" style="background-image:url('${url}');background-position:50% ${fy}%"></div>` : '';
+      const fx = this.secret.fx != null ? this.secret.fx : 50;
+      const photo = (url && url !== 'FAIL') ? `<div class="mg-foto-reveal" style="background-image:url('${url}');background-position:${fx}% ${fy}%"></div>` : '';
       const reveal = `<div class="mg-reveal">${flag(this.secret.iso)} <b>${this.secret.n}</b><br><span class="mg-reveal-sub">${this.secret.pais} · ${this.secret.pos}</span></div>`;
       const head = win ? { e: '🎉', t: `¡Acertaste en ${tries} ${tries === 1 ? 'intento' : 'intentos'}!` }
                        : { e: byTime ? '⏰' : '❌', t: byTime ? '¡Se acabó el tiempo!' : '¡No era!' };
