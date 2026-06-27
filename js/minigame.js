@@ -526,12 +526,19 @@ const MG_ROTATION = [
   function myTodayScore() { const u = mgUser(), d = dayKey(); const r = (mgRows || []).find(x => x.user === u && x.day === d); return r ? r.score : getBest(); }
   function ordToKey(ord) { return new Date(ord * 86400000).toISOString().slice(0, 10); }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-  function saveMyScore() {
+  // force=true → reescribe la fila de hoy aunque ya exista (la usa el Nivel Bonus,
+  // que suma goles a una partida ya jugada). Requiere el Apps Script con upd
+  // (si no está redeployado, el servidor ignora upd y no pasa nada malo).
+  function saveMyScore(force) {
     const u = mgUser(); if (!u) return;
     const d = dayKey(), score = getBest(), mode = (currentEntry() || {}).mode || '';
     mgRows = mgRows || [];
-    if (!mgRows.some(r => r.user === u && r.day === d)) mgRows.push({ user: u, day: d, score: score, mode: mode });
-    if (typeof api !== 'undefined' && api.mgSave) api.mgSave({ user: u, day: d, score: score, mode: mode }).catch(() => {});
+    const existing = mgRows.find(r => r.user === u && r.day === d);
+    if (existing) { if (force) { existing.score = score; existing.mode = mode; } } // refleja el total en local
+    else mgRows.push({ user: u, day: d, score: score, mode: mode });
+    const payload = { user: u, day: d, score: score, mode: mode };
+    if (force) payload.upd = 1;
+    if (typeof api !== 'undefined' && api.mgSave) api.mgSave(payload).catch(() => {});
   }
 
   // ── Burbuja flotante 🎮 + panel ──
@@ -1674,7 +1681,7 @@ const MG_ROTATION = [
         ${bonus > 0 ? `<p>¡La foto te dio <b>+${bonus}</b> ${bonus === 1 ? 'gol' : 'goles'} de bonus! 🔥</p>` : `<p>Sin bonus esta vez, pero tus <b>${g}</b> ${g === 1 ? 'gol' : 'goles'} cuentan 💪</p>`}
         <p class="mg-end-best">Tu mejor de hoy: <b>${bestLabel()}</b> 🔥</p></div>`;
       setHud(`⚽ Goles: <b>${this.goals}</b> &nbsp;·&nbsp; Tu mejor de hoy: <b>${bestLabel()}</b> 🔥`);
-      revealRanking();
+      revealRanking(true); // force: reescribe la fila para SUMAR el bonus a la nota ya guardada
     },
   };
 
@@ -1745,13 +1752,13 @@ const MG_ROTATION = [
       '<div class="mg-rank-list">' + hoy + '</div>' +
       '</div>';
   }
-  function revealRanking() {
+  function revealRanking(force) {
     if (bonusMode) return; // en el bonus: el original solo se juega; avanzas con › (sin ranking ni guardar)
     if (previewOffset !== 0) return; // vista previa de días futuros (Zoesita testea): sin guardar/bloquear, puede repetir
     setFabDone(true); // reto completado → el icono deja de moverse
     const b = el('mg-board'); if (!b || document.getElementById('mg-rankblock')) return;
     setDone();       // 1 partida al día (caché local)
-    saveMyScore();   // guarda mi puntuación en el servidor (1/día) + en mgRows
+    saveMyScore(force);   // guarda mi puntuación (force=true reescribe la fila: Nivel Bonus suma goles)
     const again = el('mg-again'); // quita "Jugar otra vez": no se puede repetir
     if (again) { const note = document.createElement('p'); note.className = 'mg-note'; note.innerHTML = '🔒 Solo se juega una vez al día · vuelve mañana 🔥'; again.replaceWith(note); }
     b.insertAdjacentHTML('beforeend', rankingBlockHTML());

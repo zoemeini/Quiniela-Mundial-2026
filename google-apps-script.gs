@@ -348,6 +348,7 @@ function mgSave(p) {
   var day  = (p.day  || '').toString().trim();
   var mode = (p.mode || '').toString().trim();
   var score = Number(p.score); if (isNaN(score)) score = 0;
+  var upd = (p.upd == '1' || p.upd === 1 || p.upd === true); // permitir REESCRIBIR la fila (Nivel Bonus: suma goles)
   if (!user || !day) return { ok: false, error: 'falta user o day' };
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
@@ -358,7 +359,12 @@ function mgSave(p) {
       var keys = s.getRange(2, 1, last - 1, 2).getValues(); // Fecha, Jugador
       for (var i = 0; i < keys.length; i++) {
         if (mgToDay(keys[i][0]) === day && String(keys[i][1]).trim() === user) {
-          return { ok: true, already: true }; // ya jugó hoy → no se sobrescribe
+          if (upd) { // actualiza la puntuación de hoy (p. ej. tras sumar el bonus)
+            s.getRange(i + 2, 3).setValue(score);   // col C = Puntuación
+            if (mode) s.getRange(i + 2, 4).setValue(mode);
+            return { ok: true, updated: true };
+          }
+          return { ok: true, already: true }; // sin upd: no se sobrescribe (1/día)
         }
       }
     }
