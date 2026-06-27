@@ -663,18 +663,19 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 /* ── Cuadro visual de eliminatorias (solo lectura) ─────── */
 .ko-bracket-wrap { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
 .kbk {
-  display: flex; gap: 14px;
+  display: flex; gap: 12px;
   overflow-x: auto; -webkit-overflow-scrolling: touch;
   padding: 4px 2px 12px;
-  align-items: stretch;
+  align-items: flex-start; /* columnas compactas (no se estiran) → sin huecos enormes en semis/final */
 }
-.kbk-col { display: flex; flex-direction: column; min-width: 132px; flex: 0 0 auto; }
+.kbk-col { display: flex; flex-direction: column; min-width: 128px; flex: 0 0 auto; }
 .kbk-col-title {
   text-align: center; font-family: 'Sora', sans-serif; font-weight: 700;
   font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
   color: var(--muted); padding-bottom: 8px;
+  position: sticky; top: 0; background: var(--bg); z-index: 1;
 }
-.kbk-col-body { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; }
+.kbk-col-body { display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; }
 .kbk-match {
   background: var(--bg2); border: 1px solid var(--border);
   border-radius: 8px; overflow: hidden;
@@ -978,6 +979,12 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   .matches-grid { grid-template-columns: 1fr; }
   .ko-grid { grid-template-columns: 1fr; }
   .modal { padding: 28px 20px; }
+  /* Cuadro: más compacto en móvil para que quepa y se lea mejor */
+  .kbk { gap: 8px; }
+  .kbk-col { min-width: 108px; }
+  .kbk-team { font-size: 11px; padding: 4px 6px; gap: 5px; }
+  .kbk-team .team-flag-img { width: 15px; }
+  .kbk-col-title { font-size: 10px; }
 }
 
 /* ── Barra de actualización (estado + botón 🔄) ───────── */
