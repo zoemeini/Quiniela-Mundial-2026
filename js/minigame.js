@@ -234,7 +234,7 @@ const MG_FOTO_POOL = [
   // Fotos LOCALES (carpeta Fotos_mini_juego). Usan `src` en vez de Wikipedia.
   { n: 'Joan García', src: 'Fotos_mini_juego/Joan_Garcia_4.jpg', iso: 'es', pais: 'España',        pos: 'Portero', fy: 36 }, // 20
   { n: 'Tim Payne',   src: 'Fotos_mini_juego/Tim_Payne_4.png',   iso: 'nz', pais: 'Nueva Zelanda', pos: 'Defensa', fy: 40 }, // 21
-  { n: 'Marc Cucurella', src: 'Fotos_mini_juego/Cucurella.png',  iso: 'es', pais: 'España',        pos: 'Defensa', fy: 50 }, // 22 (recorte muy cercano)
+  { n: 'Marc Cucurella', wiki: 'Marc Cucurella',  iso: 'es', pais: 'España',        pos: 'Defensa', fy: 16 }, // 22 (foto de Wikipedia)
 ];
 
 // ── Datos de «Goles míticos: ¿por dónde entró?» — SOLO goles de Mundiales ──
@@ -444,6 +444,9 @@ const MG_ROTATION = [
     const e = currentEntry();
     return !!e && e.mode === 'punteria' && dayOrdinal() === MG_PN_BONUS_ORD;
   }
+  // Marca que ya se jugó el Nivel Bonus de hoy (para no ofrecerlo dos veces).
+  const pnBonusKey = () => 'wc2026_mg_pnbonus_' + dayKey();
+  const pnBonusDone = () => localStorage.getItem(pnBonusKey()) != null;
   function themeByKey(k) { return MG_THEMES.find(t => t.key === k) || MG_THEMES[0]; }
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function flag(iso) { return `<img class="team-flag-img" src="https://flagcdn.com/w40/${iso}.png" srcset="https://flagcdn.com/w80/${iso}.png 2x" alt="" loading="lazy">`; }
@@ -746,7 +749,12 @@ const MG_ROTATION = [
       reconcileBest(); // "tu mejor de hoy" = tu puntuación registrada en el ranking
       // 1 partida al día SOLO para el reto de HOY (previewOffset 0). En la vista
       // previa de días siguientes (solo Zoesita) puede jugar/repetir para testear.
-      if (!bonusMode && previewOffset === 0 && (isDone() || playedTodayServer())) { showLocked(); return; }
+      if (!bonusMode && previewOffset === 0 && (isDone() || playedTodayServer())) {
+        // Hoy: si ya jugó Puntería pero aún no el Nivel Bonus, no le bloqueamos:
+        // le dejamos jugar el bonus (¿Quién es?) para sumar goles.
+        if (isPnBonusDay() && !pnBonusDone()) { startPnBonusOnly(); return; }
+        showLocked(); return;
+      }
       setTimerVisible(false);
       if (isNew) { mountNewGame(entry); return; } // juego nuevo (newgames.js)
       // Tarjeta de intro (8 originales) → al pulsar Empezar arranca el juego.
@@ -785,6 +793,13 @@ const MG_ROTATION = [
       <p>Tu resultado: <b>${sc}</b></p>
       <p class="mg-note">Solo se juega una vez al día. Vuelve mañana para el próximo reto 🔥</p></div>`;
     revealRanking();
+  }
+  // Solo HOY: ya jugó Puntería (cuenta esa nota) pero aún no el Nivel Bonus →
+  // le dejamos jugar el bonus (¿Quién es?) para sumar goles a su resultado.
+  function startPnBonusOnly() {
+    Game = PunteriaMode; gameOver = true; busy = false;
+    PunteriaMode.baseGoals = myTodayScore();   // sus goles ya marcados hoy
+    PunteriaMode.showBonusIntro();             // explica el premio → al pulsar lanza la foto → finishBonus()
   }
 
   // ===========================================================
@@ -1645,6 +1660,7 @@ const MG_ROTATION = [
     finishBonus(bonus) {
       Game = PunteriaMode; gameOver = true;
       stopTimer(); setTimerVisible(false); resetTimerBar();
+      try { localStorage.setItem(pnBonusKey(), '1'); } catch (e) {} // ya jugó el bonus de hoy
       this.goals = this.baseGoals + bonus;
       setBest(this.goals);
       const tb = el('mg-theme'); if (tb) tb.innerHTML = '🎯 Reto de hoy: <b>Puntería: marca goles</b>';
