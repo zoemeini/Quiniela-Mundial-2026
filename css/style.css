@@ -676,18 +676,22 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   position: sticky; top: 0; background: var(--bg); z-index: 2;
 }
 .kbk-col-body { flex: 1; display: flex; flex-direction: column; }
-.kbk-match { flex: 1 1 0; min-height: 46px; position: relative; display: flex; align-items: center; }
+/* min-height alto → cada partido se separa del de al lado (16avos no apretados) */
+.kbk-match { flex: 1 1 0; min-height: 70px; position: relative; display: flex; align-items: center; }
 .kbk-card {
   width: 100%; background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 8px; overflow: hidden;
+  border-radius: 8px; overflow: hidden; transition: border-color .15s, box-shadow .15s;
 }
+.kbk-card.clickable { cursor: pointer; }
+.kbk-card.clickable:hover { border-color: var(--green); box-shadow: var(--shadow); }
 .kbk-team {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 8px; font-size: 12px; min-width: 0;
 }
 .kbk-team + .kbk-team { border-top: 1px solid var(--border); }
-.kbk-team span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kbk-team span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kbk-team .team-flag-img { width: 18px; height: auto; border-radius: 2px; flex-shrink: 0; }
+.kbk-sc { flex-shrink: 0; font-weight: 800; font-family: 'Sora', sans-serif; padding-left: 4px; }
 .kbk-team.win { background: var(--green-dim); color: var(--green); font-weight: 700; }
 .kbk-team.tbd { color: var(--muted); font-style: italic; }
 /* Conectores: cada par de partidos (arriba=impar, abajo=par) se une y sale al
@@ -996,8 +1000,10 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   /* Cuadro: celdas compactas en móvil; se mantiene el hueco para las líneas */
   .kbk { gap: 22px; }
   .kbk-col { min-width: 104px; }
+  .kbk-match { min-height: 64px; }
   .kbk-team { font-size: 11px; padding: 4px 6px; gap: 5px; }
   .kbk-team .team-flag-img { width: 15px; }
+  .kbk-sc { font-size: 12px; }
   .kbk-col-title { font-size: 10px; }
   .kbk-col:not(:last-child) .kbk-match::after { width: 11px; }
   .kbk-col:not(:first-child) .kbk-match::before { width: 11px; }

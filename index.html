@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=83">
+  <link rel="stylesheet" href="css/style.css?v=84">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 </head>
 <body>
@@ -103,6 +103,18 @@
       <button class="btn-outline" id="match-preds-close">✕ Cerrar</button>
     </div>
     <div id="match-preds-body"></div>
+  </div>
+</div>
+
+<!-- Modal: editar el pronóstico de una eliminatoria (desde el cuadro) -->
+<div id="ko-edit-modal" class="modal-overlay hidden">
+  <div class="modal group-modal">
+    <div class="group-modal-head">
+      <h2 id="ko-edit-title">Eliminatoria</h2>
+      <button class="btn-outline" id="ko-edit-close">✕ Cerrar</button>
+    </div>
+    <div id="ko-edit-body"></div>
+    <p class="modal-note">Tu pronóstico se guarda solo. <span class="badge badge-gold">+5</span> vencedor (o empate) · <span class="badge badge-green">+7</span> marcador exacto (+ penalti si empate).</p>
   </div>
 </div>
 
@@ -236,7 +248,7 @@
 <script src="js/api.js?v=53"></script>
 <script src="js/data.js?v=35"></script>
 <script src="js/bracket.js?v=33"></script>
-<script src="js/app.js?v=43"></script>
+<script src="js/app.js?v=44"></script>
 <script src="js/music.js?v=30"></script>
 <script src="js/minigame.js?v=94"></script>
 <script src="js/newgames.js?v=17"></script>

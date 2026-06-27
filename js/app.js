@@ -607,6 +607,10 @@ function closeMatchPredsModal() {
 document.getElementById('match-preds-close').addEventListener('click', closeMatchPredsModal);
 document.getElementById('match-preds-modal').addEventListener('click', e => { if (e.target.id === 'match-preds-modal') closeMatchPredsModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && matchPredsOpen) closeMatchPredsModal(); });
+// Modal de edición de eliminatoria (desde el cuadro)
+document.getElementById('ko-edit-close').addEventListener('click', closeKoEdit);
+document.getElementById('ko-edit-modal').addEventListener('click', e => { if (e.target.id === 'ko-edit-modal') closeKoEdit(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && koEditMatchId) closeKoEdit(); });
 
 // ── Apuesta especial: la FINAL (2 finalistas + marcador) ─────────
 // Se guarda como predicciones "SP_FINALISTS" (índices de equipo), "SP_FINAL"
@@ -991,8 +995,9 @@ function renderKoBracketDiagram() {
   if (!host) return;
   const order = koTreeOrder();
   const cols = [['R32', '16avos'], ['R16', 'Octavos'], ['QF', 'Cuartos'], ['SF', 'Semis'], ['F', 'Final']];
-  const teamCell = (name, isWin) => name
-    ? `<div class="kbk-team${isWin ? ' win' : ''}">${teamFlag(name)}<span>${teamName(name)}</span></div>`
+  // sc = marcador del jugador (su pronóstico) si lo ha introducido.
+  const teamCell = (name, isWin, sc) => name
+    ? `<div class="kbk-team${isWin ? ' win' : ''}">${teamFlag(name)}<span>${teamName(name)}</span>${sc != null ? `<b class="kbk-sc">${sc}</b>` : ''}</div>`
     : `<div class="kbk-team tbd"><span>Por definir</span></div>`;
   let html = '<div class="kbk">';
   cols.forEach(([rk, label]) => {
@@ -1000,7 +1005,10 @@ function renderKoBracketDiagram() {
     (order[rk] || []).forEach(id => {
       const r = realBr.resolved[id] || {};
       const w = r.winner || null;
-      html += `<div class="kbk-match"><div class="kbk-card">${teamCell(r.home, w && w === r.home)}${teamCell(r.away, w && w === r.away)}</div></div>`;
+      const both = r.home && r.away;
+      const p = predictions[id]; // marcador pronosticado por el jugador
+      html += `<div class="kbk-match"><div class="kbk-card${both ? ' clickable' : ''}" data-mid="${id}">` +
+        `${teamCell(r.home, w && w === r.home, p ? p.home : null)}${teamCell(r.away, w && w === r.away, p ? p.away : null)}</div></div>`;
     });
     html += '</div></div>';
   });
@@ -1011,6 +1019,81 @@ function renderKoBracketDiagram() {
     : 'Por definir';
   html += `<div class="kbk-third"><span class="kbk-third-lbl">🥉 Tercer puesto:</span> ${tpStr}</div>`;
   host.innerHTML = html;
+  // Clic en un cruce (con ambos equipos) → editar pronóstico / ver apuestas.
+  host.querySelectorAll('.kbk-card.clickable').forEach(c => c.addEventListener('click', () => openKoEdit(c.dataset.mid)));
+}
+// Editar el pronóstico de una eliminatoria desde el cuadro (popup = tarjeta del
+// calendario). Si ya empezó, muestra qué puso cada uno (solo lectura).
+let koEditMatchId = null;
+function openKoEdit(matchId) {
+  const m = getKoMatch(matchId); if (!m) return;
+  const r = realBr.resolved[matchId] || {};
+  if (!r.home || !r.away) return;
+  if (lockedM(m)) { openMatchPredictions(matchId); return; } // ya empezó → ver resultados/apuestas
+  if (!currentUser) { openMatchPredictions(matchId); return; }
+  const k = formatKickoff(m.kickoff);
+  const pred = predictions[matchId];
+  const hv = pred ? pred.home : '', av = pred ? pred.away : '';
+  const lbl = (m.round === 'F') ? '🏆 Final' : (m.round === '3P') ? '🥉 Tercer puesto' : ((KO_ROUNDS.find(x => x.key === m.round) || {}).name || 'Eliminatoria');
+  document.getElementById('ko-edit-title').innerHTML = `${teamFlag(r.home)} ${teamName(r.home)} <span class="mpred-vs">vs</span> ${teamName(r.away)} ${teamFlag(r.away)}`;
+  document.getElementById('ko-edit-body').innerHTML = `
+    <div class="match-meta" style="justify-content:center"><span>${lbl}</span><span class="separator">·</span><span>${k.date}</span><span class="separator">·</span><span class="kickoff-time">${k.time}</span></div>
+    <div class="mc-rows">
+      <div class="mc-row">${teamFlag(r.home)}<span class="team-name">${teamName(r.home)}</span><input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="koe-home" value="${hv}"></div>
+      <div class="mc-row">${teamFlag(r.away)}<span class="team-name">${teamName(r.away)}</span><input class="score-input" type="number" inputmode="numeric" min="0" max="20" placeholder="–" id="koe-away" value="${av}"></div>
+    </div>
+    <div class="ko-pens" id="koe-pens"></div>
+    <div class="save-status idle" id="koe-status" style="text-align:center;margin-top:8px"></div>`;
+  document.getElementById('koe-home').addEventListener('input', () => koeOnChange(matchId));
+  document.getElementById('koe-away').addEventListener('input', () => koeOnChange(matchId));
+  koeUpdatePens(matchId);
+  koEditMatchId = matchId;
+  document.getElementById('ko-edit-modal').classList.remove('hidden');
+}
+function closeKoEdit() {
+  document.getElementById('ko-edit-modal').classList.add('hidden');
+  koEditMatchId = null;
+  renderKoBracketDiagram(); // refleja el marcador nuevo en el cuadro
+  if (currentPhase === 'ko') renderKoTab(currentKoTab || defaultKoTab()); // y en el calendario
+}
+function koeOnChange(matchId) {
+  const m = getKoMatch(matchId); if (!m || lockedM(m)) return;
+  const hEl = document.getElementById('koe-home'), aEl = document.getElementById('koe-away');
+  if (!hEl || !aEl) return;
+  const hv = hEl.value, av = aEl.value, st = document.getElementById('koe-status');
+  koeUpdatePens(matchId);
+  if (hv === '' && av === '') {
+    clearTimeout(saveTimers[matchId]);
+    if (predictions[matchId] || dirty[matchId]) { delete predictions[matchId]; delete dirty[matchId]; cleared[matchId] = true; api.deletePrediction({ user: currentUser, matchId }).catch(() => {}); }
+    if (st) { st.textContent = ''; st.className = 'save-status idle'; }
+    return;
+  }
+  if (hv === '' || av === '') { if (st) { st.textContent = ''; st.className = 'save-status idle'; } return; }
+  const home = parseInt(hv, 10), away = parseInt(av, 10);
+  if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return;
+  delete cleared[matchId];
+  predictions[matchId] = { home, away }; dirty[matchId] = { home, away };
+  if (st) { st.textContent = '…'; st.className = 'save-status saving'; }
+  clearTimeout(saveTimers[matchId]);
+  saveTimers[matchId] = setTimeout(() => {
+    api.savePrediction({ user: currentUser, matchId, home, away })
+      .then(() => { delete dirty[matchId]; const s = document.getElementById('koe-status'); if (s) { s.textContent = '✓ Guardado'; s.className = 'save-status saved'; } })
+      .catch(() => { const s = document.getElementById('koe-status'); if (s) { s.textContent = '✗ Sin guardar — reintenta'; s.className = 'save-status error'; } });
+  }, 500);
+}
+function koeUpdatePens(matchId) {
+  const box = document.getElementById('koe-pens'); if (!box) return;
+  const r = realBr.resolved[matchId] || {};
+  const hEl = document.getElementById('koe-home'), aEl = document.getElementById('koe-away');
+  const draw = hEl && aEl && hEl.value !== '' && aEl.value !== '' && parseInt(hEl.value, 10) === parseInt(aEl.value, 10);
+  if (!draw || !r.home || !r.away) { box.innerHTML = ''; box.classList.remove('show'); return; }
+  box.classList.add('show');
+  const penPred = predictions[matchId + 'P'];
+  const winName = penPred ? teamByIndex(penPred.home) : null;
+  const btn = name => `<button type="button" class="ko-pens-btn${winName === name ? ' on' : ''}" data-team="${teamIndex(name)}">${teamFlag(name)} ${teamName(name)}</button>`;
+  box.innerHTML = `<div class="ko-pens-q">🥅 Empate — ¿quién pasa en penaltis? <span class="ko-pens-note">(necesario para los 7 pts)</span></div>
+    <div class="ko-pens-opts">${btn(r.home)}${btn(r.away)}</div>`;
+  box.querySelectorAll('.ko-pens-btn').forEach(b => b.addEventListener('click', () => { saveKoPens(matchId, parseInt(b.dataset.team, 10)); koeUpdatePens(matchId); }));
 }
 // Días (Madrid) de las eliminatorias — calendario fijo (28-jun → 19-jul).
 function koDayKeysSorted() {
