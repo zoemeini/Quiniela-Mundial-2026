@@ -292,8 +292,17 @@ function resultBadgeHtml(matchId) {
   const pred = predictions[matchId] || { home: 0, away: 0 }; // auto 0–0
   const resultStr = `${result.home} – ${result.away}`;
   const ko = isKoId(matchId);
-  const pts = pointsFor(matchId, pred, result); // grupos 5/3 · eliminatorias 5/7
-  if (isExactHit(pred, result)) return `<span class="result-display result-correct-exact">⭐ ¡Exacto! +${ko ? 7 : 5}</span>`;
+  let penPick = null, realWinner = null;
+  if (ko) {
+    const pp = predictions[matchId + 'P']; penPick = pp ? teamByIndex(pp.home) : null;
+    const rb = realBr.resolved[matchId]; realWinner = rb ? rb.winner : null;
+  }
+  const pts = pointsFor(matchId, pred, result, penPick, realWinner); // grupos 5/3 · eliminatorias 5/7
+  const top = ko ? 7 : 5;
+  if (pts === top) {
+    const txt = (ko && result.home === result.away) ? '⭐ ¡Exacto + penalti! +7' : `⭐ ¡Exacto! +${top}`;
+    return `<span class="result-display result-correct-exact">${txt}</span>`;
+  }
   if (pts > 0) return `<span class="result-display result-correct-outcome">✓ Acierto +${ko ? 5 : 3}</span>`;
   const tu = `${pred.home}–${pred.away}`;
   return `<span class="result-display result-wrong">✗ ${tu} · real ${resultStr}</span>`;
@@ -396,6 +405,7 @@ function renderGroupTab(tabKey) {
   content.innerHTML = `<div class="group-header">${header}</div><div class="matches-grid" id="day-grid"></div>`;
   const grid = document.getElementById('day-grid');
   matches.forEach(m => grid.appendChild(m.id[0] === 'M' ? buildKoCard(m) : buildMatchCard(m)));
+  matches.forEach(m => { if (isKoId(m.id) && !lockedM(m)) updateKoPensRow(m.id); }); // selector de penaltis en cruces KO
 }
 
 // Refresca la pestaña «Próximos» cuando cambian los partidos (otro día), sin molestar si estás escribiendo.
@@ -520,23 +530,27 @@ function renderMatchPreds(matchId, result, data, body) {
   const byUser = {};
   (data.predictions || []).forEach(p => { (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
   const ko = isKoId(matchId);
+  const top = ko ? 7 : 5;
+  const realWinner = ko && realBr.resolved[matchId] ? realBr.resolved[matchId].winner : null;
   const rows = Object.keys(byUser).map(u => {
     const pred = byUser[u][matchId] || null;
-    const pts = result ? pointsFor(matchId, pred || { home: 0, away: 0 }, result) : null;
-    const ex  = result ? isExactHit(pred || { home: 0, away: 0 }, result) : false;
-    return { user: u, pred, pts, ex };
+    const penPred = ko ? byUser[u][matchId + 'P'] : null;
+    const penPick = penPred ? teamByIndex(penPred.home) : null;
+    const pts = result ? pointsFor(matchId, pred || { home: 0, away: 0 }, result, penPick, realWinner) : null;
+    return { user: u, pred, pts, penPick };
   });
   if (!rows.length) { body.innerHTML = '<div class="lb-loading">Todavía nadie ha hecho pronósticos.</div>'; return; }
   if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
   else rows.sort((a, b) => a.user.localeCompare(b.user));
-  const badge = r => r.ex ? `<span class="badge badge-green">⭐ +${ko ? 7 : 5}</span>`
+  const badge = r => r.pts === top ? `<span class="badge badge-green">⭐ +${top}</span>`
                    : r.pts > 0 ? `<span class="badge badge-gold">✓ +${ko ? 5 : 3}</span>`
                    : '<span class="badge badge-red">+0</span>';
   const sub = result ? 'Lo que puso cada uno · más puntos primero'
                      : 'Aún sin resultado · se ordenará por puntos cuando se introduzca';
   body.innerHTML = `<div class="mpred-sub">${sub} · toca un nombre para ver todas sus predicciones</div><div class="mpred-list">` + rows.map(r => {
     const isMe = r.user === currentUser;
-    const score = r.pred ? `${r.pred.home}–${r.pred.away}` : '<span class="mpred-none">sin pronóstico</span>';
+    const penStr = (r.penPick && r.pred && r.pred.home === r.pred.away) ? ` <span class="mpred-pen">🥅 ${teamName(r.penPick)}</span>` : '';
+    const score = r.pred ? `${r.pred.home}–${r.pred.away}${penStr}` : '<span class="mpred-none">sin pronóstico</span>';
     return `<a class="mpred-row${isMe ? ' me' : ''}" href="predicciones.html?u=${encodeURIComponent(r.user)}" title="Ver todas las predicciones de ${escMP(r.user)}">
       <span class="mpred-name">${escMP(r.user)}${isMe ? ' (tú)' : ''}</span>
       <span class="mpred-pred">${score}</span>
@@ -780,6 +794,7 @@ function onScoreChange(matchId) {
   const aEl = document.getElementById(`sc-${matchId}-away`);
   if (!hEl || !aEl) return;
   const hv = hEl.value, av = aEl.value;
+  if (isKoId(matchId)) updateKoPensRow(matchId); // muestra/oculta el selector de penaltis (empate)
   // Si borras AMBAS casillas → eliminar el pronóstico (no debe reaparecer al refrescar).
   if (hv === '' && av === '') {
     clearTimeout(saveTimers[matchId]);
@@ -1053,6 +1068,7 @@ function renderKoTab(tabKey) {
   container.innerHTML = `<div class="group-header">${header}</div><div class="ko-grid" id="ko-grid"></div>`;
   const grid = document.getElementById('ko-grid');
   matches.forEach(m => grid.appendChild(buildKoCard(m)));
+  matches.forEach(m => { if (!lockedM(m)) updateKoPensRow(m.id); }); // selector de penaltis si el pronóstico es empate
 }
 function buildKoCard(m) {
   const r = realBr.resolved[m.id] || {};
@@ -1086,6 +1102,7 @@ function buildKoCard(m) {
       ${lockTag(locked, result)}
     </div>
     ${scoreRowsHtml(m.id, r.home, r.away, locked)}
+    ${locked ? koPensLockedHtml(m.id) : `<div class="ko-pens" id="ko-pens-${m.id}"></div>`}
     <div class="match-footer">
       <div class="save-status idle" id="status-${m.id}"></div>
       <div id="result-badge-${m.id}">${resultBadgeHtml(m.id)}</div>
@@ -1093,6 +1110,43 @@ function buildKoCard(m) {
   if (!locked) wireCardInputs(card, m.id);
   else makeCardClickable(card, m.id); // ya empezó → toca para ver qué puso cada uno
   return card;
+}
+// Penaltis (a vida o muerte): si el pronóstico de esta eliminatoria es EMPATE, se
+// elige quién pasa en penaltis (necesario para los 7 pts). Se guarda como una
+// predicción aparte con id `<id>P` (home = índice del equipo), sin tocar el backend.
+function koPensLockedHtml(matchId) {
+  const pred = predictions[matchId];
+  if (!pred || pred.home !== pred.away) return ''; // solo si pronosticó empate
+  const penPred = predictions[matchId + 'P'];
+  const winName = penPred ? teamByIndex(penPred.home) : null;
+  return `<div class="ko-pens show"><div class="ko-pens-q">🥅 ${winName
+    ? `Penaltis: ${teamFlag(winName)} <b>${teamName(winName)}</b>`
+    : 'Empate — sin elegir penaltis'}</div></div>`;
+}
+function updateKoPensRow(matchId) {
+  const box = document.getElementById('ko-pens-' + matchId);
+  if (!box) return;
+  const r = realBr.resolved[matchId] || {};
+  const hEl = document.getElementById(`sc-${matchId}-home`), aEl = document.getElementById(`sc-${matchId}-away`);
+  const draw = hEl && aEl && hEl.value !== '' && aEl.value !== '' && parseInt(hEl.value, 10) === parseInt(aEl.value, 10);
+  if (!draw || !r.home || !r.away) { box.innerHTML = ''; box.classList.remove('show'); return; }
+  box.classList.add('show');
+  const penPred = predictions[matchId + 'P'];
+  const winName = penPred ? teamByIndex(penPred.home) : null;
+  const btn = name => `<button type="button" class="ko-pens-btn${winName === name ? ' on' : ''}" data-team="${teamIndex(name)}">${teamFlag(name)} ${teamName(name)}</button>`;
+  box.innerHTML = `<div class="ko-pens-q">🥅 Empate — ¿quién pasa en penaltis? <span class="ko-pens-note">(necesario para los 7 pts)</span></div>
+    <div class="ko-pens-opts">${btn(r.home)}${btn(r.away)}</div>`;
+  box.querySelectorAll('.ko-pens-btn').forEach(b => b.addEventListener('click', () => saveKoPens(matchId, parseInt(b.dataset.team, 10))));
+}
+function saveKoPens(matchId, teamIdx) {
+  const m = getKoMatch(matchId); if (!m || lockedM(m)) return;
+  const id = matchId + 'P';
+  predictions[id] = { home: teamIdx, away: 0 };
+  dirty[id] = { home: teamIdx, away: 0 };
+  api.savePrediction({ user: currentUser, matchId: id, home: teamIdx, away: 0 })
+    .then(() => { delete dirty[id]; })
+    .catch(e => console.error('saveKoPens', e));
+  updateKoPensRow(matchId);
 }
 
 // ── Init ─────────────────────────────────────────────────

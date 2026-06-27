@@ -647,6 +647,19 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .ko-pen-btn:hover { border-color: var(--gold); }
 .ko-pen-btn.picked { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
 
+/* Penaltis en eliminatorias (a vida o muerte): elegir quién pasa si empate */
+.ko-pens { margin-top: 10px; }
+.ko-pens:empty { display: none; }
+.ko-pens-q { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 7px; }
+.ko-pens-q b { color: var(--green); }
+.ko-pens-note { font-weight: 500; color: var(--muted); }
+.ko-pens-opts { display: flex; gap: 8px; }
+.ko-pens-btn { flex: 1 1 0; min-width: 0; padding: 8px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-weight: 600; font-size: 12.5px; line-height: 1.2; transition: background .15s, border-color .15s, color .15s; }
+.ko-pens-btn:hover { border-color: var(--green); }
+.ko-pens-btn.on { background: var(--green); border-color: var(--green); color: #06231a; }
+.ko-pens-btn .team-flag-img { width: 16px; vertical-align: middle; }
+.mpred-pen { color: var(--gold); font-size: 11px; white-space: nowrap; }
+
 /* ── Cuadro visual de eliminatorias (solo lectura) ─────── */
 .ko-bracket-wrap { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
 .kbk {

@@ -296,18 +296,25 @@ function calculatePoints(pred, result) {
   return GROUP_POINTS.outcome;
 }
 
-// ── Eliminatorias: 7 marcador exacto · 5 vencedor (empate de los 90' incluido).
-function koMatchPoints(pred, result) {
+// ── Eliminatorias (a vida o muerte): 7 / 5 / 0.
+//   · Si en los 90' hay ganador: 7 marcador exacto · 5 acertar al vencedor.
+//   · Si es EMPATE (penaltis): 7 SOLO si marcador exacto Y aciertas quién pasa en
+//     penaltis (penPick = equipo elegido, realWinner = equipo que pasó de verdad);
+//     5 si aciertas que es empate pero no ambas cosas.
+function koMatchPoints(pred, result, penPick, realWinner) {
   if (!result || result.status !== 'finished') return 0;
   if (getOutcome(pred.home, pred.away) !== getOutcome(result.home, result.away)) return 0;
-  if (pred.home === result.home && pred.away === result.away) return KO_MATCH_POINTS.exact;
-  return KO_MATCH_POINTS.outcome;
+  const exact = (pred.home === result.home && pred.away === result.away);
+  if (result.home !== result.away) return exact ? KO_MATCH_POINTS.exact : KO_MATCH_POINTS.outcome;
+  const penOk = penPick != null && realWinner != null && penPick === realWinner;
+  return (exact && penOk) ? KO_MATCH_POINTS.exact : KO_MATCH_POINTS.outcome;
 }
 // ¿Es un partido de eliminatoria? (sus ids empiezan por 'M': M73…M104)
 function isKoId(id) { return !!id && String(id)[0] === 'M'; }
 // Puntos de un partido cualquiera, eligiendo el baremo (grupos 5/3 · KO 5/7).
-function pointsFor(id, pred, result) {
-  return isKoId(id) ? koMatchPoints(pred, result) : calculatePoints(pred, result);
+// penPick/realWinner solo se usan en eliminatorias con empate (penaltis).
+function pointsFor(id, pred, result, penPick, realWinner) {
+  return isKoId(id) ? koMatchPoints(pred, result, penPick, realWinner) : calculatePoints(pred, result);
 }
 // ¿Marcador EXACTO acertado? (para contar ⭐ sin depender del valor 5/7).
 function isExactHit(pred, result) {

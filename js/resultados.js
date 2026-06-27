@@ -64,11 +64,15 @@ function render(finished, players) {
     if (!t.home || !t.away) return;
     const result = { home: res.home, away: res.away, status: 'finished' };
     const isKo = isKoId(m.id);
+    const top = isKo ? 7 : 5;
+    const realWinner = isKo && realBr.resolved[m.id] ? realBr.resolved[m.id].winner : null;
     const exact = [], outcome = [];
     players.forEach(u => {
       const pred = byUser[u][m.id] || { home: 0, away: 0 };
-      if (pointsFor(m.id, pred, result) <= 0) return;
-      if (isExactHit(pred, result)) exact.push(u); else outcome.push(u);
+      const penPred = isKo ? byUser[u][m.id + 'P'] : null;
+      const pts = pointsFor(m.id, pred, result, penPred ? teamByIndex(penPred.home) : null, realWinner);
+      if (pts <= 0) return;
+      if (pts === top) exact.push(u); else outcome.push(u);
     });
     const k = formatKickoff(m.kickoff);
     const label = isKo ? ((KO_ROUNDS.find(r => r.key === m.round) || {}).short || 'Eliminatoria')
@@ -107,22 +111,26 @@ function openMatchPredictions(matchId) {
   document.getElementById('match-preds-title').innerHTML =
     `${teamFlag(t.home)} ${teamName(t.home)} ${scoreStr} ${teamName(t.away)} ${teamFlag(t.away)}`;
   const isKo = isKoId(matchId);
+  const top = isKo ? 7 : 5;
+  const realWinner = isKo && realBr.resolved[matchId] ? realBr.resolved[matchId].winner : null;
   const res = result ? { home: result.home, away: result.away, status: 'finished' } : null;
   const rows = Object.keys(byUser).map(u => {
     const pred = byUser[u][matchId] || null;
-    const pts = res ? pointsFor(matchId, pred || { home: 0, away: 0 }, res) : null;
-    const ex  = res ? isExactHit(pred || { home: 0, away: 0 }, res) : false;
-    return { user: u, pred, pts, ex };
+    const penPred = isKo ? byUser[u][matchId + 'P'] : null;
+    const penPick = penPred ? teamByIndex(penPred.home) : null;
+    const pts = res ? pointsFor(matchId, pred || { home: 0, away: 0 }, res, penPick, realWinner) : null;
+    return { user: u, pred, pts, penPick };
   });
   if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
   else rows.sort((a, b) => a.user.localeCompare(b.user));
-  const badge = r => r.ex ? `<span class="badge badge-green">⭐ +${isKo ? 7 : 5}</span>`
+  const badge = r => r.pts === top ? `<span class="badge badge-green">⭐ +${top}</span>`
                    : r.pts > 0 ? `<span class="badge badge-gold">✓ +${isKo ? 5 : 3}</span>`
                    : '<span class="badge badge-red">+0</span>';
   const sub = result ? 'Lo que puso cada uno · más puntos primero' : 'Aún sin resultado';
   const list = rows.length ? rows.map(r => {
     const isMe = r.user === me;
-    const score = r.pred ? `${r.pred.home}–${r.pred.away}` : '<span class="mpred-none">sin pronóstico</span>';
+    const penStr = (r.penPick && r.pred && r.pred.home === r.pred.away) ? ` <span class="mpred-pen">🥅 ${teamName(r.penPick)}</span>` : '';
+    const score = r.pred ? `${r.pred.home}–${r.pred.away}${penStr}` : '<span class="mpred-none">sin pronóstico</span>';
     return `<a class="mpred-row${isMe ? ' me' : ''}" href="predicciones.html?u=${encodeURIComponent(r.user)}" title="Ver todas las predicciones de ${escHtml(r.user)}"><span class="mpred-name">${escHtml(r.user)}${isMe ? ' (tú)' : ''}</span><span class="mpred-pred">${score}</span><span class="mpred-pts">${result ? badge(r) : ''}</span></a>`;
   }).join('') : '<div class="mpred-sub" style="text-align:center">Nadie ha hecho pronósticos.</div>';
   document.getElementById('match-preds-body').innerHTML = `<div class="mpred-sub">${sub} · toca un nombre para ver todas sus predicciones</div><div class="mpred-list">${list}</div>`;
