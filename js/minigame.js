@@ -513,9 +513,17 @@ const MG_ROTATION = [
   }
   function playedTodayServer() { const u = mgUser(), d = dayKey(); return !!(mgRows || []).some(r => r.user === u && r.day === d); }
   // El servidor manda: si los datos cargaron bien y la hoja NO tiene tu partida de
-  // hoy, se borra el candado local viejo. Así, si la organizadora elimina una fila
-  // del Google Sheet, ese jugador puede volver a jugar sin tocar nada en su móvil.
-  function reconcileDone() { if (mgRows && !playedTodayServer() && isDone()) localStorage.removeItem(doneKey()); }
+  // hoy, se RESETEA el estado local de hoy (candado + mejor + flag del Nivel Bonus).
+  // Así, si la organizadora elimina una fila del Google Sheet, ese jugador queda
+  // como "no ha jugado" y puede repetir el reto entero (Puntería + bonus) limpio,
+  // sin arrastrar un marcador viejo que descuadre el guardado.
+  function reconcileDone() {
+    if (mgRows && !playedTodayServer() && isDone()) {
+      localStorage.removeItem(doneKey());
+      localStorage.removeItem(bestKey());
+      localStorage.removeItem(pnBonusKey());
+    }
+  }
   // El ranking manda también para "tu mejor de hoy": si la hoja tiene tu puntuación
   // de hoy, el mejor local se iguala a ella (así un mejor local antiguo de pruebas
   // no descuadra con lo que se ve en el ranking).
