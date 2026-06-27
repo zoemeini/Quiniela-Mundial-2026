@@ -94,9 +94,9 @@ function playerStats(user) {
     const real = resultFor(m.id); if (!real) return;
     played++;
     const pred = preds[m.id] || { home: 0, away: 0 }; // sin enviar = 0–0
-    const pts = calculatePoints(pred, { home: real.home, away: real.away, status: 'finished' });
-    if (pts >= 3) outcome++; // acertó el vencedor/empate (incluye marcadores exactos)
-    if (pts === 5) exact++;  // marcador exacto = estrella
+    const res = { home: real.home, away: real.away, status: 'finished' };
+    if (pointsFor(m.id, pred, res) > 0) outcome++; // acertó vencedor/empate (incluye exactos)
+    if (isExactHit(pred, res)) exact++;            // marcador exacto = estrella
   });
   return { played, outcome, exact };
 }

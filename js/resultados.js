@@ -63,14 +63,14 @@ function render(finished, players) {
     const t = teamsFor(m);
     if (!t.home || !t.away) return;
     const result = { home: res.home, away: res.away, status: 'finished' };
+    const isKo = isKoId(m.id);
     const exact = [], outcome = [];
     players.forEach(u => {
       const pred = byUser[u][m.id] || { home: 0, away: 0 };
-      const pts = calculatePoints(pred, result);
-      if (pts === 5) exact.push(u); else if (pts === 3) outcome.push(u);
+      if (pointsFor(m.id, pred, result) <= 0) return;
+      if (isExactHit(pred, result)) exact.push(u); else outcome.push(u);
     });
     const k = formatKickoff(m.kickoff);
-    const isKo = m.id[0] === 'M';
     const label = isKo ? ((KO_ROUNDS.find(r => r.key === m.round) || {}).short || 'Eliminatoria')
                        : ('Grupo ' + m.group);
     const labelColor = isKo ? 'var(--gold)' : groupColor(m.group);
@@ -86,8 +86,8 @@ function render(finished, players) {
           <span class="res-team away"><span>${teamName(t.away)}</span> ${teamFlag(t.away)}</span>
         </div>
         <div class="res-aciertos">
-          ${exact.length ? `<div class="res-line"><span class="badge badge-green">⭐ +5</span> ${nameList(exact)}</div>` : ''}
-          ${outcome.length ? `<div class="res-line"><span class="badge badge-gold">✓ +3</span> ${nameList(outcome)}</div>` : ''}
+          ${exact.length ? `<div class="res-line"><span class="badge badge-green">⭐ +${isKo ? 7 : 5}</span> ${nameList(exact)}</div>` : ''}
+          ${outcome.length ? `<div class="res-line"><span class="badge badge-gold">✓ +${isKo ? 5 : 3}</span> ${nameList(outcome)}</div>` : ''}
           ${(!exact.length && !outcome.length) ? `<div class="res-line res-none">Nadie acertó 😬</div>` : ''}
         </div>
         <div class="mc-seepreds">👁️ Ver qué puso cada uno ›</div>
@@ -106,21 +106,24 @@ function openMatchPredictions(matchId) {
   const scoreStr = result ? `<b>${result.home}–${result.away}</b>` : '<span class="mpred-vs">vs</span>';
   document.getElementById('match-preds-title').innerHTML =
     `${teamFlag(t.home)} ${teamName(t.home)} ${scoreStr} ${teamName(t.away)} ${teamFlag(t.away)}`;
+  const isKo = isKoId(matchId);
+  const res = result ? { home: result.home, away: result.away, status: 'finished' } : null;
   const rows = Object.keys(byUser).map(u => {
     const pred = byUser[u][matchId] || null;
-    const pts = result ? calculatePoints(pred || { home: 0, away: 0 }, { home: result.home, away: result.away, status: 'finished' }) : null;
-    return { user: u, pred, pts };
+    const pts = res ? pointsFor(matchId, pred || { home: 0, away: 0 }, res) : null;
+    const ex  = res ? isExactHit(pred || { home: 0, away: 0 }, res) : false;
+    return { user: u, pred, pts, ex };
   });
   if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
   else rows.sort((a, b) => a.user.localeCompare(b.user));
-  const badge = pts => pts === 5 ? '<span class="badge badge-green">⭐ +5</span>'
-                     : pts === 3 ? '<span class="badge badge-gold">✓ +3</span>'
-                     : '<span class="badge badge-red">+0</span>';
+  const badge = r => r.ex ? `<span class="badge badge-green">⭐ +${isKo ? 7 : 5}</span>`
+                   : r.pts > 0 ? `<span class="badge badge-gold">✓ +${isKo ? 5 : 3}</span>`
+                   : '<span class="badge badge-red">+0</span>';
   const sub = result ? 'Lo que puso cada uno · más puntos primero' : 'Aún sin resultado';
   const list = rows.length ? rows.map(r => {
     const isMe = r.user === me;
     const score = r.pred ? `${r.pred.home}–${r.pred.away}` : '<span class="mpred-none">sin pronóstico</span>';
-    return `<a class="mpred-row${isMe ? ' me' : ''}" href="predicciones.html?u=${encodeURIComponent(r.user)}" title="Ver todas las predicciones de ${escHtml(r.user)}"><span class="mpred-name">${escHtml(r.user)}${isMe ? ' (tú)' : ''}</span><span class="mpred-pred">${score}</span><span class="mpred-pts">${result ? badge(r.pts) : ''}</span></a>`;
+    return `<a class="mpred-row${isMe ? ' me' : ''}" href="predicciones.html?u=${encodeURIComponent(r.user)}" title="Ver todas las predicciones de ${escHtml(r.user)}"><span class="mpred-name">${escHtml(r.user)}${isMe ? ' (tú)' : ''}</span><span class="mpred-pred">${score}</span><span class="mpred-pts">${result ? badge(r) : ''}</span></a>`;
   }).join('') : '<div class="mpred-sub" style="text-align:center">Nadie ha hecho pronósticos.</div>';
   document.getElementById('match-preds-body').innerHTML = `<div class="mpred-sub">${sub} · toca un nombre para ver todas sus predicciones</div><div class="mpred-list">${list}</div>`;
   document.getElementById('match-preds-modal').classList.remove('hidden');

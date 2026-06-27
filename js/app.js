@@ -291,9 +291,10 @@ function resultBadgeHtml(matchId) {
   if (!result) return '';
   const pred = predictions[matchId] || { home: 0, away: 0 }; // auto 0–0
   const resultStr = `${result.home} – ${result.away}`;
-  const pts = calculatePoints(pred, result);
-  if (pts === 5) return `<span class="result-display result-correct-exact">⭐ ¡Exacto! +5</span>`;
-  if (pts === 3) return `<span class="result-display result-correct-outcome">✓ Acierto +3</span>`;
+  const ko = isKoId(matchId);
+  const pts = pointsFor(matchId, pred, result); // grupos 5/3 · eliminatorias 5/7
+  if (isExactHit(pred, result)) return `<span class="result-display result-correct-exact">⭐ ¡Exacto! +${ko ? 7 : 5}</span>`;
+  if (pts > 0) return `<span class="result-display result-correct-outcome">✓ Acierto +${ko ? 5 : 3}</span>`;
   const tu = `${pred.home}–${pred.away}`;
   return `<span class="result-display result-wrong">✗ ${tu} · real ${resultStr}</span>`;
 }
@@ -518,17 +519,19 @@ function openMatchPredictions(matchId) {
 function renderMatchPreds(matchId, result, data, body) {
   const byUser = {};
   (data.predictions || []).forEach(p => { (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
+  const ko = isKoId(matchId);
   const rows = Object.keys(byUser).map(u => {
     const pred = byUser[u][matchId] || null;
-    const pts = result ? calculatePoints(pred || { home: 0, away: 0 }, result) : null;
-    return { user: u, pred, pts };
+    const pts = result ? pointsFor(matchId, pred || { home: 0, away: 0 }, result) : null;
+    const ex  = result ? isExactHit(pred || { home: 0, away: 0 }, result) : false;
+    return { user: u, pred, pts, ex };
   });
   if (!rows.length) { body.innerHTML = '<div class="lb-loading">Todavía nadie ha hecho pronósticos.</div>'; return; }
   if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
   else rows.sort((a, b) => a.user.localeCompare(b.user));
-  const badge = pts => pts === 5 ? '<span class="badge badge-green">⭐ +5</span>'
-                     : pts === 3 ? '<span class="badge badge-gold">✓ +3</span>'
-                     : '<span class="badge badge-red">+0</span>';
+  const badge = r => r.ex ? `<span class="badge badge-green">⭐ +${ko ? 7 : 5}</span>`
+                   : r.pts > 0 ? `<span class="badge badge-gold">✓ +${ko ? 5 : 3}</span>`
+                   : '<span class="badge badge-red">+0</span>';
   const sub = result ? 'Lo que puso cada uno · más puntos primero'
                      : 'Aún sin resultado · se ordenará por puntos cuando se introduzca';
   body.innerHTML = `<div class="mpred-sub">${sub} · toca un nombre para ver todas sus predicciones</div><div class="mpred-list">` + rows.map(r => {
@@ -537,7 +540,7 @@ function renderMatchPreds(matchId, result, data, body) {
     return `<a class="mpred-row${isMe ? ' me' : ''}" href="predicciones.html?u=${encodeURIComponent(r.user)}" title="Ver todas las predicciones de ${escMP(r.user)}">
       <span class="mpred-name">${escMP(r.user)}${isMe ? ' (tú)' : ''}</span>
       <span class="mpred-pred">${score}</span>
-      <span class="mpred-pts">${result ? badge(r.pts) : ''}</span>
+      <span class="mpred-pts">${result ? badge(r) : ''}</span>
     </a>`;
   }).join('') + '</div>';
 }
@@ -913,6 +916,11 @@ function updateDayChecks() {
 }
 
 // ── Conmutador de fase ───────────────────────────────────
+// La fase final ya ha empezado cuando arranca el primer partido de 16avos.
+function koStarted() {
+  const r32 = KO_MATCHES.filter(m => m.round === 'R32').map(m => new Date(m.kickoff).getTime());
+  return r32.length > 0 && Date.now() >= Math.min.apply(null, r32);
+}
 function showPhase(phase) {
   currentPhase = phase;
   document.getElementById('phase-groups').classList.toggle('hidden', phase !== 'groups');
@@ -928,17 +936,47 @@ document.getElementById('phase-ko-btn').addEventListener('click', () => showPhas
 function renderKnockout() {
   const lockedMsg = document.getElementById('ko-locked-msg');
   const koContent = document.getElementById('ko-content');
-  if (!realBr.complete) {
+  // Los cruces se muestran EN CUANTO se conocen (por grupos terminados); el resto
+  // queda «Por determinar». Solo si aún no se sabe NINGUNO mostramos el aviso.
+  const anyKnown = KO_MATCHES.some(m => { const r = realBr.resolved[m.id]; return r && r.home && r.away; });
+  if (!anyKnown) {
     lockedMsg.classList.remove('hidden');
     koContent.classList.add('hidden');
     document.getElementById('ko-locked-progress').textContent =
-      'Entonces podrás pronosticar cada ronda con los equipos reales.';
+      'Los cruces irán apareciendo según terminen los grupos. ¡Vuelve pronto! ⚽';
     return;
   }
   lockedMsg.classList.add('hidden');
   koContent.classList.remove('hidden');
+  renderKoBracketDiagram();
   buildKoRoundTabs();
   renderKoRound(currentKoRound);
+}
+// Cuadro visual (solo lectura): una columna por ronda, ganador real resaltado.
+function renderKoBracketDiagram() {
+  const host = document.getElementById('ko-bracket');
+  if (!host) return;
+  const cols = [['R32', '16avos'], ['R16', 'Octavos'], ['QF', 'Cuartos'], ['SF', 'Semis'], ['F', 'Final']];
+  const teamCell = (name, isWin) => name
+    ? `<div class="kbk-team${isWin ? ' win' : ''}">${teamFlag(name)}<span>${teamName(name)}</span></div>`
+    : `<div class="kbk-team tbd"><span>Por definir</span></div>`;
+  let html = '<div class="kbk">';
+  cols.forEach(([rk, label]) => {
+    html += `<div class="kbk-col"><div class="kbk-col-title">${label}</div><div class="kbk-col-body">`;
+    getKoMatchesByRound(rk).forEach(m => {
+      const r = realBr.resolved[m.id] || {};
+      const w = r.winner || null;
+      html += `<div class="kbk-match">${teamCell(r.home, w && w === r.home)}${teamCell(r.away, w && w === r.away)}</div>`;
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  const tp = realBr.resolved['M103'] || {};
+  const tpStr = (tp.home || tp.away)
+    ? `${tp.home ? teamName(tp.home) : 'Por definir'} vs ${tp.away ? teamName(tp.away) : 'Por definir'}`
+    : 'Por definir';
+  html += `<div class="kbk-third"><span class="kbk-third-lbl">🥉 Tercer puesto:</span> ${tpStr}</div>`;
+  host.innerHTML = html;
 }
 function buildKoRoundTabs() {
   const tabsEl = document.getElementById('ko-round-tabs');
@@ -977,11 +1015,16 @@ function buildKoCard(m) {
   card.id = `card-${m.id}`;
 
   if (!r.home || !r.away) {
+    // Aún no se conocen ambos rivales: mostramos el lado ya conocido (si lo hay)
+    // y «Por determinar» el otro. No se puede pronosticar hasta saber los dos.
+    const sideRow = nm => nm
+      ? `<div class="mc-row">${teamFlag(nm)} <span class="team-name">${teamName(nm)}</span></div>`
+      : `<div class="mc-row"><span class="team-name tbd-text">Por determinar</span></div>`;
     card.innerHTML = `${label ? `<div class="ko-card-label">${label}</div>` : ''}
       <div class="match-meta"><span>${k.date}</span><span class="separator">·</span><span class="kickoff-time">${k.time}</span></div>
       <div class="mc-rows">
-        <div class="mc-row"><span class="team-name tbd-text">Por determinar</span></div>
-        <div class="mc-row"><span class="team-name tbd-text">Por determinar</span></div>
+        ${sideRow(r.home)}
+        ${sideRow(r.away)}
       </div>`;
     return card;
   }
@@ -1014,4 +1057,7 @@ function updateKoTabChecks() {
 // ── Init ─────────────────────────────────────────────────
 buildUI();
 setupBanner();
+// Una vez empezada la fase final, la web abre por defecto en Eliminatorias
+// (los grupos ya no importan tanto); antes, sigue abriendo en Grupos.
+showPhase(koStarted() ? 'ko' : 'groups');
 loadUser();

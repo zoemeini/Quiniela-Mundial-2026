@@ -84,9 +84,9 @@ function applyLeaderboard(data) {
         played++;
         const result = { home: res.home, away: res.away, status: 'finished' };
         const pred = byUser[user][m.id] || { home: 0, away: 0 }; // no enviado = 0–0
-        const pts = calculatePoints(pred, result);
-        if (m.id[0] === 'M') ko += pts; else g += pts;
-        if (pts === 5) exact++;
+        const pts = pointsFor(m.id, pred, result); // grupos 5/3 · eliminatorias 5/7
+        if (isKoId(m.id)) ko += pts; else g += pts;
+        if (isExactHit(pred, result)) exact++; // ⭐ marcador exacto (grupos o KO)
         if (pts > 0) hits++; // acertó el resultado (1X2), aunque no el marcador exacto
       });
       const spPts = finalPoints(byUser[user]); // apuesta de la final (0 hasta que se juegue)

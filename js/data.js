@@ -292,6 +292,25 @@ function calculatePoints(pred, result) {
   const predOutcome = getOutcome(pred.home, pred.away);
   const resOutcome  = getOutcome(result.home, result.away);
   if (predOutcome !== resOutcome) return 0;
-  if (pred.home === result.home && pred.away === result.away) return 5;
-  return 3;
+  if (pred.home === result.home && pred.away === result.away) return GROUP_POINTS.exact;
+  return GROUP_POINTS.outcome;
+}
+
+// ── Eliminatorias: 7 marcador exacto · 5 vencedor (empate de los 90' incluido).
+function koMatchPoints(pred, result) {
+  if (!result || result.status !== 'finished') return 0;
+  if (getOutcome(pred.home, pred.away) !== getOutcome(result.home, result.away)) return 0;
+  if (pred.home === result.home && pred.away === result.away) return KO_MATCH_POINTS.exact;
+  return KO_MATCH_POINTS.outcome;
+}
+// ¿Es un partido de eliminatoria? (sus ids empiezan por 'M': M73…M104)
+function isKoId(id) { return !!id && String(id)[0] === 'M'; }
+// Puntos de un partido cualquiera, eligiendo el baremo (grupos 5/3 · KO 5/7).
+function pointsFor(id, pred, result) {
+  return isKoId(id) ? koMatchPoints(pred, result) : calculatePoints(pred, result);
+}
+// ¿Marcador EXACTO acertado? (para contar ⭐ sin depender del valor 5/7).
+function isExactHit(pred, result) {
+  return !!result && result.status === 'finished'
+    && pred.home === result.home && pred.away === result.away;
 }

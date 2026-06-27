@@ -13,6 +13,7 @@
 function computeStandings(preds) {
   const standings = {};
   const thirds = [];
+  const groupComplete = {}; // { A:true/false, ... } — grupo con sus 6 partidos resueltos
   let complete = true;
 
   GROUPS.forEach(group => {
@@ -20,11 +21,11 @@ function computeStandings(preds) {
     const table = {};
     const ensure = t => (table[t] = table[t] || { team: t, pts: 0, gd: 0, gf: 0, ga: 0 });
 
-    let groupComplete = true;
+    let groupComplete_ = true;
     matches.forEach(m => {
       ensure(m.home); ensure(m.away);
       const p = preds[m.id];
-      if (!p || p.home == null || p.away == null) { groupComplete = false; return; }
+      if (!p || p.home == null || p.away == null) { groupComplete_ = false; return; }
       const h = table[m.home], a = table[m.away];
       h.gf += p.home; h.ga += p.away;
       a.gf += p.away; a.ga += p.home;
@@ -39,11 +40,12 @@ function computeStandings(preds) {
       y.pts - x.pts || y.gd - x.gd || y.gf - x.gf || x.team.localeCompare(y.team));
 
     standings[group] = ranked.map(t => t.team);
-    if (!groupComplete) complete = false;
+    groupComplete[group] = groupComplete_;
+    if (!groupComplete_) complete = false;
     else thirds.push({ group, team: ranked[2].team, pts: ranked[2].pts, gd: ranked[2].gd, gf: ranked[2].gf });
   });
 
-  return { standings, thirds, complete };
+  return { standings, thirds, complete, groupComplete };
 }
 
 // Rank the 12 third-placed teams and return the 8 best (their group letters).
@@ -139,11 +141,35 @@ function buildUserBracket(preds, picks, winnerFn) {
 // with real teams filled in as far as they are known.
 function realKnockout(groupResults, koReal) {
   const cs = computeStandings(groupResults);
-  if (!cs.complete) return { complete: false, resolved: {} };
-  const thirdAssign = assignThirds(bestEightThirds(cs.thirds));
-  const winnerFn = (matchId) => (koReal[matchId] && koReal[matchId].winner) ? koReal[matchId].winner : null;
-  const resolved = resolveBracket(cs.standings, thirdAssign, null, winnerFn);
-  return { complete: true, resolved };
+  const gc = cs.groupComplete || {};
+  const allComplete = cs.complete;
+  // Los slots de "mejor tercero" solo se pueden asignar cuando TODOS los grupos
+  // están hechos (hace falta rankear los 12 terceros para elegir 8). Hasta
+  // entonces, esos cruces quedan sin rival ("Por determinar").
+  const thirdAssign = allComplete ? assignThirds(bestEightThirds(cs.thirds)) : {};
+  const resolved = {};
+  // Devuelve el equipo de un grupo en la posición idx SOLO si ese grupo ya terminó.
+  const teamAt = (g, idx, ready) => (ready && cs.standings[g]) ? (cs.standings[g][idx] || null) : null;
+  const side = ref => {
+    if (ref.w)      return teamAt(ref.w, 0, gc[ref.w]);
+    if (ref.ru)     return teamAt(ref.ru, 1, gc[ref.ru]);
+    if (ref.third)  { const g = thirdAssign[ref.third]; return (allComplete && g) ? teamAt(g, 2, true) : null; }
+    if (ref.winOf)  return resolved[ref.winOf] ? resolved[ref.winOf].winner : null;
+    if (ref.loseOf) return resolved[ref.loseOf] ? resolved[ref.loseOf].loser : null;
+    return null;
+  };
+  KO_MATCHES.forEach(m => {
+    const home = side(m.home);
+    const away = side(m.away);
+    let winner = null;
+    if (home && away && koReal[m.id] && koReal[m.id].winner) {
+      const w = koReal[m.id].winner;
+      winner = (w === home || w === away) ? w : null;
+    }
+    const loser = winner ? (winner === home ? away : home) : null;
+    resolved[m.id] = { home, away, winner, loser };
+  });
+  return { complete: allComplete, resolved };
 }
 
 // Sets of teams that REACH each round (i.e. are participants in it),

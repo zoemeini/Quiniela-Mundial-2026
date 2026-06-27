@@ -38,6 +38,12 @@ const MUSIC = {
 const GROUP_POINTS = { exact: 5, outcome: 3 };
 
 // ============================================================
+//  Eliminatorias (por partido): 7 marcador exacto · 5 vencedor
+//  (empate de los 90' incluido). Distinto de los grupos.
+// ============================================================
+const KO_MATCH_POINTS = { exact: 7, outcome: 5 };
+
+// ============================================================
 //  Knockout points — awarded for each team you correctly
 //  predict to REACH a round (compared with the real results).
 //  Deeper rounds are worth more. Tweak freely.
