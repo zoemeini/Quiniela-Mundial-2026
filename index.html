@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=79">
+  <link rel="stylesheet" href="css/style.css?v=80">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 </head>
 <body>
@@ -212,18 +212,21 @@
     </div>
 
     <div id="ko-content" class="hidden">
-      <p class="ko-intro">Arriba tienes el <b>cuadro completo</b> (quién juega contra quién según avanzan las rondas). Debajo, pronostica el <b>marcador</b> de cada cruce: <span class="badge badge-gold">+5</span> acertar el vencedor (o empate en los 90′) · <span class="badge badge-green">+7</span> marcador exacto. Los cruces «por determinar» se rellenan solos al conocerse los equipos; cada partido se cierra a su hora de inicio.</p>
+      <p class="ko-intro">Pronostica el <b>marcador</b> de cada cruce: <span class="badge badge-gold">+5</span> acertar el vencedor (o empate en los 90′) · <span class="badge badge-green">+7</span> marcador exacto. Los cruces «por determinar» se rellenan solos al conocerse los equipos; cada partido se cierra a su hora de inicio. Abajo del todo tienes el <b>cuadro completo</b> 🗺️.</p>
 
-      <!-- Cuadro visual (solo lectura) -->
-      <div id="ko-bracket"></div>
-
-      <!-- Sub-pestañas de rondas -->
+      <!-- Calendario por días (Próximos + stepper) -->
       <div class="tabs-container">
         <div class="tabs" id="ko-round-tabs"></div>
       </div>
 
-      <!-- Paneles de rondas -->
+      <!-- Partidos del día / próximos -->
       <div id="ko-rounds"></div>
+
+      <!-- Cuadro visual completo (solo lectura) — al final -->
+      <div class="ko-bracket-wrap">
+        <div class="group-header">🗺️ Cuadro completo</div>
+        <div id="ko-bracket"></div>
+      </div>
     </div>
   </section>
 </main>
@@ -233,7 +236,7 @@
 <script src="js/api.js?v=53"></script>
 <script src="js/data.js?v=34"></script>
 <script src="js/bracket.js?v=33"></script>
-<script src="js/app.js?v=40"></script>
+<script src="js/app.js?v=41"></script>
 <script src="js/music.js?v=30"></script>
 <script src="js/minigame.js?v=94"></script>
 <script src="js/newgames.js?v=17"></script>

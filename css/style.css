@@ -648,6 +648,7 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 .ko-pen-btn.picked { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
 
 /* ── Cuadro visual de eliminatorias (solo lectura) ─────── */
+.ko-bracket-wrap { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
 .kbk {
   display: flex; gap: 14px;
   overflow-x: auto; -webkit-overflow-scrolling: touch;

@@ -12,7 +12,7 @@ let realBr       = { complete: false, resolved: {} }; // equipos reales del cuad
 let saveTimers   = {};
 let currentPhase = 'groups';
 let currentGroupTab = 'upcoming'; // 'upcoming' | dayKey ('2026-06-11') | 'group:C'
-let currentKoRound = 'R32';
+let currentKoTab = null; // 'upcoming' | dayKey ('2026-06-28') — pestaña activa de eliminatorias
 
 const lockedM = m => matchLocked(m.kickoff);
 const getAnyMatch = id => getMatchById(id) || getKoMatch(id);
@@ -948,9 +948,9 @@ function renderKnockout() {
   }
   lockedMsg.classList.add('hidden');
   koContent.classList.remove('hidden');
-  renderKoBracketDiagram();
-  buildKoRoundTabs();
-  renderKoRound(currentKoRound);
+  buildKoDayNav();
+  renderKoTab(currentKoTab || defaultKoTab());
+  renderKoBracketDiagram(); // el cuadro completo va al FINAL (#ko-bracket está al final del DOM)
 }
 // Cuadro visual (solo lectura): una columna por ronda, ganador real resaltado.
 function renderKoBracketDiagram() {
@@ -978,31 +978,81 @@ function renderKoBracketDiagram() {
   html += `<div class="kbk-third"><span class="kbk-third-lbl">🥉 Tercer puesto:</span> ${tpStr}</div>`;
   host.innerHTML = html;
 }
-function buildKoRoundTabs() {
-  const tabsEl = document.getElementById('ko-round-tabs');
-  tabsEl.innerHTML = '';
-  KO_ROUNDS.forEach(r => {
-    const btn = document.createElement('button');
-    btn.className = 'tab-btn' + (r.key === currentKoRound ? ' active' : '');
-    btn.dataset.round = r.key;
-    btn.innerHTML = `${r.short} <span class="tab-check" id="ko-tab-check-${r.key}"></span>`;
-    btn.addEventListener('click', () => switchKoRound(r.key));
-    tabsEl.appendChild(btn);
-  });
-  updateKoTabChecks();
+// Días (Madrid) de las eliminatorias — calendario fijo (28-jun → 19-jul).
+function koDayKeysSorted() {
+  const set = {};
+  KO_MATCHES.forEach(m => { set[madridDayKey(m.kickoff)] = true; });
+  return Object.keys(set).sort();
 }
-function switchKoRound(roundKey) {
-  currentKoRound = roundKey;
-  document.querySelectorAll('#ko-round-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.round === roundKey));
-  renderKoRound(roundKey);
+// Pestaña inicial: el día de HOY si hay eliminatoria, si no «Próximos».
+function defaultKoTab() {
+  const todayKey = madridDayKey(new Date());
+  return koDayKeysSorted().includes(todayKey) ? todayKey : 'upcoming';
 }
-function renderKoRound(roundKey) {
+// Próximos cruces (3 días de juego, hoy incl.) con equipos YA conocidos.
+function koUpcomingMatches() {
+  const todayKey = madridDayKey(new Date());
+  const cand = KO_MATCHES.filter(m => {
+    if (madridDayKey(m.kickoff) < todayKey) return false;
+    const r = realBr.resolved[m.id]; return r && r.home && r.away;
+  }).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  const days = [];
+  cand.forEach(m => { const k = madridDayKey(m.kickoff); if (!days.includes(k)) days.push(k); });
+  const keep = days.slice(0, 3);
+  return cand.filter(m => keep.includes(madridDayKey(m.kickoff)));
+}
+// Navegador por días de eliminatorias (igual que grupos): «Próximos» + stepper.
+function buildKoDayNav() {
+  const nav = document.getElementById('ko-round-tabs');
+  if (!nav) return;
+  nav.className = 'day-nav';
+  const days = koDayKeysSorted();
+  nav.innerHTML =
+    '<button class="tab-btn" id="ko-nav-upcoming">⏳ Próximos</button>' +
+    '<div class="day-stepper">' +
+      '<button class="day-arrow" id="ko-nav-prev" aria-label="Día anterior">‹</button>' +
+      '<select class="day-select" id="ko-day-select">' +
+        '<option value="">📅 Ir a un día…</option>' +
+        days.map(k => `<option value="${k}">${dayLabel(k)}</option>`).join('') +
+      '</select>' +
+      '<button class="day-arrow" id="ko-nav-next" aria-label="Día siguiente">›</button>' +
+    '</div>';
+  document.getElementById('ko-nav-upcoming').addEventListener('click', () => renderKoTab('upcoming'));
+  document.getElementById('ko-day-select').addEventListener('change', e => { if (e.target.value) renderKoTab(e.target.value); });
+  document.getElementById('ko-nav-prev').addEventListener('click', () => stepKoDay(-1));
+  document.getElementById('ko-nav-next').addEventListener('click', () => stepKoDay(1));
+}
+function stepKoDay(dir) {
+  const days = koDayKeysSorted();
+  const cur = days.indexOf(currentKoTab);
+  let idx;
+  if (cur >= 0) idx = (cur + dir + days.length) % days.length;
+  else idx = dir > 0 ? 0 : days.length - 1;
+  renderKoTab(days[idx]);
+}
+function renderKoTab(tabKey) {
+  currentKoTab = tabKey;
+  const upBtn = document.getElementById('ko-nav-upcoming');
+  if (upBtn) upBtn.classList.toggle('active', tabKey === 'upcoming');
+  const sel = document.getElementById('ko-day-select');
+  if (sel) sel.value = (tabKey !== 'upcoming') ? tabKey : '';
   const container = document.getElementById('ko-rounds');
-  const round = KO_ROUNDS.find(r => r.key === roundKey);
-  container.innerHTML = `<div class="group-header">${round.name}</div><div class="ko-grid" id="ko-grid"></div>`;
+  let matches, header;
+  if (tabKey === 'upcoming') {
+    matches = koUpcomingMatches();
+    header = '⏳ Próximos cruces — pronostícalos primero';
+    if (!matches.length) {
+      container.innerHTML = '<p class="ko-intro">Aún no hay cruces próximos con los dos equipos conocidos. Usa el calendario por día o mira el <b>cuadro completo</b> abajo. 🙂</p>';
+      return;
+    }
+  } else {
+    matches = KO_MATCHES.filter(m => madridDayKey(m.kickoff) === tabKey)
+      .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+    header = 'Eliminatorias del ' + dayLabel(tabKey);
+  }
+  container.innerHTML = `<div class="group-header">${header}</div><div class="ko-grid" id="ko-grid"></div>`;
   const grid = document.getElementById('ko-grid');
-  getKoMatchesByRound(roundKey).forEach(m => grid.appendChild(buildKoCard(m)));
-  updateKoTabChecks();
+  matches.forEach(m => grid.appendChild(buildKoCard(m)));
 }
 function buildKoCard(m) {
   const r = realBr.resolved[m.id] || {};
@@ -1043,15 +1093,6 @@ function buildKoCard(m) {
   if (!locked) wireCardInputs(card, m.id);
   else makeCardClickable(card, m.id); // ya empezó → toca para ver qué puso cada uno
   return card;
-}
-function updateKoTabChecks() {
-  KO_ROUNDS.forEach(r => {
-    const matches = getKoMatchesByRound(r.key);
-    const known = matches.filter(m => { const x = realBr.resolved[m.id]; return x && x.home && x.away; });
-    const done = known.length > 0 && known.every(m => predictions[m.id] !== undefined || lockedM(m));
-    const el = document.getElementById(`ko-tab-check-${r.key}`);
-    if (el) el.textContent = done ? '✓' : '';
-  });
 }
 
 // ── Init ─────────────────────────────────────────────────
