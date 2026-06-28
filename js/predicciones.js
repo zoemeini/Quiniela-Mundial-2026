@@ -25,7 +25,7 @@ function applyPred(data) {
     allPreds = {};
     (data.predictions || []).forEach(p => { (allPreds[p.user] = allPreds[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
     results = {}; (data.results || []).forEach(r => { results[r.matchId] = r; });
-    koReal = {}; (data.knockoutReal || []).forEach(k => { koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga }; });
+    koReal = {}; (data.knockoutReal || []).forEach(k => { koReal[k.matchId] = { winner: k.winner || '', gh: k.gh, ga: k.ga, home: k.home || '', away: k.away || '' }; });
     const gr = {}; MATCHES.forEach(m => { const r = resultFor(m.id); if (r) gr[m.id] = { home: r.home, away: r.away }; });
     realBr = realKnockout(gr, koReal);
 
@@ -95,7 +95,9 @@ function playerStats(user) {
     played++;
     const pred = preds[m.id] || { home: 0, away: 0 }; // sin enviar = 0–0
     const res = { home: real.home, away: real.away, status: 'finished' };
-    if (pointsFor(m.id, pred, res) > 0) outcome++; // acertó vencedor/empate (incluye exactos)
+    let pp = null, rw = null, kh = null, ka = null;
+    if (isKoId(m.id)) { const x = preds[m.id + 'P']; pp = x ? teamByIndex(x.home) : null; const rb = realBr.resolved[m.id]; if (rb) { rw = rb.winner; kh = rb.home; ka = rb.away; } }
+    if (pointsFor(m.id, pred, res, pp, rw, kh, ka) > 0) outcome++; // acertó quién pasa (incluye exactos)
     if (isExactHit(pred, res)) exact++;            // marcador exacto = estrella
   });
   return { played, outcome, exact };

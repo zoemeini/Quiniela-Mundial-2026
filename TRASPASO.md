@@ -124,17 +124,26 @@ personal.
 |---|---|---|---|
 | **Grupos** | marcador exacto | **5** | `GROUP_POINTS.exact` |
 | **Grupos** | solo el resultado (1X2) | **3** | `GROUP_POINTS.outcome` |
-| **Eliminatorias** | marcador exacto | **7** | `KO_MATCH_POINTS.exact` |
-| **Eliminatorias** | solo el vencedor (empate de los 90' incluido) | **5** | `KO_MATCH_POINTS.outcome` |
+| **Eliminatorias** | marcador exacto de los 90' | **7** | `KO_MATCH_POINTS.exact` |
+| **Eliminatorias** | acertar **quién pasa** la eliminatoria | **5** | `KO_MATCH_POINTS.outcome` |
 
-- **Eliminatorias a vida o muerte (penaltis):** si pronosticas **empate** en un cruce KO,
-  además eliges **quién pasa en penaltis**. Entonces: **7** solo si aciertas marcador exacto
-  Y el ganador de penaltis; **5** si aciertas que es empate pero no ambas cosas; **0** si fallas el 1X2.
+- **Regla clave de eliminatorias (a vida o muerte):** los **5** puntos premian acertar
+  **qué equipo PASA** la eliminatoria, **por la vía que sea** (victoria en los 90' o
+  penaltis). Tu "elegido" = el que marca más en tu pronóstico; si pronosticas **empate**,
+  tu **pick de penaltis**. Ejemplos:
+  - Pronosticas empate + Canadá en penaltis, y Canadá gana 1-0 en los 90' → **5** (acertaste
+    al que pasa), **no 7** (no acertaste el marcador). *(Este fue el caso de Zoesita en M73.)*
+  - Mismo lado ganador pero distinto marcador → **5**. Marcador exacto → **7**.
+  - Dos empates (tú y el real) → **5** aunque falles el penalti (acertaste que iría a
+    penaltis); **7** solo si además el marcador es exacto Y aciertas el penalti.
+  - El equipo que dijiste que pasa NO pasa → **0**.
 - El pick de penaltis se guarda como una **predicción aparte con id `<id>P`** (p.ej. `M73P`),
   `home` = índice del equipo. **No toca el backend** (reusa `savePrediction`).
-- Lógica centralizada en `js/data.js`: `koMatchPoints(pred,result,penPick,realWinner)`,
-  `pointsFor(id,pred,result,penPick,realWinner)`, `isKoId(id)` (ids que empiezan por `M`),
-  `isExactHit`, `calculatePoints` (grupos). Lo usan leaderboard/resultados/predicciones/app.
+- Lógica centralizada en `js/data.js`: `koMatchPoints(pred,result,penPick,realWinner,homeTeam,awayTeam)`,
+  `pointsFor(id,pred,result,penPick,realWinner,homeTeam,awayTeam)`, `isKoId(id)` (ids que
+  empiezan por `M`), `isExactHit`, `calculatePoints` (grupos). `homeTeam/awayTeam` = equipos
+  del cruce (`realBr.resolved[id].home/away`), necesarios para los casos empate↔victoria. Lo
+  usan leaderboard/resultados/predicciones/app (los 4 pasan ya los equipos del cruce).
 - Lo que no rellenas cuenta como 0-0. Cada partido se bloquea a su hora de inicio real.
 
 ## 8. Eliminatorias (cuadro)

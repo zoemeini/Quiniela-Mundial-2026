@@ -293,12 +293,12 @@ function resultBadgeHtml(matchId) {
   const pred = predictions[matchId] || { home: 0, away: 0 }; // auto 0–0
   const resultStr = `${result.home} – ${result.away}`;
   const ko = isKoId(matchId);
-  let penPick = null, realWinner = null;
+  let penPick = null, realWinner = null, koHome = null, koAway = null;
   if (ko) {
     const pp = predictions[matchId + 'P']; penPick = pp ? teamByIndex(pp.home) : null;
-    const rb = realBr.resolved[matchId]; realWinner = rb ? rb.winner : null;
+    const rb = realBr.resolved[matchId]; if (rb) { realWinner = rb.winner; koHome = rb.home; koAway = rb.away; }
   }
-  const pts = pointsFor(matchId, pred, result, penPick, realWinner); // grupos 5/3 · eliminatorias 5/7
+  const pts = pointsFor(matchId, pred, result, penPick, realWinner, koHome, koAway); // grupos 5/3 · eliminatorias 5/7
   const top = ko ? 7 : 5;
   if (pts === top) {
     const txt = (ko && result.home === result.away) ? '⭐ ¡Exacto + penalti! +7' : `⭐ ¡Exacto! +${top}`;
@@ -532,12 +532,13 @@ function renderMatchPreds(matchId, result, data, body) {
   (data.predictions || []).forEach(p => { (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
   const ko = isKoId(matchId);
   const top = ko ? 7 : 5;
-  const realWinner = ko && realBr.resolved[matchId] ? realBr.resolved[matchId].winner : null;
+  const rb = ko ? (realBr.resolved[matchId] || null) : null;
+  const realWinner = rb ? rb.winner : null;
   const rows = Object.keys(byUser).map(u => {
     const pred = byUser[u][matchId] || null;
     const penPred = ko ? byUser[u][matchId + 'P'] : null;
     const penPick = penPred ? teamByIndex(penPred.home) : null;
-    const pts = result ? pointsFor(matchId, pred || { home: 0, away: 0 }, result, penPick, realWinner) : null;
+    const pts = result ? pointsFor(matchId, pred || { home: 0, away: 0 }, result, penPick, realWinner, rb ? rb.home : null, rb ? rb.away : null) : null;
     return { user: u, pred, pts, penPick };
   });
   if (!rows.length) { body.innerHTML = '<div class="lb-loading">Todavía nadie ha hecho pronósticos.</div>'; return; }

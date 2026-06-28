@@ -297,24 +297,46 @@ function calculatePoints(pred, result) {
 }
 
 // ── Eliminatorias (a vida o muerte): 7 / 5 / 0.
-//   · Si en los 90' hay ganador: 7 marcador exacto · 5 acertar al vencedor.
-//   · Si es EMPATE (penaltis): 7 SOLO si marcador exacto Y aciertas quién pasa en
-//     penaltis (penPick = equipo elegido, realWinner = equipo que pasó de verdad);
-//     5 si aciertas que es empate pero no ambas cosas.
-function koMatchPoints(pred, result, penPick, realWinner) {
+//   · 7 = MARCADOR EXACTO de los 90'. Si el partido real acabó en empate, además hay
+//     que acertar quién pasó en penaltis (si no, se queda en 5).
+//   · 5 = acertar QUIÉN PASA la eliminatoria, aunque la vía no coincida. Tu "elegido"
+//     es el equipo que marca más en tu pronóstico; si pronosticas empate, tu pick de
+//     penaltis. El que pasa de verdad = realWinner. Así, p.ej., pronosticar empate +
+//     Canadá-en-penaltis y que Canadá gane 1-0 en los 90' = 5 (acertaste al que pasa),
+//     no 7 (no acertaste el marcador). Dos empates cuentan como acierto de "ir a
+//     penaltis" → 5 (el penalti solo aporta el +2 del marcador exacto).
+//   · 0 = el equipo que dijiste que pasa no es el que pasó.
+//   penPick/realWinner = nombres de equipo; homeTeam/awayTeam = equipos del cruce
+//   (necesarios solo para los casos cruzados empate↔victoria).
+function koMatchPoints(pred, result, penPick, realWinner, homeTeam, awayTeam) {
   if (!result || result.status !== 'finished') return 0;
-  if (getOutcome(pred.home, pred.away) !== getOutcome(result.home, result.away)) return 0;
+  const predDraw = pred.home === pred.away;
+  const realDraw = result.home === result.away;
   const exact = (pred.home === result.home && pred.away === result.away);
-  if (result.home !== result.away) return exact ? KO_MATCH_POINTS.exact : KO_MATCH_POINTS.outcome;
-  const penOk = penPick != null && realWinner != null && penPick === realWinner;
-  return (exact && penOk) ? KO_MATCH_POINTS.exact : KO_MATCH_POINTS.outcome;
+  // 7: marcador exacto de los 90' (en empate real, además acertar penaltis; si no, 5).
+  if (exact) {
+    if (!realDraw) return KO_MATCH_POINTS.exact;
+    return (penPick && realWinner && penPick === realWinner) ? KO_MATCH_POINTS.exact : KO_MATCH_POINTS.outcome;
+  }
+  // 5: acertar quién pasa.
+  if (predDraw && realDraw) return KO_MATCH_POINTS.outcome; // ambos empate → acertaste que iría a penaltis
+  if (!predDraw && !realDraw) { // ambos con ganador en los 90' → mismo lado
+    return getOutcome(pred.home, pred.away) === getOutcome(result.home, result.away)
+      ? KO_MATCH_POINTS.outcome : 0;
+  }
+  // Cruzado (empate ↔ victoria): comparar el EQUIPO que cada uno dice que pasa.
+  const predAdv = predDraw ? (penPick || null)
+                : (pred.home > pred.away ? homeTeam : awayTeam);
+  const realAdv = realWinner || (result.home > result.away ? homeTeam
+                : result.away > result.home ? awayTeam : null);
+  return (predAdv && realAdv && predAdv === realAdv) ? KO_MATCH_POINTS.outcome : 0;
 }
 // ¿Es un partido de eliminatoria? (sus ids empiezan por 'M': M73…M104)
 function isKoId(id) { return !!id && String(id)[0] === 'M'; }
 // Puntos de un partido cualquiera, eligiendo el baremo (grupos 5/3 · KO 5/7).
-// penPick/realWinner solo se usan en eliminatorias con empate (penaltis).
-function pointsFor(id, pred, result, penPick, realWinner) {
-  return isKoId(id) ? koMatchPoints(pred, result, penPick, realWinner) : calculatePoints(pred, result);
+// penPick/realWinner/homeTeam/awayTeam solo se usan en eliminatorias.
+function pointsFor(id, pred, result, penPick, realWinner, homeTeam, awayTeam) {
+  return isKoId(id) ? koMatchPoints(pred, result, penPick, realWinner, homeTeam, awayTeam) : calculatePoints(pred, result);
 }
 // ¿Marcador EXACTO acertado? (para contar ⭐ sin depender del valor 5/7).
 function isExactHit(pred, result) {

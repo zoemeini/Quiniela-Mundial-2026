@@ -84,12 +84,12 @@ function applyLeaderboard(data) {
         played++;
         const result = { home: res.home, away: res.away, status: 'finished' };
         const pred = byUser[user][m.id] || { home: 0, away: 0 }; // no enviado = 0–0
-        let penPick = null, realWinner = null;
-        if (isKoId(m.id)) { // empate en KO → cuenta quién pasa en penaltis
+        let penPick = null, realWinner = null, koHome = null, koAway = null;
+        if (isKoId(m.id)) { // KO: cuenta quién PASA (en los 90' o en penaltis)
           const pp = byUser[user][m.id + 'P']; penPick = pp ? teamByIndex(pp.home) : null;
-          const rb = realBr.resolved[m.id]; realWinner = rb ? rb.winner : null;
+          const rb = realBr.resolved[m.id]; if (rb) { realWinner = rb.winner; koHome = rb.home; koAway = rb.away; }
         }
-        const pts = pointsFor(m.id, pred, result, penPick, realWinner); // grupos 5/3 · eliminatorias 5/7
+        const pts = pointsFor(m.id, pred, result, penPick, realWinner, koHome, koAway); // grupos 5/3 · eliminatorias 5/7
         if (isKoId(m.id)) ko += pts; else g += pts;
         if (isExactHit(pred, result)) exact++; // ⭐ marcador exacto (grupos o KO)
         if (pts > 0) hits++; // acertó el resultado (1X2), aunque no el marcador exacto

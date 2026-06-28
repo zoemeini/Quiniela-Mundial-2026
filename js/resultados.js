@@ -65,12 +65,13 @@ function render(finished, players) {
     const result = { home: res.home, away: res.away, status: 'finished' };
     const isKo = isKoId(m.id);
     const top = isKo ? 7 : 5;
-    const realWinner = isKo && realBr.resolved[m.id] ? realBr.resolved[m.id].winner : null;
+    const rb = isKo ? (realBr.resolved[m.id] || null) : null;
+    const realWinner = rb ? rb.winner : null;
     const exact = [], outcome = [];
     players.forEach(u => {
       const pred = byUser[u][m.id] || { home: 0, away: 0 };
       const penPred = isKo ? byUser[u][m.id + 'P'] : null;
-      const pts = pointsFor(m.id, pred, result, penPred ? teamByIndex(penPred.home) : null, realWinner);
+      const pts = pointsFor(m.id, pred, result, penPred ? teamByIndex(penPred.home) : null, realWinner, rb ? rb.home : null, rb ? rb.away : null);
       if (pts <= 0) return;
       if (pts === top) exact.push(u); else outcome.push(u);
     });
@@ -112,13 +113,14 @@ function openMatchPredictions(matchId) {
     `${teamFlag(t.home)} ${teamName(t.home)} ${scoreStr} ${teamName(t.away)} ${teamFlag(t.away)}`;
   const isKo = isKoId(matchId);
   const top = isKo ? 7 : 5;
-  const realWinner = isKo && realBr.resolved[matchId] ? realBr.resolved[matchId].winner : null;
+  const rb = isKo ? (realBr.resolved[matchId] || null) : null;
+  const realWinner = rb ? rb.winner : null;
   const res = result ? { home: result.home, away: result.away, status: 'finished' } : null;
   const rows = Object.keys(byUser).map(u => {
     const pred = byUser[u][matchId] || null;
     const penPred = isKo ? byUser[u][matchId + 'P'] : null;
     const penPick = penPred ? teamByIndex(penPred.home) : null;
-    const pts = res ? pointsFor(matchId, pred || { home: 0, away: 0 }, res, penPick, realWinner) : null;
+    const pts = res ? pointsFor(matchId, pred || { home: 0, away: 0 }, res, penPick, realWinner, rb ? rb.home : null, rb ? rb.away : null) : null;
     return { user: u, pred, pts, penPick };
   });
   if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
