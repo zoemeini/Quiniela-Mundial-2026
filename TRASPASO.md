@@ -124,20 +124,23 @@ personal.
 |---|---|---|---|
 | **Grupos** | marcador exacto | **5** | `GROUP_POINTS.exact` |
 | **Grupos** | solo el resultado (1X2) | **3** | `GROUP_POINTS.outcome` |
-| **Eliminatorias** | marcador exacto (tras la prórroga) | **7** | `KO_MATCH_POINTS.exact` |
-| **Eliminatorias** | acertar **quién pasa** la eliminatoria | **5** | `KO_MATCH_POINTS.outcome` |
+| **Eliminatorias** | clavar **las 2 cosas** (marcador exacto + quién pasa) | **7** | `KO_MATCH_POINTS.exact` |
+| **Eliminatorias** | acertar **una** (quién pasa **o** el marcador) | **5** | `KO_MATCH_POINTS.outcome` |
+| **Eliminatorias** | no acertar ninguna | **0** | — |
 
-- **Regla clave de eliminatorias (a vida o muerte):** los **5** puntos premian acertar
-  **qué equipo PASA** la eliminatoria, **por la vía que sea** (victoria o penaltis). Tu
-  "elegido" = el que marca más en tu pronóstico; si pronosticas **empate** (tras la
-  prórroga), tu **pick de penaltis**. El empate que va a penaltis se decide **tras la
-  prórroga**, no en los 90'. Ejemplos:
-  - Pronosticas empate + Canadá en penaltis, y Canadá gana 1-0 → **5** (acertaste al que
-    pasa), **no 7** (no acertaste el marcador). *(Este fue el caso de Zoesita en M73.)*
-  - Mismo lado ganador pero distinto marcador → **5**. Marcador exacto → **7**.
-  - Dos empates (tú y el real) → **5** aunque falles el penalti (acertaste que iría a
-    penaltis); **7** solo si además el marcador es exacto Y aciertas el penalti.
-  - El equipo que dijiste que pasa NO pasa → **0**.
+- **Regla clave de eliminatorias (a vida o muerte):** hay **dos cosas** que acertar — el
+  **marcador exacto** y **quién pasa** la eliminatoria. **7** si clavas las dos · **5** si
+  aciertas solo una · **0** si ninguna. "Quién pasa" según tu pronóstico = el equipo que
+  marca más; si pronosticas **empate** (tras la **prórroga**, no en los 90'), tu **pick de
+  penaltis**. El que pasa de verdad = `realWinner` (lo registra el admin).
+- Ejemplos (pronosticas empate 1-1 y que pasa A):
+  - real **2-2 pasa B** → **0** (fallas marcador y quién pasa).
+  - real **2-2 pasa A** → **5** (aciertas quién pasa).
+  - real **1-1 pasa B** → **5** (aciertas el marcador).
+  - real **1-1 pasa A** → **7** (las dos).
+  - real **2-1 (gana A)** → **5** (aciertas quién pasa).
+  - (y "2-1" tuyo con real "1-1 pasa A" → **5**: aciertas quién pasa.)
+- Implementado en `koMatchPoints` contando aciertos: `hits = exacto + quiénPasa` → 2=7, 1=5, 0=0.
 - El pick de penaltis se guarda como una **predicción aparte con id `<id>P`** (p.ej. `M73P`),
   `home` = índice del equipo. **No toca el backend** (reusa `savePrediction`).
 - Lógica centralizada en `js/data.js`: `koMatchPoints(pred,result,penPick,realWinner,homeTeam,awayTeam)`,
