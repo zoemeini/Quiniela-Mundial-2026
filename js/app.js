@@ -935,10 +935,20 @@ function updateDayChecks() {
 }
 
 // ── Conmutador de fase ───────────────────────────────────
-// La fase final ya ha empezado cuando arranca el primer partido de 16avos.
+// Eliminatorias pasa a ser la pestaña por defecto en cuanto TERMINA la fase de
+// grupos (cuando arranca el último partido de grupos: ya no se puede pronosticar
+// ningún grupo), aunque el primer 16avos sea horas más tarde. Así, el día que
+// empiezan las eliminatorias, la web abre directamente en esa pestaña.
 function koStarted() {
-  const r32 = KO_MATCHES.filter(m => m.round === 'R32').map(m => new Date(m.kickoff).getTime());
-  return r32.length > 0 && Date.now() >= Math.min.apply(null, r32);
+  const thresholds = [];
+  const groupKicks = (typeof MATCHES !== 'undefined' ? MATCHES : [])
+    .map(m => new Date(m.kickoff).getTime()).filter(t => !isNaN(t));
+  if (groupKicks.length) thresholds.push(Math.max.apply(null, groupKicks));
+  const r32 = KO_MATCHES.filter(m => m.round === 'R32')
+    .map(m => new Date(m.kickoff).getTime()).filter(t => !isNaN(t));
+  if (r32.length) thresholds.push(Math.min.apply(null, r32));
+  if (!thresholds.length) return false;
+  return Date.now() >= Math.min.apply(null, thresholds);
 }
 function showPhase(phase) {
   currentPhase = phase;
