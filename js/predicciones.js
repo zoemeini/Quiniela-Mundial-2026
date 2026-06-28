@@ -63,6 +63,8 @@ async function load() {
   }
 }
 
+// Color del marcador según el acierto (solo cuando ya hay resultado real):
+// verde = marcador exacto · amarillo = acertó quién gana/pasa pero no el marcador · rojo = falló.
 function matchLine(matchId, homeTeam, awayTeam, preds) {
   const started = startedById(matchId);
   const pred = preds[matchId];
@@ -70,10 +72,22 @@ function matchLine(matchId, homeTeam, awayTeam, preds) {
   let mid;
   if (!started) {
     mid = `<span class="pred-score locked">🔒</span>`;
-  } else if (pred) {
-    mid = `<span class="pred-score">${pred.home} – ${pred.away}</span>`;
   } else {
-    mid = `<span class="pred-score">0 – 0 <span class="pred-unsent">(sin enviar)</span></span>`;
+    const penPick = isKoId(matchId) && preds[matchId + 'P'] ? teamByIndex(preds[matchId + 'P'].home) : null;
+    const eff = pred || { home: 0, away: 0 };
+    let cls = '';
+    if (real) {
+      const res = { home: real.home, away: real.away, status: 'finished' };
+      let rw = null, kh = null, ka = null;
+      if (isKoId(matchId)) { const rb = realBr.resolved[matchId]; if (rb) { rw = rb.winner; kh = rb.home; ka = rb.away; } }
+      cls = isExactHit(eff, res) ? ' ps-exact'
+          : (pointsFor(matchId, eff, res, penPick, rw, kh, ka) > 0 ? ' ps-outcome' : ' ps-miss');
+    }
+    if (pred) {
+      mid = `<span class="pred-score${cls}">${pred.home} – ${pred.away}</span>`;
+    } else {
+      mid = `<span class="pred-score${cls}">0 – 0 <span class="pred-unsent">(sin enviar)</span></span>`;
+    }
   }
   const realStr = real ? `<div class="pred-real">resultado real: ${real.home} – ${real.away}</div>` : '';
   return `<div class="pred-match-wrap">
@@ -145,7 +159,12 @@ function finalBetBlockHTML(user) {
 function renderPlayer(user) {
   const preds = allPreds[user] || {};
   const view = document.getElementById('pred-view');
-  let html = statsBannerHTML(user) + finalBetBlockHTML(user) + '<h3 class="pred-section-title">⚽ Fase de grupos</h3>';
+  const legend = `<div class="pred-legend">
+    <span class="pl-item"><span class="pl-dot ps-exact"></span>Marcador exacto</span>
+    <span class="pl-item"><span class="pl-dot ps-outcome"></span>Acertó quién gana/pasa</span>
+    <span class="pl-item"><span class="pl-dot ps-miss"></span>Falló</span>
+  </div>`;
+  let html = statsBannerHTML(user) + finalBetBlockHTML(user) + legend + '<h3 class="pred-section-title">⚽ Fase de grupos</h3>';
   GROUPS.forEach(g => {
     html += `<div class="pred-group"><div class="admin-group-title">Grupo ${g}</div>`;
     getMatchesByGroup(g).forEach(m => { html += matchLine(m.id, m.home, m.away, preds); });

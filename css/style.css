@@ -763,6 +763,27 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
   font-weight: 700;
   color: var(--muted);
 }
+/* Marcador coloreado según el acierto (verde exacto · amarillo vencedor · rojo fallo) */
+.pred-score.ps-exact, .pred-score.ps-outcome, .pred-score.ps-miss {
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+.pred-score.ps-exact   { background: var(--green-dim); color: var(--green); }
+.pred-score.ps-outcome { background: var(--gold-dim);  color: var(--gold); }
+.pred-score.ps-miss    { background: rgba(248,113,113,.16); color: var(--red); }
+.pred-score.ps-miss .pred-unsent { color: var(--red); opacity: .8; }
+/* Leyenda de colores */
+.pred-legend {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  margin: 0 0 14px; padding: 10px 12px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  font-size: 12px; color: var(--muted);
+}
+.pred-legend .pl-item { display: inline-flex; align-items: center; gap: 6px; }
+.pred-legend .pl-dot { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+.pred-legend .pl-dot.ps-exact   { background: var(--green); }
+.pred-legend .pl-dot.ps-outcome { background: var(--gold); }
+.pred-legend .pl-dot.ps-miss    { background: var(--red); }
 .pred-champion {
   margin-top: 16px;
   padding: 14px;
