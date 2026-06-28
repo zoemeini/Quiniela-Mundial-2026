@@ -13,6 +13,7 @@ let saveTimers   = {};
 let currentPhase = 'groups';
 let currentGroupTab = 'upcoming'; // 'upcoming' | dayKey ('2026-06-11') | 'group:C'
 let currentKoTab = null; // 'upcoming' | dayKey ('2026-06-28') — pestaña activa de eliminatorias
+let lastKoSig    = null; // firma de la estructura del cuadro ya renderizada (ver koStructureSig)
 
 const lockedM = m => matchLocked(m.kickoff);
 const getAnyMatch = id => getMatchById(id) || getKoMatch(id);
@@ -883,9 +884,14 @@ function applyData(data) {
     maybeRefreshUpcoming(); // mantiene «Próximos» al día (3 días) en tiempo real
     updateNudge();
     renderFinalBet(); // apuesta especial de la final
-    // Eliminatorias: re-render solo si no estás escribiendo una casilla KO ahora mismo.
-    const editingKo = document.activeElement && /^sc-M/.test(document.activeElement.id || '');
-    if (currentPhase === 'ko' && !editingKo) renderKnockout();
+    // Eliminatorias: reconstruir la pestaña ENTERA solo si cambió la estructura del
+    // cuadro (nuevos equipos conocidos / partidos que empiezan) Y no estás editando.
+    // Si no, refresco SUAVE que conserva lo que escribes (evita que parezca que «no se
+    // guarda» cuando el polling de 60 s reconstruía la pestaña debajo de tus dedos).
+    if (currentPhase === 'ko') {
+      if (!isEditingKo() && koStructureSig() !== lastKoSig) renderKnockout();
+      else syncKoCards();
+    }
 }
 
 // Actualiza las tarjetas visibles SIN borrar lo que el usuario está escribiendo:
@@ -962,7 +968,51 @@ document.getElementById('phase-groups-btn').addEventListener('click', () => show
 document.getElementById('phase-ko-btn').addEventListener('click', () => showPhase('ko'));
 
 // ── Eliminatorias (equipos reales por ronda) ─────────────
+// Firma de la ESTRUCTURA del cuadro: qué cruces tienen ya los dos equipos y cuáles
+// están bloqueados (ya empezaron). Si cambia, hay que reconstruir la pestaña KO; si
+// no, basta el refresco suave de syncKoCards (que NO destruye lo que escribes).
+function koStructureSig() {
+  return KO_MATCHES.map(m => {
+    const r = realBr.resolved[m.id] || {};
+    return m.id + ':' + (r.home || '') + '/' + (r.away || '') + (lockedM(m) ? ':L' : '');
+  }).join('|');
+}
+// ¿El usuario está interactuando con las eliminatorias ahora mismo? No reconstruir la
+// pestaña debajo de sus dedos, ni mientras haya un pronóstico KO sin confirmar.
+function isEditingKo() {
+  const ae = document.activeElement;
+  if (ae && /^(sc-M|koe-)/.test(ae.id || '')) return true;            // casilla del calendario o del popup
+  const modal = document.getElementById('ko-edit-modal');
+  if (modal && !modal.classList.contains('hidden')) return true;      // popup de edición abierto
+  return Object.keys(dirty).some(isKoId);                             // pronóstico KO escrito pero aún sin guardar
+}
+// Refresco SUAVE de las tarjetas KO visibles (igual que syncGroupCards en grupos):
+// rellena solo casillas vacías con lo ya pronosticado (nunca borra ni pisa lo que
+// escribes ni la casilla con foco), actualiza penaltis/insignias y pasa a solo-lectura
+// las que acaban de empezar.
+function syncKoCards() {
+  KO_MATCHES.forEach(m => {
+    const card = document.getElementById('card-' + m.id);
+    if (!card) return;                              // no está en la pestaña visible
+    const r = realBr.resolved[m.id] || {};
+    if (!r.home || !r.away) return;                 // «Por determinar»: nada que sincronizar todavía
+    const focusInCard = document.activeElement && card.contains(document.activeElement);
+    if (lockedM(m)) { if (!focusInCard) card.replaceWith(buildKoCard(m)); return; } // ya empezó → solo lectura
+    const pred = predictions[m.id];
+    if (pred) {
+      const h = document.getElementById('sc-' + m.id + '-home');
+      const a = document.getElementById('sc-' + m.id + '-away');
+      if (h && document.activeElement !== h && h.value === '') h.value = pred.home;
+      if (a && document.activeElement !== a && a.value === '') a.value = pred.away;
+      if (h && a && h.value !== '' && a.value !== '') setStatus(m.id, 'saved', '✓ Guardado');
+    }
+    updateKoPensRow(m.id);
+    const badge = document.getElementById('result-badge-' + m.id);
+    if (badge) badge.innerHTML = resultBadgeHtml(m.id);
+  });
+}
 function renderKnockout() {
+  lastKoSig = koStructureSig(); // tras una reconstrucción completa, la firma queda al día
   const lockedMsg = document.getElementById('ko-locked-msg');
   const koContent = document.getElementById('ko-content');
   // Los cruces se muestran EN CUANTO se conocen (por grupos terminados); el resto

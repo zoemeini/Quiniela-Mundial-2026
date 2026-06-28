@@ -231,6 +231,14 @@ personal.
 - Banderas: se usan **imágenes de flagcdn.com** (los emoji de bandera no se ven en Windows).
 - No usar `@import` para fuentes (bloquea el render / colgaba el screenshot del preview);
   se cargan con `<link ... media="print" onload="this.media='all'">`.
+- **Refresco de 60 s y la pestaña KO (no romper):** `loadData` se llama cada 60 s →
+  `applyData`. Los grupos se refrescan con `syncGroupCards` (SUAVE: solo rellena casillas
+  vacías, nunca borra). Las eliminatorias hacen lo mismo con `syncKoCards`; solo se
+  **reconstruye** la pestaña entera (`renderKnockout`) cuando cambia `koStructureSig()`
+  (nuevos equipos conocidos / partido que empieza) y `!isEditingKo()`. **No** volver a
+  reconstruir el KO en cada poll: reconstruir destruye los inputs y, combinado con una
+  lectura en vuelo, hacía “desaparecer” marcadores ya escritos (bug reportado, arreglado en
+  `app.js` v=47).
 
 ## 14. Cómo darle contexto a un Claude nuevo
 
