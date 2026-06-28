@@ -291,10 +291,10 @@ function seedDummy() {
   lock.waitLock(20000);
   try {
     var s = sheetByName('Predictions');
-    if (s.getLastRow() > 1) { // borra filas previas del dummy (re-ejecutable)
-      var players = s.getRange(2, 2, s.getLastRow() - 1, 1).getValues();
-      for (var i = players.length - 1; i >= 0; i--) {
-        if (String(players[i][0]).trim() === name) s.deleteRow(i + 2);
+    if (s.getLastRow() > 1) { // borra filas de GRUPOS previas del dummy (re-ejecutable; NO toca sus KO M*)
+      var rows = s.getRange(2, 2, s.getLastRow() - 1, 2).getValues(); // Jugador, ID
+      for (var i = rows.length - 1; i >= 0; i--) {
+        if (String(rows[i][0]).trim() === name && String(rows[i][1]).charAt(0) !== 'M') s.deleteRow(i + 2);
       }
     }
     var out = [];
@@ -315,6 +315,41 @@ function seedDummy() {
     lock.releaseLock();
   }
   SpreadsheetApp.getUi().alert('Dummy creado: "' + name + '" con ' + MATCHES.length + ' pronósticos de grupos aleatorios y realistas.');
+}
+
+// ── Pronósticos ALEATORIOS de ELIMINATORIAS para el Dummy (re-ejecutable). ──
+//    Ejecútalo desde el editor (elige seedDummyKnockout y pulsa ▶). Re-ejecutarlo
+//    regenera SOLO sus pronósticos KO (no toca los de grupos).
+//    Usa marcadores DECISIVOS (sin empates): así el Dummy siempre pronostica un
+//    ganador y no necesita elegir penaltis (que requeriría saber el rival). El
+//    pronóstico va por CASILLA (M73…M104), así encaja sea cual sea el equipo que
+//    asignes después a cada cruce. NO hace falta redeployar el web app: basta con
+//    pegar este .gs, Guardar, elegir seedDummyKnockout y pulsar ▶.
+function seedDummyKnockout() {
+  var name = 'TontoAQuienLeGaneElDummy';
+  // Marcadores KO realistas SIN empates (pocos goles, pesos hacia 1-0 / 2-1).
+  var pool = ['1-0','0-1','2-1','1-2','2-0','0-2','2-1','1-2','1-0','0-1','3-1','1-3','3-0','0-3','2-0','0-2','2-1','1-0'];
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var s = sheetByName('Predictions');
+    // Borra SOLO las filas KO previas del dummy (ids M*, incluidos picks de penaltis M..P).
+    if (s.getLastRow() > 1) {
+      var rows = s.getRange(2, 2, s.getLastRow() - 1, 2).getValues(); // Jugador, ID
+      for (var i = rows.length - 1; i >= 0; i--) {
+        if (String(rows[i][0]).trim() === name && String(rows[i][1]).charAt(0) === 'M') s.deleteRow(i + 2);
+      }
+    }
+    var out = [];
+    for (var k = 0; k < KO_MATCHES.length; k++) {
+      var sc = pool[Math.floor(Math.random() * pool.length)].split('-');
+      out.push([new Date(), name, KO_MATCHES[k].id, Number(sc[0]), Number(sc[1])]);
+    }
+    s.getRange(s.getLastRow() + 1, 1, out.length, 5).setValues(out);
+  } finally {
+    lock.releaseLock();
+  }
+  SpreadsheetApp.getUi().alert('Dummy: ' + KO_MATCHES.length + ' pronósticos de ELIMINATORIAS aleatorios (marcadores decisivos, sin empates). Sus pronósticos de grupos no se han tocado.');
 }
 
 // ── Minijuego diario: puntuaciones (1 partida al día por jugador) ──

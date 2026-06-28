@@ -194,7 +194,11 @@ personal.
 - Botón "Borrar" (header) → borra ese jugador (`deleteUser`) y libera el nombre. Oculto tras
   el cierre.
 - Hay un usuario "Dummy" (`TontoAQuienLeGaneElDummy`) con pronósticos aleatorios realistas
-  como "listón" (función `seedDummy` en el `.gs`).
+  como "listón". Dos seeders en el `.gs` (se ejecutan **desde el editor**, NO es redeploy):
+  `seedDummy()` (72 grupos) y `seedDummyKnockout()` (M73–M104, marcadores decisivos sin
+  empates → no necesita pick de penaltis; va por casilla, así encaja con cualquier equipo
+  que asignes). Son independientes: `seedDummy` ya no borra las filas KO. Para correrlos:
+  Apps Script → pega el `.gs` → Guardar → elige la función en el desplegable → ▶.
 
 ---
 
