@@ -1152,7 +1152,7 @@ function koeUpdatePens(matchId) {
   const penPred = predictions[matchId + 'P'];
   const winName = penPred ? teamByIndex(penPred.home) : null;
   const btn = name => `<button type="button" class="ko-pens-btn${winName === name ? ' on' : ''}" data-team="${teamIndex(name)}">${teamFlag(name)} ${teamName(name)}</button>`;
-  box.innerHTML = `<div class="ko-pens-q">🥅 Empate — ¿quién pasa en penaltis? <span class="ko-pens-note">(necesario para los 7 pts)</span></div>
+  box.innerHTML = `<div class="ko-pens-q">🥅 Empate tras la prórroga — ¿quién pasa en los penaltis? <span class="ko-pens-note">(tu elegido para pasar)</span></div>
     <div class="ko-pens-opts">${btn(r.home)}${btn(r.away)}</div>`;
   box.querySelectorAll('.ko-pens-btn').forEach(b => b.addEventListener('click', () => { saveKoPens(matchId, parseInt(b.dataset.team, 10)); koeUpdatePens(matchId); }));
 }
@@ -1274,9 +1274,9 @@ function buildKoCard(m) {
   else makeCardClickable(card, m.id); // ya empezó → toca para ver qué puso cada uno
   return card;
 }
-// Penaltis (a vida o muerte): si el pronóstico de esta eliminatoria es EMPATE, se
-// elige quién pasa en penaltis (necesario para los 7 pts). Se guarda como una
-// predicción aparte con id `<id>P` (home = índice del equipo), sin tocar el backend.
+// Penaltis (a vida o muerte): si el pronóstico de esta eliminatoria es EMPATE (tras la
+// prórroga), se elige quién pasa en los penaltis (= tu elegido para pasar). Se guarda
+// como una predicción aparte con id `<id>P` (home = índice del equipo), sin tocar el backend.
 function koPensLockedHtml(matchId) {
   const pred = predictions[matchId];
   if (!pred || pred.home !== pred.away) return ''; // solo si pronosticó empate
@@ -1284,7 +1284,7 @@ function koPensLockedHtml(matchId) {
   const winName = penPred ? teamByIndex(penPred.home) : null;
   return `<div class="ko-pens show"><div class="ko-pens-q">🥅 ${winName
     ? `Penaltis: ${teamFlag(winName)} <b>${teamName(winName)}</b>`
-    : 'Empate — sin elegir penaltis'}</div></div>`;
+    : 'Empate tras la prórroga — sin elegir penaltis'}</div></div>`;
 }
 function updateKoPensRow(matchId) {
   const box = document.getElementById('ko-pens-' + matchId);
@@ -1297,7 +1297,7 @@ function updateKoPensRow(matchId) {
   const penPred = predictions[matchId + 'P'];
   const winName = penPred ? teamByIndex(penPred.home) : null;
   const btn = name => `<button type="button" class="ko-pens-btn${winName === name ? ' on' : ''}" data-team="${teamIndex(name)}">${teamFlag(name)} ${teamName(name)}</button>`;
-  box.innerHTML = `<div class="ko-pens-q">🥅 Empate — ¿quién pasa en penaltis? <span class="ko-pens-note">(necesario para los 7 pts)</span></div>
+  box.innerHTML = `<div class="ko-pens-q">🥅 Empate tras la prórroga — ¿quién pasa en los penaltis? <span class="ko-pens-note">(tu elegido para pasar)</span></div>
     <div class="ko-pens-opts">${btn(r.home)}${btn(r.away)}</div>`;
   box.querySelectorAll('.ko-pens-btn').forEach(b => b.addEventListener('click', () => saveKoPens(matchId, parseInt(b.dataset.team, 10))));
 }

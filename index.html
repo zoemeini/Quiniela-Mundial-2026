@@ -114,7 +114,7 @@
       <button class="btn-outline" id="ko-edit-close">✕ Cerrar</button>
     </div>
     <div id="ko-edit-body"></div>
-    <p class="modal-note">Tu pronóstico se guarda solo. <span class="badge badge-gold">+5</span> vencedor (o empate) · <span class="badge badge-green">+7</span> marcador exacto (+ penalti si empate).</p>
+    <p class="modal-note">Tu pronóstico se guarda solo. <span class="badge badge-gold">+5</span> acertar quién pasa · <span class="badge badge-green">+7</span> marcador exacto. Si empatan tras la prórroga, marca quién pasa en los penaltis.</p>
   </div>
 </div>
 
@@ -127,7 +127,7 @@
       <p><b>1.</b> Pronostica el <b>marcador</b> de cada partido. Se guarda solo.</p>
       <p><b>2.</b> Cada partido se <b>cierra a su hora de inicio</b>; puedes editar hasta entonces. Lo que no rellenes cuenta como <b>0–0</b>.</p>
       <p><b>3. Puntos:</b> <span class="badge badge-green">+5</span> resultado exacto · <span class="badge badge-gold">+3</span> acertar el vencedor · <span class="badge badge-red">0</span> fallo.</p>
-      <p><b>4. Eliminatorias:</b> se abren al terminar los grupos, ronda por ronda, con los equipos reales clasificados.</p>
+      <p><b>4. Eliminatorias:</b> se abren al terminar los grupos, ronda por ronda, con los equipos reales. Puntúan distinto: <span class="badge badge-gold">+5</span> acertar <b>quién pasa</b> · <span class="badge badge-green">+7</span> marcador exacto. Si empatan tras la prórroga, elige quién pasa en los penaltis.</p>
       <p><b>5.</b> En <b>«Predicciones»</b> ves lo que puso cada uno, pero solo de cada partido <b>una vez que ha empezado</b> (así nadie copia).</p>
       <p><b>6.</b> Entra desde <b>cualquier dispositivo</b> con tu mismo <b>nombre y PIN</b> y verás tus pronósticos. Para empezar de cero, usa <b>«Borrar»</b>.</p>
     </div>
@@ -224,7 +224,7 @@
     </div>
 
     <div id="ko-content" class="hidden">
-      <p class="ko-intro">Pronostica el <b>marcador</b> de cada cruce: <span class="badge badge-gold">+5</span> acertar el vencedor (o empate en los 90′) · <span class="badge badge-green">+7</span> marcador exacto. Los cruces «por determinar» se rellenan solos al conocerse los equipos; cada partido se cierra a su hora de inicio. Abajo del todo tienes el <b>cuadro completo</b> 🗺️.</p>
+      <p class="ko-intro">Pronostica el <b>marcador</b> de cada cruce: <span class="badge badge-gold">+5</span> si aciertas <b>quién pasa</b> · <span class="badge badge-green">+7</span> si además clavas el <b>marcador exacto</b>. Si crees que acabarán <b>empatados tras la prórroga</b>, elige quién pasa en los <b>penaltis</b>. Los cruces «por determinar» se rellenan solos al conocerse los equipos; cada partido se cierra a su hora de inicio. Abajo del todo tienes el <b>cuadro completo</b> 🗺️.</p>
 
       <!-- Calendario por días (Próximos + stepper) -->
       <div class="tabs-container">
@@ -248,7 +248,7 @@
 <script src="js/api.js?v=53"></script>
 <script src="js/data.js?v=36"></script>
 <script src="js/bracket.js?v=34"></script>
-<script src="js/app.js?v=48"></script>
+<script src="js/app.js?v=49"></script>
 <script src="js/music.js?v=30"></script>
 <script src="js/minigame.js?v=94"></script>
 <script src="js/newgames.js?v=17"></script>

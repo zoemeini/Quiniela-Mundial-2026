@@ -38,8 +38,8 @@ const MUSIC = {
 const GROUP_POINTS = { exact: 5, outcome: 3 };
 
 // ============================================================
-//  Eliminatorias (por partido): 7 marcador exacto · 5 vencedor
-//  (empate de los 90' incluido). Distinto de los grupos.
+//  Eliminatorias (por partido): 7 marcador exacto · 5 acertar quién pasa
+//  (por victoria o por penaltis tras la prórroga). Distinto de los grupos.
 // ============================================================
 const KO_MATCH_POINTS = { exact: 7, outcome: 5 };
 

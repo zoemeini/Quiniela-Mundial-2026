@@ -297,14 +297,14 @@ function calculatePoints(pred, result) {
 }
 
 // ── Eliminatorias (a vida o muerte): 7 / 5 / 0.
-//   · 7 = MARCADOR EXACTO de los 90'. Si el partido real acabó en empate, además hay
-//     que acertar quién pasó en penaltis (si no, se queda en 5).
+//   · 7 = MARCADOR EXACTO (el del acta: tras la prórroga si la hubo). Si el partido real
+//     acabó en empate, además hay que acertar quién pasó en penaltis (si no, se queda en 5).
 //   · 5 = acertar QUIÉN PASA la eliminatoria, aunque la vía no coincida. Tu "elegido"
 //     es el equipo que marca más en tu pronóstico; si pronosticas empate, tu pick de
 //     penaltis. El que pasa de verdad = realWinner. Así, p.ej., pronosticar empate +
-//     Canadá-en-penaltis y que Canadá gane 1-0 en los 90' = 5 (acertaste al que pasa),
-//     no 7 (no acertaste el marcador). Dos empates cuentan como acierto de "ir a
-//     penaltis" → 5 (el penalti solo aporta el +2 del marcador exacto).
+//     Canadá-en-penaltis y que Canadá gane 1-0 = 5 (acertaste al que pasa), no 7 (no
+//     acertaste el marcador). Dos empates cuentan como acierto de "ir a penaltis" → 5
+//     (el penalti solo aporta el +2 del marcador exacto).
 //   · 0 = el equipo que dijiste que pasa no es el que pasó.
 //   penPick/realWinner = nombres de equipo; homeTeam/awayTeam = equipos del cruce
 //   (necesarios solo para los casos cruzados empate↔victoria).
@@ -313,14 +313,14 @@ function koMatchPoints(pred, result, penPick, realWinner, homeTeam, awayTeam) {
   const predDraw = pred.home === pred.away;
   const realDraw = result.home === result.away;
   const exact = (pred.home === result.home && pred.away === result.away);
-  // 7: marcador exacto de los 90' (en empate real, además acertar penaltis; si no, 5).
+  // 7: marcador exacto (en empate real, además acertar penaltis; si no, 5).
   if (exact) {
     if (!realDraw) return KO_MATCH_POINTS.exact;
     return (penPick && realWinner && penPick === realWinner) ? KO_MATCH_POINTS.exact : KO_MATCH_POINTS.outcome;
   }
   // 5: acertar quién pasa.
   if (predDraw && realDraw) return KO_MATCH_POINTS.outcome; // ambos empate → acertaste que iría a penaltis
-  if (!predDraw && !realDraw) { // ambos con ganador en los 90' → mismo lado
+  if (!predDraw && !realDraw) { // ambos con ganador (sin penaltis) → mismo lado
     return getOutcome(pred.home, pred.away) === getOutcome(result.home, result.away)
       ? KO_MATCH_POINTS.outcome : 0;
   }

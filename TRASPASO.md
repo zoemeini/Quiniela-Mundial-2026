@@ -124,15 +124,16 @@ personal.
 |---|---|---|---|
 | **Grupos** | marcador exacto | **5** | `GROUP_POINTS.exact` |
 | **Grupos** | solo el resultado (1X2) | **3** | `GROUP_POINTS.outcome` |
-| **Eliminatorias** | marcador exacto de los 90' | **7** | `KO_MATCH_POINTS.exact` |
+| **Eliminatorias** | marcador exacto (tras la prórroga) | **7** | `KO_MATCH_POINTS.exact` |
 | **Eliminatorias** | acertar **quién pasa** la eliminatoria | **5** | `KO_MATCH_POINTS.outcome` |
 
 - **Regla clave de eliminatorias (a vida o muerte):** los **5** puntos premian acertar
-  **qué equipo PASA** la eliminatoria, **por la vía que sea** (victoria en los 90' o
-  penaltis). Tu "elegido" = el que marca más en tu pronóstico; si pronosticas **empate**,
-  tu **pick de penaltis**. Ejemplos:
-  - Pronosticas empate + Canadá en penaltis, y Canadá gana 1-0 en los 90' → **5** (acertaste
-    al que pasa), **no 7** (no acertaste el marcador). *(Este fue el caso de Zoesita en M73.)*
+  **qué equipo PASA** la eliminatoria, **por la vía que sea** (victoria o penaltis). Tu
+  "elegido" = el que marca más en tu pronóstico; si pronosticas **empate** (tras la
+  prórroga), tu **pick de penaltis**. El empate que va a penaltis se decide **tras la
+  prórroga**, no en los 90'. Ejemplos:
+  - Pronosticas empate + Canadá en penaltis, y Canadá gana 1-0 → **5** (acertaste al que
+    pasa), **no 7** (no acertaste el marcador). *(Este fue el caso de Zoesita en M73.)*
   - Mismo lado ganador pero distinto marcador → **5**. Marcador exacto → **7**.
   - Dos empates (tú y el real) → **5** aunque falles el penalti (acertaste que iría a
     penaltis); **7** solo si además el marcador es exacto Y aciertas el penalti.
