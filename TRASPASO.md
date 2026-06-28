@@ -200,21 +200,21 @@ personal.
 
 ## 12. ⚠️ TAREAS PENDIENTES (lo que falta / a vigilar)
 
-1. **REDESPLEGAR el Apps Script** (§5) para activar 2 cosas ya programadas en el `.gs`:
-   - `mgSave` con `upd:1` → permite **reescribir** la puntuación del día (necesario para que
-     el +bonus de Puntería se sume en el ranking de quien ya jugó).
-   - acción `mgDelete(user,day)` → botón de tester "🔄 Reiniciar mi reto de hoy".
-   Sin redeploy ambas se ignoran sin romper nada (el reinicio funciona local pero al
-   refrescar reaparece la fila).
-2. **Asignar a mano los "terceros" del cuadro** en `admin.html` → Eliminatorias (dos
+1. **Asignar a mano los "terceros" del cuadro** en `admin.html` → Eliminatorias (dos
    desplegables por cruce). Verificado que funciona: M74→Paraguay y M77→Suecia dan
-   "Alemania vs Paraguay" y "Francia vs Suecia".
-3. **Meter los resultados de grupos que falten** en Admin (o en la pestaña `Results`) para
-   que se resuelvan los cruces de esos grupos.
-4. **Minijuego "Dorsales" — dorsales OFICIALES del Mundial 2026** (Cracks 1-3 en
+   "Alemania vs Paraguay" y "Francia vs Suecia". ← **lo único realmente pendiente hoy.**
+2. **Minijuego "Dorsales" — dorsales OFICIALES del Mundial 2026** (Cracks 1-3 en
    `newgames.js` siguen con dorsales provisionales; el set de la FINAL ya está verificado).
-5. **Bonus de la final (19-jul):** normalización 0–100 de las puntuaciones de los 3 juegos
+3. **Bonus de la final (19-jul):** normalización 0–100 de las puntuaciones de los 3 juegos
    elegidos + ranking común (de momento solo se juega, sin ranking conjunto).
+
+**Ya resuelto (no hacer):**
+- ✅ Resultados de la fase de grupos: **todos introducidos** (2026-06-28).
+- ✅ Redeploy del Apps Script para `mgSave upd` / `mgDelete`: **ya NO es necesario** — esas
+  funciones eran para el bonus de Puntería y el botón de reinicio de tester, que la
+  organizadora descartó. El código queda inerte en el `.gs` (no se dispara) y la web en vivo
+  funciona con lo ya desplegado. Si en el futuro hace falta recalcular notas ya guardadas del
+  minijuego, *entonces* sí habría que redesplegar para usar `upd:1`.
 
 ## 13. Trampas conocidas (gotchas) — leer antes de tocar
 
