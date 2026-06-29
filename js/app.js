@@ -315,13 +315,12 @@ function resultBadgeHtml(matchId) {
     const pp = predictions[matchId + 'P']; penPick = pp ? teamByIndex(pp.home) : null;
     const rb = realBr.resolved[matchId]; if (rb) { realWinner = rb.winner; koHome = rb.home; koAway = rb.away; }
   }
-  const pts = pointsFor(matchId, pred, result, penPick, realWinner, koHome, koAway); // grupos 5/3 · eliminatorias 5/7
-  const top = ko ? 7 : 5;
+  const pts = pointsFor(matchId, pred, result, penPick, realWinner, koHome, koAway); // grupos 5/3 · KO aditivo (máx 7)
+  const top = ko ? koMaxPoints() : GROUP_POINTS.exact;
   if (pts === top) {
-    const txt = (ko && result.home === result.away) ? '⭐ ¡Exacto + penalti! +7' : `⭐ ¡Exacto! +${top}`;
-    return `<span class="result-display result-correct-exact">${txt}</span>`;
+    return `<span class="result-display result-correct-exact">⭐ ${ko ? '¡Pleno!' : '¡Exacto!'} +${pts}</span>`;
   }
-  if (pts > 0) return `<span class="result-display result-correct-outcome">✓ Acierto +${ko ? 5 : 3}</span>`;
+  if (pts > 0) return `<span class="result-display result-correct-outcome">✓ +${pts}</span>`;
   const tu = `${pred.home}–${pred.away}`;
   return `<span class="result-display result-wrong">✗ ${tu} · real ${resultStr}</span>`;
 }
@@ -551,7 +550,7 @@ function renderMatchPreds(matchId, result, data, body) {
   const byUser = {};
   (data.predictions || []).forEach(p => { (byUser[p.user] = byUser[p.user] || {})[p.matchId] = { home: p.home, away: p.away }; });
   const ko = isKoId(matchId);
-  const top = ko ? 7 : 5;
+  const top = ko ? koMaxPoints() : GROUP_POINTS.exact;
   const rb = ko ? (realBr.resolved[matchId] || null) : null;
   const realWinner = rb ? rb.winner : null;
   const rows = Object.keys(byUser).map(u => {
@@ -564,8 +563,8 @@ function renderMatchPreds(matchId, result, data, body) {
   if (!rows.length) { body.innerHTML = '<div class="lb-loading">Todavía nadie ha hecho pronósticos.</div>'; return; }
   if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
   else rows.sort((a, b) => a.user.localeCompare(b.user));
-  const badge = r => r.pts === top ? `<span class="badge badge-green">⭐ +${top}</span>`
-                   : r.pts > 0 ? `<span class="badge badge-gold">✓ +${ko ? 5 : 3}</span>`
+  const badge = r => r.pts === top ? `<span class="badge badge-green">⭐ +${r.pts}</span>`
+                   : r.pts > 0 ? `<span class="badge badge-gold">✓ +${r.pts}</span>`
                    : '<span class="badge badge-red">+0</span>';
   const sub = result ? 'Lo que puso cada uno · más puntos primero'
                      : 'Aún sin resultado · se ordenará por puntos cuando se introduzca';

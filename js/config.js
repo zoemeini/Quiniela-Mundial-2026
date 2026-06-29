@@ -38,10 +38,12 @@ const MUSIC = {
 const GROUP_POINTS = { exact: 5, outcome: 3 };
 
 // ============================================================
-//  Eliminatorias (por partido): hay 2 cosas (marcador exacto y quién pasa) →
-//  7 si clavas las dos · 5 si aciertas una · 0 si ninguna. Distinto de los grupos.
+//  Eliminatorias (por partido): puntos ADITIVOS (se suman), máx 7:
+//   +3 acertar el resultado 1X2 a los 120' (ganador o empate)
+//   +2 además, marcador exacto a los 120'
+//   +2 acertar qué equipo pasa de ronda (por los 120' o por penaltis)
 // ============================================================
-const KO_MATCH_POINTS = { exact: 7, outcome: 5 };
+const KO_MATCH_POINTS = { outcome: 3, exact: 2, advance: 2 };
 
 // ============================================================
 //  Knockout points — awarded for each team you correctly

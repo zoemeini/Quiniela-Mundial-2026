@@ -124,23 +124,21 @@ personal.
 |---|---|---|---|
 | **Grupos** | marcador exacto | **5** | `GROUP_POINTS.exact` |
 | **Grupos** | solo el resultado (1X2) | **3** | `GROUP_POINTS.outcome` |
-| **Eliminatorias** | clavar **las 2 cosas** (marcador exacto + quién pasa) | **7** | `KO_MATCH_POINTS.exact` |
-| **Eliminatorias** | acertar **una** (quién pasa **o** el marcador) | **5** | `KO_MATCH_POINTS.outcome` |
-| **Eliminatorias** | no acertar ninguna | **0** | — |
+| **Eliminatorias** | resultado 1X2 a los 120' (ganador o empate) | **+3** | `KO_MATCH_POINTS.outcome` |
+| **Eliminatorias** | + marcador exacto a los 120' | **+2** | `KO_MATCH_POINTS.exact` |
+| **Eliminatorias** | + acertar quién pasa de ronda | **+2** | `KO_MATCH_POINTS.advance` |
 
-- **Regla clave de eliminatorias (a vida o muerte):** hay **dos cosas** que acertar — el
-  **marcador exacto** y **quién pasa** la eliminatoria. **7** si clavas las dos · **5** si
-  aciertas solo una · **0** si ninguna. "Quién pasa" según tu pronóstico = el equipo que
-  marca más; si pronosticas **empate** (tras la **prórroga**, no en los 90'), tu **pick de
-  penaltis**. El que pasa de verdad = `realWinner` (lo registra el admin).
-- Ejemplos (pronosticas empate 1-1 y que pasa A):
-  - real **2-2 pasa B** → **0** (fallas marcador y quién pasa).
-  - real **2-2 pasa A** → **5** (aciertas quién pasa).
-  - real **1-1 pasa B** → **5** (aciertas el marcador).
-  - real **1-1 pasa A** → **7** (las dos).
-  - real **2-1 (gana A)** → **5** (aciertas quién pasa).
-  - (y "2-1" tuyo con real "1-1 pasa A" → **5**: aciertas quién pasa.)
-- Implementado en `koMatchPoints` contando aciertos: `hits = exacto + quiénPasa` → 2=7, 1=5, 0=0.
+- **Eliminatorias = puntos ADITIVOS (se suman), máx 7.** Las tres cosas son independientes:
+  **+3** acertar el resultado 1X2 a los **120'** (con prórroga) · **+2** si además clavas el
+  marcador exacto (solo se da si también aciertas el 1X2) · **+2** acertar **qué equipo pasa**
+  de ronda. Totales posibles: 0, 2, 3, 5, 7. "Quién pasa" según tu pronóstico = el equipo que
+  marca más; si pronosticas **empate** (tras la prórroga), tu **pick de penaltis**. El que pasa
+  de verdad = `realWinner` (lo registra el admin). **El empate se decide tras la prórroga, no en los 90'.**
+- Ejemplos: real 2-1 gana A, tú "A 2-1" → 7 (3+2+2) · tú "A 1-0" → 5 (3+0+2) · tú "B 0-1" → 0 ·
+  tú "empate 1-1, pasa A" → 2 (solo quién pasa). Real "1-1, pasa A": tú "1-1 pasa A" → 7 · tú
+  "1-1 pasa B" → 5 (3+2+0) · tú "2-2 pasa A" → 5 (3+0+2) · tú "2-2 pasa B" → 3.
+- Cambio retroactivo automático: la puntuación se calcula al vuelo (no se guarda), así que al
+  cambiar `koMatchPoints` se recalcula sola para los partidos ya jugados. `koMaxPoints()` = 7.
 - El pick de penaltis se guarda como una **predicción aparte con id `<id>P`** (p.ej. `M73P`),
   `home` = índice del equipo. **No toca el backend** (reusa `savePrediction`).
 - Lógica centralizada en `js/data.js`: `koMatchPoints(pred,result,penPick,realWinner,homeTeam,awayTeam)`,

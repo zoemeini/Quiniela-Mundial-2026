@@ -64,17 +64,19 @@ function render(finished, players) {
     if (!t.home || !t.away) return;
     const result = { home: res.home, away: res.away, status: 'finished' };
     const isKo = isKoId(m.id);
-    const top = isKo ? 7 : 5;
+    const top = isKo ? koMaxPoints() : GROUP_POINTS.exact;
     const rb = isKo ? (realBr.resolved[m.id] || null) : null;
     const realWinner = rb ? rb.winner : null;
-    const exact = [], outcome = [];
+    const byPts = {}; // puntos → jugadores (KO es aditivo: 0,2,3,5,7 · grupos 0,3,5)
     players.forEach(u => {
       const pred = byUser[u][m.id] || { home: 0, away: 0 };
       const penPred = isKo ? byUser[u][m.id + 'P'] : null;
       const pts = pointsFor(m.id, pred, result, penPred ? teamByIndex(penPred.home) : null, realWinner, rb ? rb.home : null, rb ? rb.away : null);
       if (pts <= 0) return;
-      if (pts === top) exact.push(u); else outcome.push(u);
+      (byPts[pts] = byPts[pts] || []).push(u);
     });
+    const ptsLines = Object.keys(byPts).map(Number).sort((a, b) => b - a).map(v =>
+      `<div class="res-line"><span class="badge ${v === top ? 'badge-green' : 'badge-gold'}">${v === top ? '⭐' : '✓'} +${v}</span> ${nameList(byPts[v])}</div>`).join('');
     const k = formatKickoff(m.kickoff);
     const label = isKo ? ((KO_ROUNDS.find(r => r.key === m.round) || {}).short || 'Eliminatoria')
                        : ('Grupo ' + m.group);
@@ -91,9 +93,7 @@ function render(finished, players) {
           <span class="res-team away"><span>${teamName(t.away)}</span> ${teamFlag(t.away)}</span>
         </div>
         <div class="res-aciertos">
-          ${exact.length ? `<div class="res-line"><span class="badge badge-green">⭐ +${isKo ? 7 : 5}</span> ${nameList(exact)}</div>` : ''}
-          ${outcome.length ? `<div class="res-line"><span class="badge badge-gold">✓ +${isKo ? 5 : 3}</span> ${nameList(outcome)}</div>` : ''}
-          ${(!exact.length && !outcome.length) ? `<div class="res-line res-none">Nadie acertó 😬</div>` : ''}
+          ${ptsLines || `<div class="res-line res-none">Nadie acertó 😬</div>`}
         </div>
         <div class="mc-seepreds">👁️ Ver qué puso cada uno ›</div>
       </div>`);
@@ -112,7 +112,7 @@ function openMatchPredictions(matchId) {
   document.getElementById('match-preds-title').innerHTML =
     `${teamFlag(t.home)} ${teamName(t.home)} ${scoreStr} ${teamName(t.away)} ${teamFlag(t.away)}`;
   const isKo = isKoId(matchId);
-  const top = isKo ? 7 : 5;
+  const top = isKo ? koMaxPoints() : GROUP_POINTS.exact;
   const rb = isKo ? (realBr.resolved[matchId] || null) : null;
   const realWinner = rb ? rb.winner : null;
   const res = result ? { home: result.home, away: result.away, status: 'finished' } : null;
@@ -125,8 +125,8 @@ function openMatchPredictions(matchId) {
   });
   if (result) rows.sort((a, b) => b.pts - a.pts || a.user.localeCompare(b.user));
   else rows.sort((a, b) => a.user.localeCompare(b.user));
-  const badge = r => r.pts === top ? `<span class="badge badge-green">⭐ +${top}</span>`
-                   : r.pts > 0 ? `<span class="badge badge-gold">✓ +${isKo ? 5 : 3}</span>`
+  const badge = r => r.pts === top ? `<span class="badge badge-green">⭐ +${r.pts}</span>`
+                   : r.pts > 0 ? `<span class="badge badge-gold">✓ +${r.pts}</span>`
                    : '<span class="badge badge-red">+0</span>';
   const sub = result ? 'Lo que puso cada uno · más puntos primero' : 'Aún sin resultado';
   const list = rows.length ? rows.map(r => {

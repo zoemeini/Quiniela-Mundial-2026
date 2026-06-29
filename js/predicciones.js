@@ -80,8 +80,9 @@ function matchLine(matchId, homeTeam, awayTeam, preds) {
       const res = { home: real.home, away: real.away, status: 'finished' };
       let rw = null, kh = null, ka = null;
       if (isKoId(matchId)) { const rb = realBr.resolved[matchId]; if (rb) { rw = rb.winner; kh = rb.home; ka = rb.away; } }
-      cls = isExactHit(eff, res) ? ' ps-exact'
-          : (pointsFor(matchId, eff, res, penPick, rw, kh, ka) > 0 ? ' ps-outcome' : ' ps-miss');
+      const top = isKoId(matchId) ? koMaxPoints() : GROUP_POINTS.exact;
+      const pts = pointsFor(matchId, eff, res, penPick, rw, kh, ka);
+      cls = pts === top ? ' ps-exact' : (pts > 0 ? ' ps-outcome' : ' ps-miss'); // verde=pleno · amarillo=parcial · rojo=fallo
     }
     if (pred) {
       mid = `<span class="pred-score${cls}">${pred.home} – ${pred.away}</span>`;
@@ -160,8 +161,8 @@ function renderPlayer(user) {
   const preds = allPreds[user] || {};
   const view = document.getElementById('pred-view');
   const legend = `<div class="pred-legend">
-    <span class="pl-item"><span class="pl-dot ps-exact"></span>Marcador exacto</span>
-    <span class="pl-item"><span class="pl-dot ps-outcome"></span>Acertó quién gana/pasa</span>
+    <span class="pl-item"><span class="pl-dot ps-exact"></span>Acierto pleno</span>
+    <span class="pl-item"><span class="pl-dot ps-outcome"></span>Acierto parcial</span>
     <span class="pl-item"><span class="pl-dot ps-miss"></span>Falló</span>
   </div>`;
   let html = statsBannerHTML(user) + finalBetBlockHTML(user) + legend + '<h3 class="pred-section-title">⚽ Fase de grupos</h3>';

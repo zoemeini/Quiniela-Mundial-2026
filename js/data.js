@@ -296,34 +296,35 @@ function calculatePoints(pred, result) {
   return GROUP_POINTS.outcome;
 }
 
-// ── Eliminatorias (a vida o muerte): 7 / 5 / 0.
-//   Hay DOS cosas que acertar: (a) el MARCADOR exacto y (b) QUIÉN PASA la eliminatoria.
-//   · 7 = lo clavas TODO: marcador exacto Y quién pasa (en empate, el ganador de penaltis).
-//   · 5 = aciertas UNA sola: quién pasa, o el marcador, pero no las dos.
-//   · 0 = no aciertas ninguna.
+// ── Eliminatorias: puntos ADITIVOS (se suman), máx 7.
+//   +3 acertar el RESULTADO 1X2 a los 120' (ganador o empate).
+//   +2 además, MARCADOR exacto a los 120' (solo se da si también aciertas el 1X2).
+//   +2 acertar QUÉ EQUIPO PASA de ronda (por los 120' o por penaltis).
 //   "Quién pasa" según tu pronóstico = el equipo que marca más; si pronosticas empate, tu
-//   pick de penaltis. El que pasa de verdad = realWinner (lo registra el admin). Ejemplos
-//   (empate 1-1, dices que pasa A): real 2-2 pasa B → 0 · real 2-2 pasa A → 5 (quién pasa)
-//   · real 1-1 pasa B → 5 (marcador) · real 1-1 pasa A → 7 · real 2-1 pasa A → 5.
+//   pick de penaltis. El que pasa de verdad = realWinner (lo registra el admin).
 //   penPick/realWinner = nombres de equipo; homeTeam/awayTeam = equipos del cruce.
 function koMatchPoints(pred, result, penPick, realWinner, homeTeam, awayTeam) {
   if (!result || result.status !== 'finished') return 0;
-  const exact = (pred.home === result.home && pred.away === result.away); // marcador clavado
-  // Equipo que PASA según cada uno: el que marca más; si empata, el pick de penaltis.
+  let pts = 0;
+  // +3: resultado 1X2 a los 120' (vencedor o empate)
+  if (getOutcome(pred.home, pred.away) === getOutcome(result.home, result.away)) pts += KO_MATCH_POINTS.outcome;
+  // +2: además, marcador exacto a los 120'
+  if (pred.home === result.home && pred.away === result.away) pts += KO_MATCH_POINTS.exact;
+  // +2: acertar qué equipo PASA de ronda (el que marca más; si empatas, tu pick de penaltis)
   const predAdv = pred.home > pred.away ? homeTeam
                 : pred.away > pred.home ? awayTeam
                 : (penPick || null);
   const realAdv = realWinner
                 || (result.home > result.away ? homeTeam
                   : result.away > result.home ? awayTeam : null);
-  const advOk = predAdv != null && realAdv != null && predAdv === realAdv; // acertaste quién pasa
-  // Cuenta cuántas de las dos clavaste: 2 → 7 · 1 → 5 · 0 → 0.
-  const hits = (exact ? 1 : 0) + (advOk ? 1 : 0);
-  return hits === 2 ? KO_MATCH_POINTS.exact : hits === 1 ? KO_MATCH_POINTS.outcome : 0;
+  if (predAdv != null && realAdv != null && predAdv === realAdv) pts += KO_MATCH_POINTS.advance;
+  return pts;
 }
+// Puntos MÁXIMOS de una eliminatoria (los tres componentes sumados) = 7.
+function koMaxPoints() { return KO_MATCH_POINTS.outcome + KO_MATCH_POINTS.exact + KO_MATCH_POINTS.advance; }
 // ¿Es un partido de eliminatoria? (sus ids empiezan por 'M': M73…M104)
 function isKoId(id) { return !!id && String(id)[0] === 'M'; }
-// Puntos de un partido cualquiera, eligiendo el baremo (grupos 5/3 · KO 5/7).
+// Puntos de un partido cualquiera, eligiendo el baremo (grupos 5/3 · KO aditivo máx 7).
 // penPick/realWinner/homeTeam/awayTeam solo se usan en eliminatorias.
 function pointsFor(id, pred, result, penPick, realWinner, homeTeam, awayTeam) {
   return isKoId(id) ? koMatchPoints(pred, result, penPick, realWinner, homeTeam, awayTeam) : calculatePoints(pred, result);
