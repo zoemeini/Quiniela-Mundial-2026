@@ -317,12 +317,15 @@ function resultBadgeHtml(matchId) {
   }
   const pts = pointsFor(matchId, pred, result, penPick, realWinner, koHome, koAway); // grupos 5/3 · KO aditivo (máx 7)
   const top = ko ? koMaxPoints() : GROUP_POINTS.exact;
-  if (pts === top) {
+  // Resultado real (en empates KO, indica quién pasó en penaltis).
+  const realFull = resultStr + (ko && result.home === result.away && realWinner ? ` (pasa ${teamName(realWinner)})` : '');
+  if (pts === top) { // pleno: tu marcador ya ES el real, no hace falta repetirlo
     return `<span class="result-display result-correct-exact">⭐ ${ko ? '¡Pleno!' : '¡Exacto!'} +${pts}</span>`;
   }
-  if (pts > 0) return `<span class="result-display result-correct-outcome">✓ +${pts}</span>`;
+  // Si no es el máximo, muestra también el resultado real para comparar.
+  if (pts > 0) return `<span class="result-display result-correct-outcome">✓ +${pts} · real ${realFull}</span>`;
   const tu = `${pred.home}–${pred.away}`;
-  return `<span class="result-display result-wrong">✗ ${tu} · real ${resultStr}</span>`;
+  return `<span class="result-display result-wrong">✗ ${tu} · real ${realFull}</span>`;
 }
 function lockTag(locked, result) {
   if (result) return `<span class="lock-tag finished">Final</span>`;
