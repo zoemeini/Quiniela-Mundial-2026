@@ -244,6 +244,12 @@ personal.
 - Banderas: se usan **imágenes de flagcdn.com** (los emoji de bandera no se ven en Windows).
 - No usar `@import` para fuentes (bloquea el render / colgaba el screenshot del preview);
   se cargan con `<link ... media="print" onload="this.media='all'">`.
+- **Autoguardado de pronósticos (no perder lo escrito):** se guarda con debounce de 600 ms,
+  PERO además se fuerza el guardado **al salir de cada casilla** (`change`/`blur` → `flushSave`)
+  y **al cerrar/segundo plano** (`visibilitychange`→hidden y `pagehide` → `flushPendingSaves`,
+  con `fetch keepalive` porque el backend solo atiende GET, no sirve `sendBeacon`). Sin esto,
+  en móvil se perdían los últimos marcadores si el amigo cambiaba de app antes de los 600 ms.
+  No quitar estos flushes.
 - **Refresco de 60 s y la pestaña KO (no romper):** `loadData` se llama cada 60 s →
   `applyData`. Los grupos se refrescan con `syncGroupCards` (SUAVE: solo rellena casillas
   vacías, nunca borra). Las eliminatorias hacen lo mismo con `syncKoCards`; solo se
