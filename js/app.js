@@ -78,10 +78,23 @@ function updateNudge() {
     `Tienes ${n} partido${n > 1 ? 's' : ''} por rellenar que empieza${n > 1 ? 'n' : ''} pronto (próximas 24 h).`;
 }
 document.getElementById('nudge-banner').addEventListener('click', () => {
-  showPhase('groups');
-  renderGroupTab('upcoming');
-  const c = document.getElementById('day-content');
-  if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Lleva a la fase donde están esos partidos: si los próximos sin rellenar son de
+  // eliminatorias (y los grupos ya no), abre la pestaña de Eliminatorias.
+  const now = Date.now(), H = 24 * 3600 * 1000;
+  const soon = m => !matchLocked(m.kickoff) && !predictions[m.id] && (new Date(m.kickoff).getTime() - now) <= H;
+  const grpSoon = MATCHES.some(soon);
+  const koSoon = KO_MATCHES.some(m => { const r = realBr.resolved[m.id]; return r && r.home && r.away && soon(m); });
+  if (koSoon && !grpSoon) {
+    showPhase('ko');
+    renderKoTab('upcoming');
+    const c = document.getElementById('ko-content');
+    if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    showPhase('groups');
+    renderGroupTab('upcoming');
+    const c = document.getElementById('day-content');
+    if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 });
 // ── Entrar / registrarse con nombre + PIN ────────────────
 // Un único formulario sirve para todo:
@@ -340,9 +353,12 @@ function defaultGroupTab() {
 // conocen los equipos reales.
 function upcomingMatches() {
   const todayKey = madridDayKey(new Date());
-  const cand = allMatches().filter(m => {
+  // SOLO partidos de GRUPOS. Las eliminatorias tienen su propia pestaña con calendario;
+  // incluirlas aquí pintaba la MISMA tarjeta en dos sitios (mismos ids `sc-M*`), y como la
+  // fase oculta sigue en el DOM, onScoreChange/setStatus cogían la copia equivocada y no se
+  // guardaba lo escrito desde el calendario KO.
+  const cand = MATCHES.filter(m => {
     if (madridDayKey(m.kickoff) < todayKey) return false; // días pasados → pestañas por día / Resultados
-    if (m.id[0] === 'M') { const r = realBr.resolved[m.id]; if (!r || !r.home || !r.away) return false; }
     return true;
   }).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
   const days = [];
