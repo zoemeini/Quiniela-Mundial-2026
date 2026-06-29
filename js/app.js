@@ -283,6 +283,10 @@ function wireCardInputs(card, matchId) {
     const el = card.querySelector(`#sc-${matchId}-${side}`);
     if (!el) return;
     el.addEventListener('input', () => onScoreChange(matchId)); // sin salto automático
+    // Al salir de la casilla (cambiar de partido, cerrar teclado…) guarda YA, sin esperar
+    // el debounce: así no se pierde lo último escrito si el móvil cierra/congela la página.
+    el.addEventListener('change', () => flushSave(matchId));
+    el.addEventListener('blur', () => flushSave(matchId));
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); advanceFocus(el.id); } });
     el.addEventListener('focus', () => safeSelect(el));
   });
@@ -839,6 +843,37 @@ async function savePrediction(matchId) {
     console.error(err);
   }
 }
+// Guarda YA un pronóstico pendiente, sin esperar el debounce de 600 ms.
+function flushSave(matchId) {
+  if (!dirty[matchId]) return;        // nada sin confirmar
+  clearTimeout(saveTimers[matchId]);
+  savePrediction(matchId);
+}
+// Guarda de golpe TODO lo pendiente cuando la página se cierra o pasa a segundo plano
+// (típico en móvil al cambiar de app o bloquear). `keepalive` permite que la petición
+// llegue al servidor aunque la pestaña muera → no se pierde lo último escrito.
+function flushPendingSaves() {
+  if (!currentUser || typeof SHEET_API_URL === 'undefined') return;
+  Object.keys(dirty).forEach(id => {
+    const p = predictions[id];
+    if (!p) return;
+    clearTimeout(saveTimers[id]);
+    try {
+      const url = new URL(SHEET_API_URL);
+      url.searchParams.set('action', 'savePrediction');
+      url.searchParams.set('user', currentUser);
+      url.searchParams.set('matchId', id);
+      url.searchParams.set('home', p.home);
+      url.searchParams.set('away', p.away);
+      url.searchParams.set('t', Date.now());
+      fetch(url.toString(), { method: 'GET', keepalive: true }).catch(() => {});
+    } catch (_) {}
+  });
+}
+// El móvil dispara 'visibilitychange'→hidden y 'pagehide' al irse de la app: ahí forzamos
+// el guardado. (No usamos sendBeacon porque el backend solo atiende GET, no POST.)
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushPendingSaves(); });
+window.addEventListener('pagehide', flushPendingSaves);
 function setStatus(matchId, cls, text) {
   const el = document.getElementById(`status-${matchId}`);
   if (!el) return;
@@ -1112,8 +1147,10 @@ function openKoEdit(matchId) {
   document.getElementById('ko-edit-modal').classList.remove('hidden');
 }
 function closeKoEdit() {
+  const editedId = koEditMatchId;
   document.getElementById('ko-edit-modal').classList.add('hidden');
   koEditMatchId = null;
+  if (editedId) flushSave(editedId); // guarda ya lo editado en el popup (sin esperar debounce)
   renderKoBracketDiagram(); // refleja el marcador nuevo en el cuadro
   if (currentPhase === 'ko') renderKoTab(currentKoTab || defaultKoTab()); // y en el calendario
 }
