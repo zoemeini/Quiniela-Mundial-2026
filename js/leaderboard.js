@@ -2,7 +2,7 @@ const me = localStorage.getItem('wc2026_username');
 if (me) document.getElementById('username-display').textContent = me;
 
 // ── OG = la porra original (lista fija). Quien se una después = "invitados". ──
-const WC_FRIENDS = ['Zoesita', 'cacota', 'Real Bertis', 'Nai', 'Vicky', 'EricYamal', 'oscar', 'Mariona', 'Joan', 'Guillem', 'Jon Aritz', 'saracarbonero', 'TontoAQuienLeGaneElDummy', 'Cacu', 'Alex Martos', 'Piti Alonso', 'ikerxu', 'Jontxu', 'erikaso', 'Clara', 'Belenchu', 'Jordi Alba', 'Roger'];
+const WC_FRIENDS = ['Zoesita', 'cacota', 'Real Bertis', 'Nai', 'Vicky', 'EricYamal', 'oscar', 'Mariona', 'Joan', 'Guillem', 'Jon Aritz', 'saracarbonero', 'TontoAQuienLeGaneElDummy', 'Cacu', 'Alex Martos', 'Piti Alonso', 'ikerxu', 'Jontxu', 'erikaso', 'Clara', 'Belenchu', 'Jordi Alba', 'Roger', 'fernandinho'];
 function normName(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
 const FRIEND_SET = new Set(WC_FRIENDS.map(normName));
 const isFriend = u => FRIEND_SET.has(normName(u));
