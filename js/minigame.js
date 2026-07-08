@@ -282,73 +282,72 @@ const NAT_NAMES = {
   'az': 'Azerbaiyán', 'tm': 'Turkmenistán', 'iq': 'Irak', 'qa': 'Catar', 'jp': 'Japón',
   'kr': 'Corea del Sur', 'cn': 'China', 'th': 'Tailandia', 'vn': 'Vietnam',
   'pt': 'Portugal', 'br': 'Brasil', 'tn': 'Túnez', 'eg': 'Egipto',
-  // Añadidos para los quizzes largos (día 9 y bonus de la final)
+  // Añadidos (todas son selecciones del Mundial 2026, usadas como respuesta o distractor)
   'no': 'Noruega', 'cv': 'Cabo Verde', 'uz': 'Uzbekistán', 'ba': 'Bosnia y Herzegovina',
   'gb-sct': 'Escocia', 'nz': 'Nueva Zelanda', 'uy': 'Uruguay', 'hr': 'Croacia',
-  'se': 'Suecia', 'dk': 'Dinamarca', 'is': 'Islandia', 've': 'Venezuela', 'ml': 'Malí',
-  'sa': 'Arabia Saudí', 'rs': 'Serbia', 'pl': 'Polonia', 'ie': 'Irlanda', 'au': 'Australia',
+  'se': 'Suecia', 'sa': 'Arabia Saudí', 'au': 'Australia', 'mx': 'México', 'cz': 'Chequia',
 };
 // Jugadores (probables Mundial 2026) con nacionalidad poco evidente por el nombre.
 // iso = nacionalidad real · d = 3 distractores plausibles.
 // Intercalado a propósito: cada bloque de 5 (un quiz) mezcla 5 selecciones distintas.
 const MG_NAT_POOL = [
-  // Quiz 1
-  { n: 'Yunus Musah',         iso: 'us', d: ['gh', 'gb-eng', 'it'] },
-  { n: 'Alphonso Davies',     iso: 'ca', d: ['gh', 'lr', 'gb-eng'] },
+  // Quiz 1  (distractores SOLO de selecciones del Mundial 2026)
+  { n: 'Yunus Musah',         iso: 'us', d: ['gh', 'gb-eng', 'ca'] },
+  { n: 'Alphonso Davies',     iso: 'ca', d: ['gh', 'us', 'gb-eng'] },
   { n: 'Hakim Ziyech',        iso: 'ma', d: ['nl', 'dz', 'be'] },
-  { n: 'Xherdan Shaqiri',     iso: 'ch', d: ['xk', 'al', 'mk'] },
-  { n: 'Eduardo Camavinga',   iso: 'fr', d: ['ao', 'cd', 'pt'] },
+  { n: 'Xherdan Shaqiri',     iso: 'ch', d: ['ba', 'hr', 'at'] },
+  { n: 'Eduardo Camavinga',   iso: 'fr', d: ['cd', 'sn', 'ci'] },
   // Quiz 2
-  { n: 'Folarin Balogun',     iso: 'us', d: ['ng', 'gb-eng', 'fr'] },
-  { n: 'Stephen Eustáquio',   iso: 'ca', d: ['pt', 'br', 'ao'] },
+  { n: 'Folarin Balogun',     iso: 'us', d: ['gb-eng', 'fr', 'ca'] },
+  { n: 'Stephen Eustáquio',   iso: 'ca', d: ['pt', 'br', 'us'] },
   { n: 'Noussair Mazraoui',   iso: 'ma', d: ['nl', 'tn', 'dz'] },
-  { n: 'Granit Xhaka',        iso: 'ch', d: ['al', 'xk', 'tr'] },
-  { n: 'Randal Kolo Muani',   iso: 'fr', d: ['cd', 'cm', 'sn'] },
+  { n: 'Granit Xhaka',        iso: 'ch', d: ['tr', 'ba', 'at'] },
+  { n: 'Randal Kolo Muani',   iso: 'fr', d: ['cd', 'sn', 'ci'] },
   // Quiz 3
-  { n: 'Sergiño Dest',        iso: 'us', d: ['nl', 'sr', 'be'] },
-  { n: 'Jonathan David',      iso: 'ca', d: ['us', 'ht', 'tt'] },
+  { n: 'Sergiño Dest',        iso: 'us', d: ['nl', 'be', 'ca'] },
+  { n: 'Jonathan David',      iso: 'ca', d: ['us', 'ht', 'pa'] },
   { n: 'Sofyan Amrabat',      iso: 'ma', d: ['nl', 'eg', 'dz'] },
-  { n: 'Breel Embolo',        iso: 'ch', d: ['cm', 'fr', 'be'] },
-  { n: 'Aurélien Tchouaméni', iso: 'fr', d: ['cm', 'sn', 'ci'] },
+  { n: 'Breel Embolo',        iso: 'ch', d: ['fr', 'be', 'sn'] },
+  { n: 'Aurélien Tchouaméni', iso: 'fr', d: ['sn', 'ci', 'cd'] },
   // Quiz 4
-  { n: 'Antonee Robinson',    iso: 'us', d: ['gb-eng', 'jm', 'gb-wls'] },
-  { n: 'Tajon Buchanan',      iso: 'ca', d: ['jm', 'gb-eng', 'us'] },
-  { n: 'Manuel Akanji',       iso: 'ch', d: ['ng', 'gh', 'de'] },
-  { n: 'Piero Hincapié',      iso: 'ec', d: ['co', 'ar', 'it'] },
-  { n: 'Sardar Azmoun',       iso: 'ir', d: ['az', 'tm', 'iq'] },
+  { n: 'Antonee Robinson',    iso: 'us', d: ['gb-eng', 'ca', 'mx'] },
+  { n: 'Tajon Buchanan',      iso: 'ca', d: ['gb-eng', 'us', 'mx'] },
+  { n: 'Manuel Akanji',       iso: 'ch', d: ['gh', 'de', 'ci'] },
+  { n: 'Piero Hincapié',      iso: 'ec', d: ['co', 'ar', 'uy'] },
+  { n: 'Sardar Azmoun',       iso: 'ir', d: ['iq', 'sa', 'qa'] },
   // Quiz 5
   { n: 'Weston McKennie',     iso: 'us', d: ['de', 'gb-eng', 'at'] },
-  { n: 'Moisés Caicedo',      iso: 'ec', d: ['co', 'pe', 'pa'] },
+  { n: 'Moisés Caicedo',      iso: 'ec', d: ['co', 'pa', 'uy'] },
   { n: 'Mehdi Taremi',        iso: 'ir', d: ['iq', 'qa', 'ma'] },
-  { n: 'Wataru Endo',         iso: 'jp', d: ['kr', 'cn', 'th'] },
-  { n: 'Hwang Hee-chan',      iso: 'kr', d: ['jp', 'cn', 'vn'] },
+  { n: 'Wataru Endo',         iso: 'jp', d: ['kr', 'sa', 'au'] },
+  { n: 'Hwang Hee-chan',      iso: 'kr', d: ['jp', 'sa', 'au'] },
 ];
 
 // ── Quizzes LARGOS (10 jugadores, países variados, nombres poco conocidos). ──
 //    Uno para el día 9 y otro para el BONUS de la final (día 19).
 const MG_NAT_DIA9 = [ // Noruega, Cabo Verde, Colombia, C. Marfil, Irak, Inglaterra, Uzbekistán, Brasil, Suiza, Corea
-  { n: 'Fredrik Aursnes',      iso: 'no',     d: ['se', 'dk', 'is'] },
-  { n: 'Jovane Cabral',        iso: 'cv',     d: ['pt', 'ao', 'sn'] },
-  { n: 'Richard Ríos',         iso: 'co',     d: ['ec', 've', 'pe'] },
-  { n: 'Wilfried Singo',       iso: 'ci',     d: ['sn', 'ml', 'cm'] },
+  { n: 'Fredrik Aursnes',      iso: 'no',     d: ['se', 'cz', 'at'] },
+  { n: 'Jovane Cabral',        iso: 'cv',     d: ['pt', 'sn', 'ma'] },
+  { n: 'Richard Ríos',         iso: 'co',     d: ['ec', 'br', 'uy'] },
+  { n: 'Wilfried Singo',       iso: 'ci',     d: ['sn', 'gh', 'ma'] },
   { n: 'Zidane Iqbal',         iso: 'iq',     d: ['dz', 'ir', 'qa'] },
-  { n: 'Ezri Konsa',           iso: 'gb-eng', d: ['ng', 'gh', 'jm'] },
-  { n: 'Abbosbek Fayzullaev',  iso: 'uz',     d: ['tm', 'az', 'tr'] },
+  { n: 'Ezri Konsa',           iso: 'gb-eng', d: ['gh', 'gb-sct', 'ci'] },
+  { n: 'Abbosbek Fayzullaev',  iso: 'uz',     d: ['tr', 'ir', 'sa'] },
   { n: 'Andrey Santos',        iso: 'br',     d: ['ar', 'co', 'pt'] },
-  { n: 'Ardon Jashari',        iso: 'ch',     d: ['xk', 'al', 'mk'] },
-  { n: 'Hwang In-beom',        iso: 'kr',     d: ['jp', 'cn', 'th'] },
+  { n: 'Ardon Jashari',        iso: 'ch',     d: ['ba', 'hr', 'at'] },
+  { n: 'Hwang In-beom',        iso: 'kr',     d: ['jp', 'sa', 'au'] },
 ];
 const MG_NAT_FINAL = [ // Bosnia, Catar, Haití, Turquía, Alemania, Escocia, Túnez, N. Zelanda, Uruguay, Croacia
-  { n: 'Ermedin Demirović',    iso: 'ba',     d: ['hr', 'rs', 'de'] },
+  { n: 'Ermedin Demirović',    iso: 'ba',     d: ['hr', 'de', 'at'] },
   { n: 'Abdelkarim Hassan',    iso: 'qa',     d: ['sa', 'eg', 'ma'] },
-  { n: 'Frantzdy Pierrot',     iso: 'ht',     d: ['fr', 'cm', 'jm'] },
-  { n: 'Orkun Kökçü',          iso: 'tr',     d: ['nl', 'de', 'az'] },
-  { n: 'Robert Andrich',       iso: 'de',     d: ['at', 'ch', 'pl'] },
-  { n: 'Lewis Ferguson',       iso: 'gb-sct', d: ['gb-eng', 'gb-wls', 'ie'] },
+  { n: 'Frantzdy Pierrot',     iso: 'ht',     d: ['fr', 'sn', 'pa'] },
+  { n: 'Orkun Kökçü',          iso: 'tr',     d: ['nl', 'de', 'ba'] },
+  { n: 'Robert Andrich',       iso: 'de',     d: ['at', 'ch', 'cz'] },
+  { n: 'Lewis Ferguson',       iso: 'gb-sct', d: ['gb-eng', 'no', 'se'] },
   { n: 'Aïssa Laïdouni',       iso: 'tn',     d: ['dz', 'ma', 'fr'] },
-  { n: 'Liberato Cacace',      iso: 'nz',     d: ['au', 'it', 'ie'] },
+  { n: 'Liberato Cacace',      iso: 'nz',     d: ['au', 'hr', 'pt'] },
   { n: 'Sebastián Cáceres',    iso: 'uy',     d: ['ar', 'co', 'ec'] },
-  { n: 'Luka Sučić',           iso: 'hr',     d: ['ba', 'rs', 'at'] },
+  { n: 'Luka Sučić',           iso: 'hr',     d: ['ba', 'at', 'ch'] },
 ];
 // Índices de quiz: 0-4 = cortos (5, salen de MG_NAT_POOL) · 5 = día 9 (10) · 6 = bonus final (10).
 const MG_NAT_QUIZZES = [
