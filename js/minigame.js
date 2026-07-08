@@ -282,6 +282,11 @@ const NAT_NAMES = {
   'az': 'Azerbaiyán', 'tm': 'Turkmenistán', 'iq': 'Irak', 'qa': 'Catar', 'jp': 'Japón',
   'kr': 'Corea del Sur', 'cn': 'China', 'th': 'Tailandia', 'vn': 'Vietnam',
   'pt': 'Portugal', 'br': 'Brasil', 'tn': 'Túnez', 'eg': 'Egipto',
+  // Añadidos para los quizzes largos (día 9 y bonus de la final)
+  'no': 'Noruega', 'cv': 'Cabo Verde', 'uz': 'Uzbekistán', 'ba': 'Bosnia y Herzegovina',
+  'gb-sct': 'Escocia', 'nz': 'Nueva Zelanda', 'uy': 'Uruguay', 'hr': 'Croacia',
+  'se': 'Suecia', 'dk': 'Dinamarca', 'is': 'Islandia', 've': 'Venezuela', 'ml': 'Malí',
+  'sa': 'Arabia Saudí', 'rs': 'Serbia', 'pl': 'Polonia', 'ie': 'Irlanda', 'au': 'Australia',
 };
 // Jugadores (probables Mundial 2026) con nacionalidad poco evidente por el nombre.
 // iso = nacionalidad real · d = 3 distractores plausibles.
@@ -317,6 +322,39 @@ const MG_NAT_POOL = [
   { n: 'Mehdi Taremi',        iso: 'ir', d: ['iq', 'qa', 'ma'] },
   { n: 'Wataru Endo',         iso: 'jp', d: ['kr', 'cn', 'th'] },
   { n: 'Hwang Hee-chan',      iso: 'kr', d: ['jp', 'cn', 'vn'] },
+];
+
+// ── Quizzes LARGOS (10 jugadores, países variados, nombres poco conocidos). ──
+//    Uno para el día 9 y otro para el BONUS de la final (día 19).
+const MG_NAT_DIA9 = [ // Noruega, Cabo Verde, Colombia, C. Marfil, Irak, Inglaterra, Uzbekistán, Brasil, Suiza, Corea
+  { n: 'Fredrik Aursnes',      iso: 'no',     d: ['se', 'dk', 'is'] },
+  { n: 'Jovane Cabral',        iso: 'cv',     d: ['pt', 'ao', 'sn'] },
+  { n: 'Richard Ríos',         iso: 'co',     d: ['ec', 've', 'pe'] },
+  { n: 'Wilfried Singo',       iso: 'ci',     d: ['sn', 'ml', 'cm'] },
+  { n: 'Zidane Iqbal',         iso: 'iq',     d: ['dz', 'ir', 'qa'] },
+  { n: 'Ezri Konsa',           iso: 'gb-eng', d: ['ng', 'gh', 'jm'] },
+  { n: 'Abbosbek Fayzullaev',  iso: 'uz',     d: ['tm', 'az', 'tr'] },
+  { n: 'Andrey Santos',        iso: 'br',     d: ['ar', 'co', 'pt'] },
+  { n: 'Ardon Jashari',        iso: 'ch',     d: ['xk', 'al', 'mk'] },
+  { n: 'Hwang In-beom',        iso: 'kr',     d: ['jp', 'cn', 'th'] },
+];
+const MG_NAT_FINAL = [ // Bosnia, Catar, Haití, Turquía, Alemania, Escocia, Túnez, N. Zelanda, Uruguay, Croacia
+  { n: 'Ermedin Demirović',    iso: 'ba',     d: ['hr', 'rs', 'de'] },
+  { n: 'Abdelkarim Hassan',    iso: 'qa',     d: ['sa', 'eg', 'ma'] },
+  { n: 'Frantzdy Pierrot',     iso: 'ht',     d: ['fr', 'cm', 'jm'] },
+  { n: 'Orkun Kökçü',          iso: 'tr',     d: ['nl', 'de', 'az'] },
+  { n: 'Robert Andrich',       iso: 'de',     d: ['at', 'ch', 'pl'] },
+  { n: 'Lewis Ferguson',       iso: 'gb-sct', d: ['gb-eng', 'gb-wls', 'ie'] },
+  { n: 'Aïssa Laïdouni',       iso: 'tn',     d: ['dz', 'ma', 'fr'] },
+  { n: 'Liberato Cacace',      iso: 'nz',     d: ['au', 'it', 'ie'] },
+  { n: 'Sebastián Cáceres',    iso: 'uy',     d: ['ar', 'co', 'ec'] },
+  { n: 'Luka Sučić',           iso: 'hr',     d: ['ba', 'rs', 'at'] },
+];
+// Índices de quiz: 0-4 = cortos (5, salen de MG_NAT_POOL) · 5 = día 9 (10) · 6 = bonus final (10).
+const MG_NAT_QUIZZES = [
+  MG_NAT_POOL.slice(0, 5), MG_NAT_POOL.slice(5, 10), MG_NAT_POOL.slice(10, 15),
+  MG_NAT_POOL.slice(15, 20), MG_NAT_POOL.slice(20, 25),
+  MG_NAT_DIA9, MG_NAT_FINAL,
 ];
 
 // ── Calendario: un reto por día del 10-jun-2026 al 19-jul-2026 (40 días).
@@ -367,7 +405,7 @@ const MG_ROTATION = [
   // pistas5, wordle3=Kane, porteria0=Maradona, sudoku0).
   const MG_CYCLE = [
     { mode: 'mm', key: 'theme', list: ['goles', 'edad', 'champions', 'caps', 'selecciones', 'altura', 'fichaje', 'instagram'] },
-    { mode: 'nat', list: [1, 2, 3, 4] },
+    { mode: 'nat', list: [1, 5, 3, 4] }, // 2.ª aparición (9-jul) = quiz LARGO nuevo (índice 5)
     { mode: 'foto', list: [0, 3, 5, 11, 8, 6] },        // Messi, Haaland, Vinícius, Bellingham, Modrić, Salah (Mbappé→Messi)
     { mode: 'punteria', list: [0] },
     { mode: 'pistas', list: [21, 15, 19, 22, 27] },      // Valverde (Madrid, menos conocido) 1º; no Mbappé/Pedri
@@ -415,7 +453,7 @@ const MG_ROTATION = [
   // justa). Se eligió contenido que no sale en la rotación normal.
   function freshContent(mode) {
     if (mode === 'mm') return { theme: 'selecciones' };   // 🏆 Victorias en Mundiales (temático para la final)
-    if (mode === 'nat') return { i: 4 };                  // Quiz 5 (McKennie, Caicedo, Taremi, Endo, Hwang)
+    if (mode === 'nat') return { i: 6 };                  // quiz LARGO de la final (10 jugadores, índice 6)
     if (mode === 'foto') return { i: 7 };                 // Lewandowski
     if (mode === 'pistas') return { i: 32 };              // Son Heung-min
     if (mode === 'wordle') return { i: 16 };              // COURTOIS (más difícil que Pedri)
@@ -462,7 +500,7 @@ const MG_ROTATION = [
   const fmtMMSS = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + pad2(s % 60); };
   const MODE_SCORING = {
     mm:       { lower: false, fmt: v => v + (v === 1 ? ' acierto' : ' aciertos') },
-    nat:      { lower: false, fmt: v => v + '/5' },
+    nat:      { lower: false, fmt: v => v + '/' + ((MG_NAT_QUIZZES[(currentEntry() || {}).i || 0] || []).length || 5) },
     punteria: { lower: false, fmt: v => v + (v === 1 ? ' gol' : ' goles') },
     pistas:   { lower: true,  fmt: v => v >= MG_DNF ? '❌ no acertó' : v + (v === 1 ? ' pista' : ' pistas') },
     wordle:   { lower: true,  fmt: v => v >= MG_DNF ? '❌ no acertó' : v + (v === 1 ? ' intento' : ' intentos') },
@@ -1536,9 +1574,8 @@ const MG_ROTATION = [
     qs: [], qi: 0, score: 0,
     start() {
       const occ = currentEntry().i || 0;
-      let slice = MG_NAT_POOL.slice(occ * 5, occ * 5 + 5);
-      if (slice.length < 5) slice = MG_NAT_POOL.slice(0, 5);
-      // baraja el orden de las 5 preguntas (para que no salga siempre la misma primero)
+      let slice = (MG_NAT_QUIZZES[occ] || MG_NAT_QUIZZES[0]).slice();
+      // baraja el orden de las preguntas (para que no salga siempre la misma primero)
       const rng = mulberry32(seedInt() ^ 0x33ce71);
       for (let i = slice.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = slice[i]; slice[i] = slice[j]; slice[j] = t; }
       this.qs = slice; this.qi = 0; this.score = 0; gameOver = false; busy = false;
