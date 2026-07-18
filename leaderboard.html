@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="css/style.css?v=86">
+  <link rel="stylesheet" href="css/style.css?v=87">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 </head>
 <body>
@@ -41,11 +41,18 @@
     <div class="tabs" id="lb-tabs">
       <button type="button" class="tab-btn active" data-lbtab="friends">👑 Ranking de los OG</button>
       <button type="button" class="tab-btn" data-lbtab="others">🎟️ Ranking de los invitados</button>
+      <button type="button" class="tab-btn" data-lbtab="manhattan">📏 Ranking manhattan</button>
     </div>
   </div>
 
+  <div class="info-banner hidden" id="lb-manh-note" style="display:block;margin-bottom:20px;line-height:1.5">
+    📏 <b>Ranking Manhattan</b> (solo OG): además de la puntuación normal, si te quedas a <b>un solo gol</b> del marcador real
+    (distancia 1: p. ej. real 2-2 → 1-2, 2-1, 3-2 o 2-3) sumas <b>+1</b> en grupos y <b>+1,5</b> en eliminatorias.
+    La columna 📏 cuenta cuántas veces rozaste el marcador.
+  </div>
+
   <div class="leaderboard-table">
-    <div class="lb-header">
+    <div class="lb-header" id="lb-head">
       <div>#</div>
       <div>Jugador</div>
       <div style="text-align:center"><span class="lb-h-full">Total</span><span class="lb-h-abbr">Pts</span></div>
@@ -60,12 +67,12 @@
   </div>
 </main>
 
-<script src="js/config.js?v=34"></script>
+<script src="js/config.js?v=35"></script>
 <script src="js/cache.js?v=30"></script>
 <script src="js/api.js?v=53"></script>
-<script src="js/data.js?v=38"></script>
+<script src="js/data.js?v=39"></script>
 <script src="js/bracket.js?v=34"></script>
-<script src="js/leaderboard.js?v=48"></script>
+<script src="js/leaderboard.js?v=49"></script>
 <script src="js/music.js?v=30"></script>
 <script src="js/minigame.js?v=96"></script>
 <script src="js/newgames.js?v=17"></script>

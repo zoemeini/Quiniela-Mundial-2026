@@ -78,6 +78,7 @@ function applyLeaderboard(data) {
 
     const rows = players.map(user => {
       let g = 0, ko = 0, exact = 0, hits = 0, played = 0;
+      let mBonusG = 0, mBonusK = 0, manh = 0; // bono y aciertos «distancia Manhattan 1»
       allMatches().forEach(m => {
         const res = realResults[m.id];
         if (!res) return;
@@ -93,10 +94,14 @@ function applyLeaderboard(data) {
         if (isKoId(m.id)) ko += pts; else g += pts;
         if (isExactHit(pred, result)) exact++; // ⭐ marcador exacto (grupos o KO)
         if (pts > 0) hits++; // acertó el resultado (1X2), aunque no el marcador exacto
+        const mb = manhattanBonus(m.id, pred, result); // +1 grupos / +1.5 KO si roza por un gol
+        if (mb > 0) { manh++; if (isKoId(m.id)) mBonusK += mb; else mBonusG += mb; }
       });
       const spPts = finalPoints(byUser[user]); // apuesta de la final (0 hasta que se juegue)
       const acc = played > 0 ? Math.round(hits / played * 100) : null; // % de aciertos (1X2) sobre partidos jugados
-      return { user, group: g, ko, total: g + ko + spPts, exact, acc };
+      // Campos «m…» = Ranking Manhattan (puntuación normal + bono por rozar el marcador).
+      return { user, group: g, ko, total: g + ko + spPts, exact, acc, manh,
+        mGroup: g + mBonusG, mKo: ko + mBonusK, mTotal: g + ko + mBonusG + mBonusK + spPts };
     });
 
     rows.sort((a, b) => b.total - a.total || b.exact - a.exact || a.user.localeCompare(b.user));
@@ -119,11 +124,16 @@ async function loadLeaderboard() {
   }
 }
 
-// Asigna puesto (1..N) a una lista ya ordenada; empata solo si coinciden puntos y ⭐.
-function ranked(list) {
+// Muestra puntos: entero si es exacto, con un decimal si lleva medio punto (bono KO 1.5).
+function fmtPts(n) { return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+
+// Asigna puesto (1..N) a una lista ya ordenada; empata solo si coincide la clave.
+// keyFn por defecto: puntos totales + ⭐ (para el Ranking Manhattan se pasa otra clave).
+function ranked(list, keyFn) {
+  keyFn = keyFn || (row => row.total + '|' + row.exact);
   let rank = 0, prevKey = null;
   return list.map(row => {
-    const key = row.total + '|' + row.exact;
+    const key = keyFn(row);
     if (prevKey === null || key !== prevKey) { rank++; prevKey = key; }
     return { row, rank };
   });
@@ -171,32 +181,63 @@ function renderLeaderboard(rows, playedGroup, playedKo) {
   paintTab();
 }
 
-// Pinta la pestaña activa (Mis amigos / Los demás), con su propio ranking.
+// Cabecera de la tabla: 7 columnas normal · 8 columnas (con 📏) en Ranking Manhattan.
+function updateLbHeader(manhattan) {
+  const table = document.querySelector('.leaderboard-table');
+  if (table) table.classList.toggle('lb-manhattan', manhattan);
+  const head = document.getElementById('lb-head');
+  if (!head) return;
+  const manhCol = manhattan
+    ? '<div style="text-align:center" title="Aciertos a distancia Manhattan 1 (rozaste el marcador por un gol)">📏</div>'
+    : '';
+  head.innerHTML = `
+    <div>#</div>
+    <div>Jugador</div>
+    <div style="text-align:center"><span class="lb-h-full">Total</span><span class="lb-h-abbr">Pts</span></div>
+    <div style="text-align:center"><span class="lb-h-full">Grupos</span><span class="lb-h-abbr">Gr</span></div>
+    <div style="text-align:center"><span class="lb-h-full">Elim.</span><span class="lb-h-abbr">El</span></div>
+    <div style="text-align:center" title="Marcadores exactos">⭐</div>
+    ${manhCol}
+    <div style="text-align:center"><span class="lb-h-full">Acierto</span><span class="lb-h-abbr">%</span></div>`;
+}
+
+// Pinta la pestaña activa (OG / invitados / Manhattan), con su propio ranking.
 function paintTab() {
   const rows = lastRows || [];
   // Los OG marcados en WC_BOTH salen también en invitados (y al revés).
   const friends = rows.filter(r => isFriend(r.user) || isBoth(r.user));
   const others = rows.filter(r => !isFriend(r.user) || isBoth(r.user));
-  const fb = document.querySelector('[data-lbtab="friends"]'), ob = document.querySelector('[data-lbtab="others"]');
+  const fb = document.querySelector('[data-lbtab="friends"]'),
+        ob = document.querySelector('[data-lbtab="others"]'),
+        mb = document.querySelector('[data-lbtab="manhattan"]');
   if (fb) { fb.innerHTML = `👑 Ranking de los OG <span class="tab-check">${friends.length}</span>`; fb.classList.toggle('active', lbTab === 'friends'); }
   if (ob) { ob.innerHTML = `🎟️ Ranking de los invitados <span class="tab-check">${others.length}</span>`; ob.classList.toggle('active', lbTab === 'others'); }
-  renderRows(lbTab === 'friends' ? friends : others);
+  if (mb) { mb.innerHTML = `📏 Ranking manhattan <span class="tab-check">${friends.length}</span>`; mb.classList.toggle('active', lbTab === 'manhattan'); }
+  const manhattan = lbTab === 'manhattan';
+  const note = document.getElementById('lb-manh-note');
+  if (note) note.classList.toggle('hidden', !manhattan);
+  updateLbHeader(manhattan);
+  // Manhattan = solo OG (misma lista que la pestaña de los OG).
+  renderRows(manhattan ? friends.slice() : (lbTab === 'friends' ? friends : others), manhattan);
 }
 
-function renderRows(rows) {
+function renderRows(rows, manhattan) {
   const rankIcons = ['🥇', '🥈', '🥉'];
   const body = document.getElementById('lb-body');
   body.innerHTML = '';
   if (rows.length === 0) {
-    body.innerHTML = lbTab === 'friends'
-      ? '<div class="lb-loading">Todavía ningún OG ha pronosticado.</div>'
-      : '<div class="lb-loading">Todavía no se ha unido ningún invitado. 🌱</div>';
+    body.innerHTML = (lbTab === 'others')
+      ? '<div class="lb-loading">Todavía no se ha unido ningún invitado. 🌱</div>'
+      : '<div class="lb-loading">Todavía ningún OG ha pronosticado.</div>';
     return;
   }
-  // Numeración correlativa (empata solo si coinciden puntos y ⭐), con flecha de
+  // En Manhattan reordenamos por el total con bono (desempata ⭐ y luego 📏).
+  if (manhattan) rows.sort((a, b) => b.mTotal - a.mTotal || b.exact - a.exact || b.manh - a.manh || a.user.localeCompare(b.user));
+  // Numeración correlativa (empata solo si coincide la clave), con flecha de
   // subida/bajada de puestos respecto a antes del último resultado.
-  const prefix = lbTab === 'friends' ? 'f:' : 'o:';
-  ranked(rows).forEach(({ row, rank }) => {
+  const prefix = lbTab === 'friends' ? 'f:' : (lbTab === 'others' ? 'o:' : 'm:');
+  const keyFn = manhattan ? (row => row.mTotal + '|' + row.exact + '|' + row.manh) : undefined;
+  ranked(rows, keyFn).forEach(({ row, rank }) => {
     const isMe = row.user === me;
     const div = document.createElement('div');
     div.className = 'lb-row clickable' + (isMe ? ' me' : '');
@@ -206,19 +247,24 @@ function renderRows(rows) {
     });
     const rankClass = rank <= 3 ? `top-${rank}` : '';
     const rankLabel = rank <= 3 ? rankIcons[rank - 1] : rank;
-    const mv = lbDelta[prefix + normName(row.user)];
+    const mv = lbDelta[prefix + normName(row.user)]; // (Manhattan no lleva flechas)
     const move = (mv > 0)
       ? ` <span style="color:var(--green);font-weight:700;font-size:11px;white-space:nowrap" title="Sube ${mv} ${mv === 1 ? 'puesto' : 'puestos'}">▲${mv}</span>`
       : (mv < 0)
         ? ` <span style="color:var(--red);font-weight:700;font-size:11px;white-space:nowrap" title="Baja ${-mv} ${-mv === 1 ? 'puesto' : 'puestos'}">▼${-mv}</span>`
         : '';
+    const total = manhattan ? fmtPts(row.mTotal) : row.total;
+    const grp   = manhattan ? fmtPts(row.mGroup) : row.group;
+    const elim  = manhattan ? fmtPts(row.mKo) : row.ko;
+    const manhCell = manhattan ? `<div class="lb-num" title="Rozó el marcador por un gol">${row.manh}</div>` : '';
     div.innerHTML = `
       <div class="lb-rank ${rankClass}">${rankLabel}</div>
       <div class="lb-name">${escHtml(row.user)}${isMe ? ' <span style="font-size:11px;color:var(--muted)">(tú)</span>' : ''}${move}</div>
-      <div class="lb-pts">${row.total}</div>
-      <div class="lb-num">${row.group}</div>
-      <div class="lb-num">${row.ko}</div>
+      <div class="lb-pts">${total}</div>
+      <div class="lb-num">${grp}</div>
+      <div class="lb-num">${elim}</div>
       <div class="lb-num">${row.exact}</div>
+      ${manhCell}
       <div class="lb-num">${row.acc == null ? '—' : row.acc + '%'}</div>`;
     body.appendChild(div);
   });

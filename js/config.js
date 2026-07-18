@@ -46,6 +46,14 @@ const GROUP_POINTS = { exact: 5, outcome: 3 };
 const KO_MATCH_POINTS = { outcome: 3, exact: 2, advance: 2 };
 
 // ============================================================
+//  Bono «distancia Manhattan» (solo para el Ranking Manhattan)
+//  Si el pronóstico se queda a UN gol del marcador real
+//  (distancia Manhattan 1: p. ej. real 2-2 → 1-2, 2-1, 3-2, 2-3),
+//  suma este bono ADEMÁS de la puntuación normal.
+// ============================================================
+const MANHATTAN_BONUS = { group: 1, ko: 1.5 };
+
+// ============================================================
 //  Knockout points — awarded for each team you correctly
 //  predict to REACH a round (compared with the real results).
 //  Deeper rounds are worth more. Tweak freely.

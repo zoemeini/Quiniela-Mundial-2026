@@ -334,3 +334,18 @@ function isExactHit(pred, result) {
   return !!result && result.status === 'finished'
     && pred.home === result.home && pred.away === result.away;
 }
+
+// ── Distancia Manhattan del marcador (solo para el Ranking Manhattan) ──
+// Diferencia de goles en total: |local| + |visitante|.
+function manhattanDistance(pred, result) {
+  return Math.abs(pred.home - result.home) + Math.abs(pred.away - result.away);
+}
+// ¿Se quedó a UN gol del marcador real? (distancia exactamente 1).
+function isManhattan1(pred, result) {
+  return !!result && result.status === 'finished' && manhattanDistance(pred, result) === 1;
+}
+// Bono Manhattan de un partido: +1 en grupos, +1.5 en eliminatorias (0 si no roza).
+function manhattanBonus(id, pred, result) {
+  if (!isManhattan1(pred, result)) return 0;
+  return isKoId(id) ? MANHATTAN_BONUS.ko : MANHATTAN_BONUS.group;
+}
