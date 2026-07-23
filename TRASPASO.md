@@ -3,7 +3,7 @@
 > **Para quien lea esto (humano o Claude):** este fichero contiene TODO lo necesario
 > para seguir trabajando en el proyecto sin contexto previo. Léelo entero antes de
 > hacer cambios. Está escrito en español porque la organizadora (Zoe) trabaja en español.
-> Última actualización: **2026-06-28**.
+> Última actualización: **2026-07-23**.
 
 ---
 
@@ -38,25 +38,25 @@ Navegador de los amigos  ⇆  Google Apps Script (web app)  ⇆  Google Sheet
 
 > Cada `<script>`/`<link>` en el HTML lleva `?v=N`. **Hay que SUBIR ese N cada vez que
 > cambias un fichero JS/CSS**, si no los navegadores sirven la versión cacheada vieja.
-> Versiones actuales (2026-06-28):
+> Versiones actuales (2026-07-23):
 
 | Fichero | Qué hace | v |
 |---|---|---|
 | `index.html` | Página principal: "Mis Pronósticos" (grupos + eliminatorias) | — (HTML no versionado; ver §4) |
-| `predicciones.html` + `js/predicciones.js` | Ver lo que pronosticó cada uno (solo lectura; cada partido se revela al empezar) | js v=34 |
-| `resultados.html` + `js/resultados.js` | Feed de partidos terminados + quién acertó (badges de puntos) | js v=35 |
-| `leaderboard.html` + `js/leaderboard.js` | Clasificación en vivo (2 pestañas: OG / invitados) | js v=46 |
+| `predicciones.html` + `js/predicciones.js` | Ver lo que pronosticó cada uno (solo lectura; cada partido se revela al empezar; colores verde/amarillo/rojo por acierto) | js v=37 |
+| `resultados.html` + `js/resultados.js` | Feed de partidos terminados + quién acertó (badges de puntos) | js v=37 |
+| `leaderboard.html` + `js/leaderboard.js` | Clasificación en vivo (**3 pestañas: OG / invitados / Manhattan**, ver §10) | js v=49 |
 | `admin.html` + `js/admin.js` | Panel admin (contraseña): meter resultados de grupos + eliminatorias reales | js v=33 |
-| `js/config.js` | URL del backend + contraseña admin + puntos | v=33 |
+| `js/config.js` | URL del backend + contraseña admin + puntos (grupos, KO y bono Manhattan) | v=35 |
 | `js/api.js` | Wrapper que llama al Apps Script por GET | v=53 |
-| `js/data.js` | 72 partidos de grupos + cuadro KO (`KO_MATCHES`) + nombres/banderas + puntuación | v=35 |
+| `js/data.js` | 72 partidos de grupos + cuadro KO (`KO_MATCHES`) + nombres/banderas + puntuación (incl. helpers Manhattan) | v=39 |
 | `js/bracket.js` | Lógica del cuadro: `computeStandings`, `realKnockout` (resolución parcial) | v=34 |
-| `js/app.js` | Lógica de pronósticos (grupos + eliminatorias, cuadro visual, modales) | v=46 |
-| `js/cache.js` | Caché stale-while-revalidate en localStorage (navegación instantánea) | v=30 |
-| `js/minigame.js` | Minijuego diario "Reto del día" (rotación de modos, ranking, bonus) | v=94 |
+| `js/app.js` | Lógica de pronósticos (grupos + eliminatorias, cuadro visual, modales) | v=53 |
+| `js/cache.js` | Caché stale-while-revalidate en localStorage (navegación instantánea) | v=30 (v=32 en admin) |
+| `js/minigame.js` | Minijuego diario "Reto del día" (rotación de modos, ranking, bonus; quizzes nacionalidad) | v=96 |
 | `js/newgames.js` | 6 minijuegos nuevos integrados a la rotación (expone `window.NG`) | v=17 |
 | `js/music.js` | Reproductor flotante 🎵 opcional (no autoplay) | v=30 |
-| `css/style.css` | TODOS los estilos | v=85 |
+| `css/style.css` | TODOS los estilos | v=87 |
 | `google-apps-script.gs` | Backend (se pega dentro del Sheet, ver §5) | — |
 | `.claude/launch.json` | Config del servidor de preview local (`python3 -m http.server 3000`) | — |
 
@@ -146,6 +146,8 @@ personal.
   empiezan por `M`), `isExactHit`, `calculatePoints` (grupos). `homeTeam/awayTeam` = equipos
   del cruce (`realBr.resolved[id].home/away`), necesarios para los casos empate↔victoria. Lo
   usan leaderboard/resultados/predicciones/app (los 4 pasan ya los equipos del cruce).
+- **Bono "distancia Manhattan"**: existe una puntuación EXTRA que solo se aplica en la pestaña
+  **Ranking Manhattan** de la clasificación (no en el Total normal). Ver §10.
 - Lo que no rellenas cuenta como 0-0. Cada partido se bloquea a su hora de inicio real.
 
 ## 8. Eliminatorias (cuadro)
@@ -183,6 +185,11 @@ personal.
   (memory, keepie/que-no-caiga, gol-o-tarjeta, cálculo, mastermind de equipaciones, dorsales).
   Ciclo de 14 (`MG_CYCLE`); contenido **determinista por fecha** (semilla = fecha) para que
   sea idéntico para todos.
+- **Quiz de nacionalidad ("¿de qué país?"):** varios grupos de jugadores. Hay 5 quizzes cortos
+  (5 jugadores) + **2 largos de 10** para el día 9 y el día 19/final (`MG_NAT_DIA9`,
+  `MG_NAT_FINAL`; enrutados por `MG_NAT_QUIZZES`). **Todas las opciones de respuesta (la correcta
+  y los 3 distractores) son SOLO selecciones que jugaron la fase de grupos del Mundial 2026**
+  (nada de Malí, Angola, etc.); los nombres de país válidos están en `NAT_NAMES`.
 - **Día de la FINAL (19-jul) = BONUS:** se juegan varios seguidos con contenido FIJO
   (`MG_BONUS_SEED=20260719`). Pendiente: normalizar puntuaciones a 0–100 y ranking común.
 - **Testers:** solo **Zoesita** (`MG_HIDDEN=['zoesita']`, `isTester`) ve el navegador ‹ › para
@@ -191,11 +198,32 @@ personal.
 
 ## 10. Clasificación (leaderboard)
 
-- 2 pestañas para todos: **"👑 Ranking de los OG"** (lista fija `WC_FRIENDS` en
-  `js/leaderboard.js`) y **"🎟️ Ranking de los invitados"** (todos los demás).
+- **3 pestañas** (variable `lbTab` en `js/leaderboard.js`):
+  - **"👑 Ranking de los OG"** (`friends`) — lista fija `WC_FRIENDS`.
+  - **"🎟️ Ranking de los invitados"** (`others`) — todos los demás.
+  - **"📏 Ranking manhattan"** (`manhattan`) — **solo OG**, con puntuación extra (ver abajo).
 - Para añadir/quitar a alguien de los OG: editar el array `WC_FRIENDS`. Match por nombre
-  normalizado (sin acentos/mayúsculas).
-- Columnas: Total · Grupos · **Elim.** · ⭐ (exactos) · % acierto.
+  normalizado (sin acentos/mayúsculas). Los de `WC_BOTH` salen también en invitados.
+- Columnas normales (7): Total · Grupos · **Elim.** · ⭐ (exactos) · % acierto.
+
+### 📏 Ranking Manhattan (bono por "rozar" el marcador)
+- **Regla:** ADEMÁS de la puntuación normal, si un pronóstico queda a **distancia Manhattan 1**
+  del marcador real (a un gol en total: p. ej. real 2-2 → 1-2, 2-1, 3-2 o 2-3) suma **+1** en
+  grupos y **+1,5** en eliminatorias. Es un bono **aditivo** (no reemplaza los puntos de 1X2 ni
+  de marcador exacto; puede caer encima de ellos).
+- **Columna nueva 📏:** cuenta cuántas veces cada jugador rozó el marcador (igual que ⭐ cuenta
+  los exactos). La tabla pasa a **8 columnas** (clase `.lb-manhattan` en `.leaderboard-table`,
+  grid definido en `css/style.css` para escritorio y móvil) y se **reordena por el total con
+  bono** (desempata ⭐ y luego 📏). Los totales pueden llevar medio punto (bono KO 1,5) → se
+  muestran con el helper `fmtPts` (entero si es exacto, un decimal si no).
+- **Constante:** `MANHATTAN_BONUS = { group: 1, ko: 1.5 }` en `js/config.js`.
+- **Helpers** en `js/data.js`: `manhattanDistance(pred,result)` (|Δlocal|+|Δvisitante|),
+  `isManhattan1(pred,result)`, `manhattanBonus(id,pred,result)` (elige 1 o 1,5 según `isKoId`).
+- En `leaderboard.js` cada fila lleva además `mGroup` / `mKo` / `mTotal` / `manh` (campos "m…").
+  La cabecera es dinámica (`updateLbHeader(manhattan)`) y hay una nota explicativa
+  (`#lb-manh-note`, forzada a `display:block` porque `.info-banner` es flex). El Ranking
+  Manhattan **no** muestra flechas ▲▼ de subida/bajada (prefijo de posiciones `m:` sin snapshot).
+- **Solo cliente** (se calcula al vuelo como el resto de la puntuación): **sin redeploy**.
 
 ## 11. Login y usuarios
 
